@@ -23,7 +23,7 @@
                 <div class="group_title">
                     <i 
                         class='iconfont icon-unfold'
-                        :class="group.extend ? '' : 'icon-unfold_rotate'"
+                        :class="group.extend ? '' : 'icon_rotate'"
                         @click='extendToggle(index)'
                         ></i>
                     <span>{{group.groupName}}</span>
@@ -38,7 +38,6 @@
                             <p class='every'>{{list.title}}</p>
                         </div>
                     </div>
-               
                 </transition-group>
             </div>
             
@@ -48,7 +47,7 @@
                 top_operate~~
             </div>
             <div class="detail_file">
-                <div class="left_box">
+                <div id="leftBox" class="left_box">
                     <div class="left_file_list">
                         <draggable
                             class='draggable'
@@ -74,52 +73,142 @@
                                 >
                                 {{ele.Title}}
                             </div>
+                            <div class="null"></div>
                         </draggable>
                     </div>
                 </div>
-                 <div class="right_box">
+                <div id="centerBox" class="center_box">
                     <div class="parths">
                         <div 
                             class="parths_group"
-                            v-for="group in parthsGroup"
+                            v-for="(group, index) in parthsGroup"
                             :key="group.id"
                             >
                             <div class="group_top">
                                 <span class="group_name">{{group.groupTitle}}</span>
+                                <div class="group_operate">
+                                  {{group.packUp}}
+                                  <span 
+                                    v-if='group.packUp' 
+                                    @click='groupExtendToggle(index)'
+                                    class='mainColor_text'
+                                    >收起</span>
+                                </div>
                                 <div 
                                     :class="group.border ? 'group_border group_file' : 'group_file'"
+                                    :key="group.id"
                                     >
+                                    <!-- 展开的时候 -->
                                     <draggable
-                                        class="draggable"
+                                      v-if='!group.overList && !group.allList'
+                                      class="draggable"
+                                      :groupid='group.id'
+                                      v-model="group.list"
+                                      :options="{
+                                        group:{name: 'file',pull:'clone'},
+                                        ghostClass: 'ghost_file', 
+                                        dragClass: 'drag_file',
+                                        draggable: '.draged',
+                                        disabled: group.dragDisabled
+                                      }"
+                                      :move='fileMove'
+                                      @start='dragStart($event, group.id)'
+                                      @end='dragEnd'
+                                      >
+                                      <div 
+                                        class="every_file fold_up draged"
+                                        v-for="item in group.list"
+                                        :key="item.Pkid"
                                         :groupid='group.id'
-                                        v-model="group.list"
-                                        :options="{
-                                          group:{name: 'file',pull:'clone'},
-                                          ghostClass: 'ghost_file', 
-                                          dragClass: 'drag_file',
-                                          disabled: group.dragDisabled
-                                        }"
-                                        :move='fileMove'
-                                        @start='dragStart($event, group.id)'
-                                        @end='dragEnd'
-                                    >
+                                        :id='item.Pkid'
+                                        :filename='item.Title'
+                                        >
+                                        
+                                        <div class='file_title'>{{item.Title}}</div>
+                                        <div class="from_who">1--{{item.Uname}}</div>
+                                      </div>
+                                      <div class="null"></div>
+                                    </draggable>
+                                    <!-- 折叠成一行的时候 -->
+                                    <draggable
+                                      v-if='group.overList && !group.allList'
+                                      class="draggable"
+                                      :groupid='group.id'
+                                      v-model="group.overList"
+                                      :options="{
+                                        group:{name: 'file',pull:'clone'},
+                                        ghostClass: 'ghost_file', 
+                                        dragClass: 'drag_file',
+                                        draggable: '.draged',
+                                        disabled: group.dragDisabled
+                                      }"
+                                      :move='fileMove'
+                                      @start='dragStart($event, group.id)'
+                                      @end='dragEnd'
+                                      >
                                         <div 
-                                            class="every_file"
-                                            v-for="item in group.list"
-                                            :key="item.Pkid"
-                                            :groupid='group.id'
-                                            :id='item.Pkid'
-                                            :filename='item.Title'
-                                            >
-                                            <div class='file_title' :groupid='group.id'>{{item.Title}}</div>
+                                          class="every_file fold_up"
+                                          :class="item.overLength ? '' : 'draged'"
+                                          v-for="item in group.overList"
+                                          :key="item.Pkid"
+                                          :groupid='group.id'
+                                          :id='item.Pkid'
+                                          :filename='item.Title'
+                                          >
+                                          <template v-if='item.overLength'>
+                                            <div class='file_title'>more</div>
+                                            <div class="from_who" @click='groupExtendToggle(index)'>1展开更多{{item.overLength}}个文件</div>
+                                          </template>
+                                          <template v-else>
+                                            <div class='file_title'>{{item.Title}}</div>
                                             <div class="from_who">{{item.Uname}}</div>
+                                          </template>
+                                          <div class="null"></div>
                                         </div>
-                                     </draggable>
+                                    </draggable>
+                                    <!-- 折叠成一个的时候 -->
+                                    <draggable
+                                      v-if='group.allList'
+                                      class="draggable"
+                                      :groupid='group.id'
+                                      v-model="group.allList"
+                                      :options="{
+                                        group:{name: 'file',pull:'clone'},
+                                        ghostClass: 'ghost_file', 
+                                        dragClass: 'drag_file',
+                                        draggable: '.draged',
+                                        disabled: group.dragDisabled
+                                      }"
+                                      :move='fileMove'
+                                      @start='dragStart($event, group.id)'
+                                      @end='dragEnd'
+                                      >
+                                      <div 
+                                        class="every_file fold_up"
+                                          v-if='item.overLength'
+                                        v-for="item in group.allList"
+                                        :key="item.Pkid"
+                                        :groupid='group.id'
+                                        :id='item.Pkid'
+                                        :filename='item.Title'
+                                        >
+                                          <div class='file_title'>more</div>
+                                          <div class="from_who" @click='groupExtendToggle(index)'>2展开更多{{item.overLength}}个文件</div>
+                                      </div>
+                                      <div class="null"></div>
+                                    </draggable>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="left_center_toggle" @click='leftCenterToggle'>
+                      <i 
+                        class="iconfont icon-tubiaozhizuomoban"
+                        :class="leftCenterFlag ? 'icon_rotate' : ''"
+                        ></i>
+                    </div>
                 </div>
+                <div id="rightBox" class="right_box" v-if='false'></div>
             </div>
             <div class="personal_files" id='personalFiles'>
                 <div class="left_pull">
@@ -260,40 +349,23 @@ export default {
           groupTitle: "分组1",
           border: false,
           dragDisabled: false,
+          packUp: false,
           list: [
             {
               Pkid: "404",
               Title: "屏幕快照 2018-12-24 上午10.44.17 (2)",
-              YimageUrl:
-                "/upload/file/20181224050137/ca823fe4-260b-4eee-bfd9-3d7fcf8b32b2/dd9a8e20-9686-45fc-bbaf-fbb9d2b8e44e.png",
               Url:
                 "/upload/file/20181224050137/ca823fe4-260b-4eee-bfd9-3d7fcf8b32b2/dd9a8e20-9686-45fc-bbaf-fbb9d2b8e44e_s1.png",
-              Titles:
-                "/upload/file/20181224050137/ca823fe4-260b-4eee-bfd9-3d7fcf8b32b2/dd9a8e20-9686-45fc-bbaf-fbb9d2b8e44e_s0.png",
-              ImageHeight: 608,
-              ImageWidth: 1080,
               FileType: "png",
-              Size: 0,
               Uname: "祝建云",
-              IsCollection: false,
-              CreateTime: "2018年12月24日 17:01"
             },
             {
               Pkid: "403",
               Title: "屏幕快照 2018-12-24 上午10.44.17",
-              YimageUrl:
-                "/upload/file/20181224050130/397969a5-5bd8-452a-99f6-76ddbe8d0738/e6e47bb3-d648-4aee-b78a-4b312d2ea75d.png",
               Url:
                 "/upload/file/20181224050130/397969a5-5bd8-452a-99f6-76ddbe8d0738/e6e47bb3-d648-4aee-b78a-4b312d2ea75d_s1.png",
-              Titles:
-                "/upload/file/20181224050130/397969a5-5bd8-452a-99f6-76ddbe8d0738/e6e47bb3-d648-4aee-b78a-4b312d2ea75d_s0.png",
-              ImageHeight: 675,
-              ImageWidth: 1080,
               FileType: "png",
-              Size: 0,
               Uname: "祝建云",
-              IsCollection: false,
-              CreateTime: "2018年12月24日 17:01"
             }
           ]
         }
@@ -369,10 +441,287 @@ export default {
         fromGroup: null,
         toGroup: null
       },
-      navBar: [{id: 0, name: '个人文档'}]
+      navBar: [{id: 0, name: '个人文档'}],
+      fileBoxW: 142, // 188
+      leftBoxW: 210,
+      personalBoxW: 388,
+      leftCenterFlag: false, // true--未分组占大份 false--分组区域占大份
     };
   },
+  watch: {
+  },
   methods: {
+    // 左右文件视图大小转换
+    leftCenterToggle() {
+      this.leftCenterFlag = !this.leftCenterFlag;
+      if(this.leftCenterFlag) { // 未分组占大份
+        $('#leftBox').addClass('left_box_toggle');
+        $('#centerBox').addClass('center_box_toggle');
+        this.countFileOne();
+         for(let x of this.parthsGroup) {
+            x.packUp = false;
+          if(x.overList) {
+             delete x.overList;
+          }
+        }
+        this.parthsGroup = this.parthsGroup.concat();
+        
+      }else { // 分组区域占大份
+        $('#leftBox').removeClass('left_box_toggle');
+        $('#centerBox').removeClass('center_box_toggle');
+        for(let x of this.parthsGroup) {
+          if(x.allList) {
+            delete x.allList;
+          }
+        }
+        for(let i = 0; i < this.parthsGroup.length; i++) {
+          let x = this.parthsGroup[i];
+          if(!x.overList) {
+            this.countFileMore(i);
+          }
+        }
+        this.parthsGroup = this.parthsGroup.concat();
+      } 
+    },
+    
+    // 文件组折叠/展开
+    groupExtendToggle(index) {
+      if(this.leftCenterFlag) {
+        this.leftCenterToggle();
+        this.parthsGroup[index].packUp = false;
+      }else {
+        this.parthsGroup[index].packUp = !this.parthsGroup[index].packUp;
+      }
+      if(this.parthsGroup[index].packUp) { // 收起
+        this.countFileMore(index, false);
+      }else { // 展开
+        this.countFileMore(index, true);
+      }
+      this.parthsGroup = this.parthsGroup.concat();
+    },
+
+    // 计算需要折叠的文件个数--分组折叠成一行
+    countFileMore(i, flag) {
+      // console.log(this.parthsGroup[i].list);
+      if(flag === false) { // 展开
+        if(this.parthsGroup[i].overList) {
+          delete this.parthsGroup[i].overList;
+        }
+        this.parthsGroup = this.parthsGroup.concat();
+        return;
+      }
+      this.$nextTick(() => {
+        const w = $('.parths_group').eq(i).find('.group_file').eq(0).width();
+        const x = Math.floor(w / this.fileBoxW);
+        let list = [...this.parthsGroup[i].list];
+        let length = list.length;
+        let over = length - x;
+        let overList = [...list].splice(0, x - 1);
+        let others = [...list].splice(x - 1);
+        let urls = [];
+        others.map(ele => urls.push(ele.Url));
+        if(urls.length > 3) {
+          urls.splice(0, 3);
+        }
+        overList.push({
+          Pkid: `group${i}`,
+          Title: null,
+          Url: urls,
+          FileType: null,
+          Uname: null,
+          overLength: over + 1
+        });
+        this.parthsGroup[i] = Object.assign({}, this.parthsGroup[i], {overList: overList})
+        this.parthsGroup = this.parthsGroup.concat();
+        // console.log('countFileMore--', 'w--> ' + w, 'x--> ' + x, 'length==>' + this.parthsGroup[i].list.length, this.parthsGroup[i]);
+
+      });
+    },
+    // 计算需要折叠的文件个数--分组折叠成一个
+    countFileOne() {
+      let i = 0;
+      for(let ele of this.parthsGroup) {
+        let urls = [];
+        ele.list.map(el => urls.push(el.Url));
+        if(urls.length > 3) {
+          urls.splice(0, 3);
+        }
+        let allList = [{
+          Pkid: `group${i}`,
+          Title: null,
+          Url: urls,
+          FileType: null,
+          Uname: null,
+          overLength: ele.list.length
+        }]
+        i++;
+        this.$set(ele, 'allList', allList);
+        this.parthsGroup = this.parthsGroup.concat();
+      }
+    },
+    // 文件拖拽操作-------------
+    // 文件移动时的回调函数
+    fileMove(e, under) {
+      // e.dragged 拖拽的元素
+      // e.draggedContext 拖拽的元素的详情
+      // e.draggedContext.element 拖拽的元素的内容
+      // e.draggedContext.futureIndex / index 拖拽的元素的索引
+      // e.to: 拖入区域
+      // e.relatedContext: 拖入区域的上下文
+
+      // console.log("fileMove", e);
+      if(!this.dragItem.item.Title) {
+        const item =  e.draggedContext.element;
+        this.dragItem.item = Object.assign({}, item);
+      }
+
+    },
+    // 文件开始移动时的回调函数
+    dragStart(e, groupid) {
+      this.dragFileId = $(e.item).attr("id");
+      const filename = $(e.item).attr("filename");
+      this.dragItem.fromGroup = $(e.from).attr('groupid');
+      this.$nextTick(() => {
+        const ele = $(`#${this.dragFileId}`);
+        if(ele.attr('draggable') === 'false') {
+          ele.addClass('dragging');
+        }
+      });
+
+      // console.log("dragStart----", e);
+      this.parthsGroup.push({
+        id: this.parthsGroup.length,
+        groupTitle: `分组${this.parthsGroup.length + 1}`,
+        border: false,
+        packUp: false,
+        list: [],
+        dragDisabled: false,
+        temporary: true
+      });
+      // 判断是否重复
+      this.judegRepeat(groupid, filename);
+    },
+    // 文件结束移动时的回调函数
+    async dragEnd(e) {
+      this.dragItem.toGroup = $(e.to).attr('groupid');
+      const from = this.dragItem.fromGroup;
+      const to = this.dragItem.toGroup;
+      const item = this.dragItem.item;
+      if(from !== 'personal' && to === 'personal') { // 添加到个人文档--copy
+      }else if(from === 'personal' && to !== 'personal') { // 从个人文档添加到我的操作中--copy
+      }else if(from !== to) { // 移动--move
+        let indexs = null;
+        if(from === 'noGroup') {
+          indexs = this.fileList.findIndex(x => x.Pkid === item.Pkid);
+          indexs != -1 && this.fileList.splice(indexs, 1);
+        }else if(parseInt(from) !== NaN) {
+          const id = parseInt(from);
+          let ids = this.parthsGroup.findIndex(x =>  parseInt(x.id) === id);
+          if(ids !== -1) {
+            indexs = this.parthsGroup[ids].list.findIndex(x => x.Pkid === item.Pkid);
+            indexs != -1 && this.parthsGroup[ids].list.splice(indexs, 1);
+          }
+        }
+      }   
+      await this.parthsGroupChange(e.newIndex);
+      await this.dragEndInit();
+    },
+    // 开始拖拽时判断是否有重复区域放置
+    judegRepeat(groupid, filename) {
+      let have = null;
+      if(groupid === 'personal') {
+        have = this.fileList.findIndex( x => x.Title === filename);
+        have !== -1 && (this.dragDisabled = true);
+      }else {
+        have = this.personalFiles.findIndex( x => x.Title === filename);
+        have !== -1 && (this.dragDisabled_personal = true);
+      }
+        
+      for(let ele of this.parthsGroup) {
+        let has = ele.list.findIndex( x => x.Title === filename);
+        if(ele.id.toString() === this.dragItem.fromGroup) {
+          ele.border = true; 
+          ele.dragDisabled = false;
+        }else if(has != -1) {
+          ele.border = false; 
+          ele.dragDisabled = true;
+        }else {
+          ele.border = true; 
+          ele.dragDisabled = false;
+        }
+      }
+      this.parthsGroup = this.parthsGroup.concat();
+    },
+
+    // 拖拽完成后parthsGroup数组改变后的展开/折叠属性
+    parthsGroupChange(insertIndex) {
+      this.$nextTick(() => {
+        return new Promise((resolve) => {
+          let list = [...this.parthsGroup];
+          for(let i = 0; i < list.length; i++) {
+            let x = list[i];
+            // 这段代码有问题--------------
+            if(false && !x.packUp && (x.id == this.dragItem.toGroup)) {
+              if(x.allList || (!x.allList && x.temporary && this.leftCenterFlag)) {
+                // x.list.push(this.dragItem.item);
+                this.countFileOne(i);
+              }else {
+                // x.list.splice(insertIndex + 1, 0, this.dragItem.item);
+                this.countFileMore(i);
+              }
+            }else {
+              const h = $('.parths_group').eq(i).find('.group_file').eq(0).height();
+              if(h > 170) {
+                x.packUp = true;
+              }else {
+                x.packUp = false;
+              }
+            }
+          }
+          this.parthsGroup = [...list];
+          resolve(true);
+        });
+      });
+
+    },
+
+    // 拖拽结束后初始化数据
+    dragEndInit() {
+      return new Promise((resolve) => {
+        $('.dragging').eq(0).removeClass('dragging');
+        this.dragFileId = null;
+        this.dragItem = {
+          item: {},
+          fromGroup: null,
+          toGroup: null
+        }
+        this.dragDisabled = false;
+        this.dragDisabled_personal = false;
+        for(let ele of this.parthsGroup) {
+          ele.border = false; 
+          ele.dragDisabled = false;
+        }
+        if (!this.parthsGroup[this.parthsGroup.length - 1].list.length) {
+          this.parthsGroup.pop();
+        } else {
+          delete this.parthsGroup[this.parthsGroup.length - 1].temporary;
+        }
+        resolve(true);
+      });
+      
+    },
+
+    // 个人文档的操作-------------
+    // 是否显示个人文件
+    personalFilesPull() {
+      this.personalFilesShow = !this.personalFilesShow;
+      if (this.personalFilesShow) {
+        $("#personalFiles").css("right", 0);
+      } else {
+        $("#personalFiles").css("right", "-375px");
+      }
+    },
+
     // 分区和任务的展开/折叠
     extendToggle(index) {
       this.tasksList[index].extend = !this.tasksList[index].extend;
@@ -455,127 +804,8 @@ export default {
       ];
       this.navBar = [{id: 0, name: '个人文档'}];
     },
-    // 文件移动时的回调函数
-    fileMove(e, under) {
-      // e.dragged 拖拽的元素
-      // e.draggedContext 拖拽的元素的详情
-      // e.draggedContext.element 拖拽的元素的内容
-      // e.draggedContext.futureIndex / index 拖拽的元素的索引
-      // e.to: 拖入区域
-      // e.relatedContext: 拖入区域的上下文
 
-      // console.log("fileMove", e);
-      if(!this.dragItem.item.Title) {
-        const item =  e.draggedContext.element;
-        this.dragItem.item = Object.assign({}, item);
-      }
 
-    },
-    // 文件开始移动时的回调函数
-    dragStart(e, groupid) {
-      this.dragFileId = $(e.item).attr("id");
-      const filename = $(e.item).attr("filename");
-      this.dragItem.fromGroup = $(e.from).attr('groupid');
-      this.$nextTick(() => {
-        const ele = $(`#${this.dragFileId}`);
-        if(ele.attr('draggable') === 'false') {
-          ele.addClass('dragging');
-        }
-      });
-
-      // console.log("dragStart----", e);
-      this.parthsGroup.push({
-        id: this.parthsGroup.length,
-        groupTitle: `分组${this.parthsGroup.length + 1}`,
-        border: false,
-        list: [],
-        dragDisabled: false,
-        temporary: true
-      });
-      // 判断是否重复
-      this.judegRepeat(groupid, filename);
-    },
-    // 文件结束移动时的回调函数
-    dragEnd(e) {
-      this.dragItem.toGroup = $(e.to).attr('groupid');
-      // console.log(e, this.dragItem);
-      const from = this.dragItem.fromGroup;
-      const to = this.dragItem.toGroup;
-      const item = this.dragItem.item;
-      if(from !== 'personal' && to === 'personal') { // 添加到个人文档--copy
-      }else if(from === 'personal' && to !== 'personal') { // 从个人文档添加到我的操作中--copy
-      }else if(from !== to) { // 移动--move
-        let indexs = null;
-        if(from === 'noGroup') {
-          indexs = this.fileList.findIndex(x => x.Pkid === item.Pkid);
-          indexs != -1 && this.fileList.splice(indexs, 1);
-        }else if(parseInt(from) !== NaN) {
-          const id = parseInt(from);
-          let ids = this.parthsGroup.findIndex(x =>  parseInt(x.id) === id);
-          if(ids !== -1) {
-            indexs = this.parthsGroup[ids].list.findIndex(x => x.Pkid === item.Pkid);
-            indexs != -1 && this.parthsGroup[ids].list.splice(indexs, 1);
-          }
-        }
-      }   
-      this.dragEndInit();
-    },
-    // 开始拖拽时判断是否有重复区域放置
-    judegRepeat(groupid, filename) {
-      let have = null;
-      if(groupid === 'personal') {
-        have = this.fileList.findIndex( x => x.Title.indexOf(filename) != -1);
-        have !== -1 && (this.dragDisabled = true);
-      }else {
-        have = this.personalFiles.findIndex( x => x.Title.indexOf(filename) != -1);
-        have !== -1 && (this.dragDisabled_personal = true);
-      }
-        
-      for(let ele of this.parthsGroup) {
-        let has = ele.list.findIndex( x => x.Title.indexOf(filename) != -1);
-        if(ele.id.toString() === this.dragItem.fromGroup) {
-          ele.border = true; 
-          ele.dragDisabled = false;
-        }else if(has != -1) {
-          ele.border = false; 
-          ele.dragDisabled = true;
-        }else {
-          ele.border = true; 
-          ele.dragDisabled = false;
-        }
-      }
-      this.parthsGroup = this.parthsGroup.concat();
-    },
-    // 拖拽结束后初始化数据
-    dragEndInit() {
-      this.dragFileId = null;
-      this.dragItem = {
-        item: {},
-        fromGroup: null,
-        toGroup: null
-      }
-      this.dragDisabled = false;
-      this.dragDisabled_personal = false;
-      for(let ele of this.parthsGroup) {
-        ele.border = false; 
-        ele.dragDisabled = false;
-      }
-      if (!this.parthsGroup[this.parthsGroup.length - 1].list.length) {
-        this.parthsGroup.pop();
-      } else {
-        delete this.parthsGroup[this.parthsGroup.length - 1].temporary;
-      }
-    },
-
-    // 是否显示个人文件
-    personalFilesPull() {
-      this.personalFilesShow = !this.personalFilesShow;
-      if (this.personalFilesShow) {
-        $("#personalFiles").css("right", 0);
-      } else {
-        $("#personalFiles").css("right", "-375px");
-      }
-    },
     // 获取任务列表
     getTaskList() {
       let obj = {
@@ -710,13 +940,6 @@ export default {
           -o-transition: transform 0.25s linear;
           transition: transform 0.25s linear;
         }
-        .icon-unfold_rotate {
-          transform: rotate(-180deg);
-          -webkit-transition: transform 0.25s linear;
-          -moz-transition: transform 0.25s linear;
-          -o-transition: transform 0.25s linear;
-          transition: transform 0.25s linear;
-        }
       }
       .group_list {
         height: 32px;
@@ -747,6 +970,7 @@ export default {
       width: 100px;
       height: 50px;
       border: 1px solid #33ccff;
+      float: left;
       .border_radius(@br: 2px;);
       text-align: center;
       padding: 30px 10px;
@@ -755,6 +979,10 @@ export default {
         height: 30px;
         .word_over;
       }
+    }
+
+    .null {
+      clear: both;
     }
     .dragging {
       border-color: @line !important;
@@ -772,20 +1000,30 @@ export default {
         .left_file_list {
           width: 100%;
           height: 100%;
-          padding: 20px;
-          .box_sizing;
-          overflow: auto;
+          .draggable {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            .box_sizing;
+            overflow: auto;
+          }
           .every_file {
             margin: 0 auto;
             margin-top: 20px;
+            margin-left: 20px;
           }
         }
       }
-      .right_box {
+      .left_box_toggle {
+        width: calc(100% - 220px);
+      }
+      .center_box {
         float: right;
-        width: calc(100% - 221px);
+        width: calc(100% - 220px);
         height: 100%;
         border-left: 1px solid #eee;
+        .box_sizing;
+        position: relative;
         .parths {
           width: 100%;
           height: 100%;
@@ -801,6 +1039,9 @@ export default {
               .group_name {
                 font-weight: bold;
               }
+              .group_operate {
+                float: right;
+              }
               .group_file {
                 width: 100%;
                 min-height: 170px;
@@ -810,13 +1051,14 @@ export default {
                 overflow: hidden;
                 .box_sizing;
                 .every_file {
-                  float: left;
                   margin-left: 20px;
                   margin-top: 20px;
                 }
               }
               .draggable {
                 min-height: 170px;
+                width: 100%;
+                height: 100%;
               }
               .group_border {
                 border: 1px dashed @mainColor;
@@ -826,6 +1068,33 @@ export default {
             }
           }
         }
+        .left_center_toggle {
+          position: absolute;
+          top: 50%;
+          margin-top: -10px;
+          left: -11px;
+          width: 20px;
+          height: 20px;
+          border: 1px solid @line;
+          background: #fff;
+          .border_radius(@br: 50%);
+          text-align: center;
+          .iconfont {
+            vertical-align: middle;
+            margin-top: -1px;
+            .dis-in-bl;
+            -webkit-transition: transform 0.25s linear;
+            -moz-transition: transform 0.25s linear;
+            -o-transition: transform 0.25s linear;
+            transition: transform 0.25s linear;
+          }
+          &:hover {
+            border: 1px solid @mainColor;
+          }
+        }
+      }
+      .center_box_toggle {
+        width: 220px;
       }
     }
 
@@ -888,7 +1157,6 @@ export default {
             height: 100%;
           }
           .every_file {
-            float: left;
             margin-left: 20px;
             margin-top: 20px;
           }
@@ -901,6 +1169,13 @@ export default {
         }
       }
     }
+  }
+  .icon_rotate {
+    transform: rotate(180deg);
+    -webkit-transition: transform 0.25s linear;
+    -moz-transition: transform 0.25s linear;
+    -o-transition: transform 0.25s linear;
+    transition: transform 0.25s linear;
   }
   .ghost_file {
     background: #33ccff !important;
