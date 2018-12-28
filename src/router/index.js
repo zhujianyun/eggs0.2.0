@@ -30,7 +30,7 @@ import WorkBenchList from '@/components/personal/workbench/list';
 
 import Friend from '@/components/personal/friend';
 
-import TaskDetail from '@/components/personal/project/taskDetail';
+import TaskDetail from '@/components/project/taskDetail';
 
 Vue.use(Router)
 
