@@ -19,9 +19,9 @@
                   </span>
                 </el-tab-pane>
             </el-tabs>
-            <div class='stage_all'>
+            <div class='stage_all' :class="fullPreviewShow ? 'select_stage_all' : ''">
                 <span class='line'></span>
-                <span>整体预览</span> 
+                <span @click='fullPreview'>整体预览</span> 
             </div>
           </div>
           <i class='iconfont icon-guanbijiantou'></i>
@@ -81,6 +81,7 @@
               </span>
             </div>
           </div>
+          <!-- 文件的所有展示 -->
           <div class="detail_file">
               <!-- 任务文件 -->
               <div id="operateFile" class="operate_file">
@@ -96,8 +97,13 @@
                   </div>
                   <div class="right fr">
                     <span class="">
-                      <i class='iconfont icon-fenzu1'></i>
-                      分组管理
+                      <el-dropdown class="fixed file_more">
+                        <span class="el-dropdown-link"><i class='iconfont icon-fenzu1'></i>分组管理</span>
+                        <el-dropdown-menu slot="dropdown">
+                          <el-dropdown-item @click.native="groupCommand('create')">新建分组</el-dropdown-item>
+                          <el-dropdown-item @click.native="groupCommand('sort')">分组排序</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </el-dropdown>
                     </span>
                       <span class="toggle">
                       <i class='iconfont icon-liebiao'></i>
@@ -191,17 +197,25 @@
                           v-for="(group, index) in parthsGroup"
                           :key="group.id"
                           >
+                          <!-- 分组的头部操作 -->
                           <div class="group_top">
-                              <span class="group_name">{{group.groupTitle}}</span>
+                              <span v-if='!group.edit' class="group_name">{{group.groupTitle}}</span>
+                                <input 
+                                  v-else 
+                                  :ref="group.createdGroup ? 'createdGroup' : ''" 
+                                  class="group_name edit" 
+                                  type="text" 
+                                  v-model='group.groupTitle'
+                                  @blur='groupTitleBlur(group)'
+                                  />
                               <div class="group_operate">
-                                {{group.packUp}}
                                 <span 
                                   v-if='group.packUp' 
                                   @click='groupExtendToggle(index)'
                                   class='mainColor_underline_text'
-                                  >收起</span>
+                                  >收起</span>{{group.packUp}}
                                   <el-dropdown class="fixed file_more">
-                                    <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
+                                    <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
                                     <el-dropdown-menu slot="dropdown">
                                       <el-dropdown-item @click.native="fileGroupCommand('upload')">上传文件</el-dropdown-item>
                                       <el-dropdown-item @click.native="fileGroupCommand('download')">下载</el-dropdown-item>
@@ -429,7 +443,7 @@
                 
               </div>
               <!-- 个人文档 -->
-              <div id="personalFiles" class="personal_files">
+              <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
                 <div class="top_box">
                   <div class="left fl">
                     <i class='iconfont icon-shangchuan'></i>
@@ -439,7 +453,7 @@
                       ></i>
                     <i 
                       class='iconfont icon-xinjianfenzu'
-                      @click='newFile'
+                      @click='newFolder'
                       ></i>
                     <span class="line"></span>
                     <el-checkbox class="" v-model="fileCheckboxSelf"></el-checkbox>
@@ -503,19 +517,29 @@
                             :filename='file.Title'
                             @dblclick='dbFolder(file)'
                             >
+                            <!-- 文件夹 -->
                             <template v-if='file.children'>
                               <span class="file_pic">
                                 <img src="../../../assets/img/wenjianjia.png" alt="">
                                 <span class="none"></span>
                               </span>
                               <div class="file_info">
-                                <p class="title">{{file.Title}}</p>
+                                <p v-if='!file.edit' class="title">{{file.Title}}</p>
+                                <input 
+                                  v-else 
+                                  :ref="file.createdFolder ? 'createdFolder' : ''" 
+                                  class="title edit" 
+                                  type="text" 
+                                  v-model='file.Title'
+                                  @blur='folderBlur(file)'
+                                  />
                                 <p class="file_num">{{file.children.length}}个文件</p>
                                 <!-- <span class="fixed file_checkbox">
                                   <el-checkbox v-model="fileCheckbox"></el-checkbox>
                                 </span> -->
                               </div>
                             </template>
+                            <!-- 文件 -->
                             <template v-else>
                                 <span class="file_pic">
                                 <img :src="'http://server.apexgame.cn'+file.Url" alt="">
@@ -544,19 +568,27 @@
                         </div>
                       </draggable>
                   </div>
+                </div>
               </div>
-              </div>
+
           </div>
+
+          <!-- 整体预览 -->
+          <full-preview
+            v-if='fullPreviewShow'
+            taskId='1'
+          />
       </div>
 
     </div>
 </template>
 <script>
 import draggable from "vuedraggable";
-
+import FullPreview from './fullPreview';
 export default {
   components: {
-    draggable
+    draggable,
+    FullPreview
   },
   data() {
     return {
@@ -861,10 +893,11 @@ export default {
         },
         {
           Pkid: 2,
-          Title: "文件夹1",
+          Title: "我的文件",
           Url: null,
           FileType: 0,
           Uname: null,
+          default: true,
           children: [
             {
               Pkid: "407",
@@ -874,7 +907,6 @@ export default {
               FileType: "png",
               Uname: "祝建云"
             },
-
             {
               Pkid: "405",
               Title: "video",
@@ -887,10 +919,11 @@ export default {
         },
         {
           Pkid: 3,
-          Title: "文件夹2--这是我的文件夹中的第二个",
+          Title: "我的收藏",
           Url: null,
           FileType: 0,
           Uname: null,
+          default: true,
           children: [
             {
               Pkid: "408",
@@ -935,7 +968,8 @@ export default {
       leftCenterFlag: false, // true--未分组占大份 false--分组区域占大份
       inputTextShow1: false, // 输入文字弹窗——任务文件
       inputTextShow2: false, // 输入文字弹窗——个人文档
-      inputText: ''
+      inputText: '', // 添加文字的内容
+      fullPreviewShow: false, // 整体预览是否显示
     };
   },
   watch: {},
@@ -1008,8 +1042,23 @@ export default {
         .slideToggle(400);
     },
 
-    // 切换当前选择的状态
-    stageChange() {},
+    // 切换当前选择的阶段
+    stageChange() {
+      if(this.fullPreviewShow) {
+        this.fullPreviewShow = false;
+      }
+    },
+
+    // 阶段的整体预览
+    fullPreview() {
+      this.selectStage = null;
+      this.fullPreviewShow = true;
+    },
+
+    // 关闭阶段的整体预览
+    closeFullPreview() {
+      this.fullPreviewShow = false;
+    },
 
     // 点击左侧任务列表
     taskChange(id) {
@@ -1143,6 +1192,88 @@ export default {
         this.$set(ele, "allList", allList);
       }
       this.parthsGroup = this.parthsGroup.concat();
+    },
+
+    // 整体的分组管理
+    groupCommand(type, drag) {
+      // 文件拖拽时默认临时加的分组
+      if(drag) {
+        this.parthsGroup.push({
+          id: this.parthsGroup.length,
+          groupTitle: `分组${this.parthsGroup.length + 1}`,
+          border: false,
+          packUp: null,
+          list: [],
+          dragDisabled: false,
+          temporary: true
+        });
+        return;
+      }
+      // 新建分组
+      if(type === 'create') {
+        let title = '新建分组';
+        let repeat = this.parthsGroup.findIndex(ele => ele.groupTitle === title);
+        // 分组名称判断
+        if(repeat !== -1) { // 文件名重复
+          let repeatNum = [];
+          for(let x of this.parthsGroup) {
+            let y = 0;
+            if(x.groupTitle.indexOf('新建分组') !== -1 && x.groupTitle.length > 4) {
+              y = x.groupTitle.slice(4);
+              y = parseInt(y);
+              repeatNum.push(y);
+            }
+          }
+          if(repeatNum.length) {
+            repeatNum.sort();
+            title = title + (repeatNum[repeatNum.length - 1] + 1);
+          } else {
+            title = title + 1;
+          }
+        }
+        // 添加一条数据
+        this.parthsGroup.push({
+          id: this.parthsGroup.length,
+          groupTitle: title,
+          border: false,
+          packUp: null,
+          list: [],
+          dragDisabled: false,
+          edit: true,
+          createdGroup: true
+        });
+        // 分组名获取焦点并选
+        this.$nextTick(() => {
+          const ele = $(this.$refs.createdGroup[0]);
+          ele.focus();
+          ele.select();
+        });
+        return;
+      }
+
+       // 分组排序
+      if(type === 'sort') {
+        return;
+      }
+    },
+
+    // 新建/编辑分组
+    groupTitleBlur(group) {
+      if(group.createdGroup) { // 新建
+        // 发送请求---新建分组
+        group.edit = false;
+        delete group.createdGroup;
+        console.log('新建分组成功');
+      }else { // 编辑
+        // 先判重，如果有重复的名字--提示，否则--发送请求
+        let repeat = this.parthsGroup.findIndex(ele => ele.groupTitle === group.groupTitle);
+        if(repeat !== -1) {
+          this.$message.warning('已含有同名分组名！');
+        }else {
+          // 发送修改分组名的接口
+          console.log('分组名修改成功');
+        }
+      }
     },
 
     // 文件的更多操作
@@ -1474,18 +1605,63 @@ export default {
       this.navBar = [{ id: 0, name: "个人文档" }];
     },
 
-    // 新建文件夹
-    newFile() {
+    // 点击新建文件夹
+    newFolder() {
+      let title = '新建文件夹';
+      let repeat = this.personalFiles.findIndex(ele => ele.Title === title);
+      if(repeat !== -1) { // 文件名重复
+        let repeatNum = [];
+        for(let x of this.personalFiles) {
+          let y = 0;
+          if(x.Title.indexOf('新建文件夹') !== -1 && x.Title.length > 6) {
+            y = x.Title.slice(6);
+            y = parseInt(y);
+            repeatNum.push(y);
+          }
+        }
+        if(repeatNum.length) {
+          repeatNum.sort();
+          title = title + ' ' + (repeatNum[repeatNum.length - 1] + 1);
+        } else {
+          title = title + ' ' + 1;
+        }
+      }
       this.personalFiles.push({
-          Pkid: this.personalFiles.length,
-          Title: "新建文件夹",
-          Url: null,
-          FileType: 0,
-          Uname: null,
-          children: [],
-          edit: true,
+        Pkid: this.personalFiles.length,
+        Title: title,
+        Url: null,
+        FileType: 0,
+        Uname: null,
+        children: [],
+        edit: true,
+        createdFolder: true
+      });
+      this.$nextTick(() => {
+        const ele = $(this.$refs.createdFolder[0]);
+        ele.focus();
+        ele.select();
       });
     },
+
+    // 添加/修改文件夹失去焦点--保存
+    folderBlur(file) {
+      if(file.createdFolder) { // 新建
+        // 发送请求---新建文件夹
+        file.edit = false;
+        delete file.createdFolder;
+        console.log('新建成功');
+      }else { // 编辑
+        // 先判重，如果有重复的名字--提示，否则--发送请求
+        let repeat = this.personalFiles.findIndex(ele => ele.Title === file.Title);
+        if(repeat !== -1) {
+          this.$message.warning('该目录下已含有同名文件夹！');
+        }else {
+          // 发送修改文件名的接口
+          console.log('文件名修改成功');
+        }
+      }
+    },
+
 
     // 获取任务列表
     getTaskList() {

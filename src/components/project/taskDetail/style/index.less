@@ -68,7 +68,7 @@
       .stage_all {
         position: relative;
         float: right;
-        height: 47px;
+        height: 50px;
         margin-left: 40px;
         .cur;
         .line {
@@ -79,6 +79,22 @@
           width: 1px;
           height: 16px;
           background: #999;
+        }
+        &:hover {
+          color: @mainColor;
+        }
+      }
+      .select_stage_all {
+        color: @mainColor;
+        &::after {
+          content: '';
+          display: block;
+          width: 100%;
+          height: 2px;
+          background: @mainColor;
+          position: absolute;
+          bottom: 0;
+          left: 0;
         }
       }
     }
@@ -262,6 +278,18 @@
             padding: 0 15px;
             .box_sizing;
             .word_over;
+          }
+          .edit {
+            width: 136px;
+            height: 20px;
+            border: 1px solid @grayNight;
+            margin: 6px 10px;
+            text-align: left;
+            padding: 4px;
+            &::selection {
+              background: @mainColor;
+              color: #fff;
+            }
           }
           img {
             width: 14px;
@@ -466,6 +494,16 @@
                       margin-bottom: 8px;
                       .group_name {
                         font-weight: bold;
+                      }
+                      .edit {
+                        width: 136px;
+                        height: 24px;
+                        border: 1px solid @grayNight;
+                        text-align: left;
+                        &::selection {
+                          background: @mainColor;
+                          color: #fff;
+                        }
                       }
                       .group_operate {
                         float: right;
