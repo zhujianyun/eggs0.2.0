@@ -1,8 +1,13 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 
-import Home from '@/components/home';
+import Enter from '@/components/enter';
 import Login from '@/components/login';
+// 首页
+import Home from '@/components/home';
+
+
+
 import RegisterPage from '@/components/register';
 import WxRegister from '@/components/wxRegister';
 import MyCenter from '@/components/myCenter';
@@ -10,27 +15,20 @@ import MyCenter from '@/components/myCenter';
 import ForgetPwd from '@/components/forgetPwd';
 import RetrievePwdEmail from '@/components/retrievePwdEmail';
 
-import PersonalHome from '@/components/personal/home';
+// 工作台
 
-import MyTask from '@/components/personal/myTask';
-import TaskInfo from '@/components/personal/myTask/info';
-import SetUp from '@/components/personal/myTask/setup';
-import TaskList from '@/components/personal/myTask/list';
+// 项目
+import Project from '@/components/project';
+import Workbench from '@/components/workbench';
+import PersonalDocuments from '@/components/personalDocuments'
+import ProjectInfo from '@/components/project/ProjectInfo';
 
-import Project from '@/components/personal/project';
-import ProjectManage from '@/components/personal/project/projectManage';
-import ProjectTask from '@/components/personal/project/projectTask';
-
-
-import Transmit from '@/components/personal/transmit';
-import Collect from '@/components/personal/collect';
-
-import WorkBench from '@/components/personal/workbench';
-import WorkBenchList from '@/components/personal/workbench/list';
-
-import Friend from '@/components/personal/friend';
-
+// 项目中的任务详情
 import TaskDetail from '@/components/project/taskDetail';
+
+
+import Friend from '@/components/friend';
+
 
 Vue.use(Router)
 
@@ -39,6 +37,41 @@ export default new Router({
         path: '/',
         name: 'Home',
         component: Home,
+        children: [{
+            path: '/workbench',
+            name: 'Workbench',
+            component: Workbench,
+        },
+        {
+            path: '/project',
+            name: 'Project',
+            component:  Project ,
+        }, 
+        {
+            path:'/project/projectInfo',
+            name:'ProjectInfo',
+            component:  ProjectInfo ,
+        },
+        {
+            path:'/project/taskDetail',
+            name:'TaskDetail',
+            component:  TaskDetail ,
+        },
+        {
+            path:'/personalDocuments',
+            name: 'PersonalDocuments',
+            component:  PersonalDocuments 
+        },
+        {
+            path: '/friend',
+            name: 'Friend',
+            component: Friend
+        }
+        ]
+    }, {
+        path: '/enter',
+        name: 'Enter',
+        component: Enter,
     }, {
         path: '/login',
         name: 'Login',
@@ -63,47 +96,6 @@ export default new Router({
         path: '/retrievePwdEmail',
         name: 'RetrievePwdEmail',
         component: RetrievePwdEmail
-    }, {
-        path: '/personalHome',
-        name: 'PersonalHome',
-        component: PersonalHome,
-        children: [{
-            path: '/myTask',
-            name: 'MyTask',
-            component: MyTask
-
-        }, {
-            path: '/transmit',
-            name: 'Transmit',
-            component: Transmit,
-        }, {
-            path: '/project',
-            name: 'Project',
-            component: Project,
-            children: [{
-                path: '/project/projectManage',
-                name: 'ProjectManage',
-                component: ProjectManage,
-            }, {
-                path: '/project/projectTask',
-                name: 'ProjectTask',
-                component: ProjectTask,
-            }, {
-                path: '/project/TaskDetail',
-                name: 'taskDetail',
-                component: TaskDetail,
-            }]
-        }, {
-            path: '/collect',
-            name: 'Collect',
-            component: Collect,
-        }, {
-            path: '/friend',
-            name: 'Friend',
-            component: Friend
-        }
-        ]
-    },
-
+    }, 
     ]
 })

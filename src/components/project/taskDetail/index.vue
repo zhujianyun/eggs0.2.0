@@ -524,7 +524,7 @@
                             <!-- 文件夹 -->
                             <template v-if='file.children'>
                               <span class="file_pic">
-                                <img src="../../../assets/img/wenjianjia.png" alt="">
+                                <img src="./style/wenjianjia.png" alt="">
                                 <span class="none"></span>
                               </span>
                               <div class="file_info">
