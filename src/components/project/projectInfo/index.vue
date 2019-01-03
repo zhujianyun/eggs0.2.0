@@ -67,10 +67,10 @@
             </div>
             <div :class="leftFixed ?'stageRight':'stageListBox'"
                  class=" clearfix ">
-              <div v-for="element in stageList"
-                   :key="element.pkid"
+              <div v-for="list in stageList"
+                   :key="list.pkid"
                    class="stageLists">
-                {{element.title}}
+                {{list.title}}
               </div>
             </div>
           </div>
@@ -97,7 +97,8 @@
                          :style="'height:'+ ((element.taskList.length )* 72) +'px;'">
                       <span class="iconBox">
                         <span class="icon"
-                              @click="move">
+                              @click="move"
+                              v-if="element.partitionId!==0">
                           <i class="iconfont icon-pailie cur"
                              @click="movePartitions"></i>
                         </span>
@@ -106,7 +107,8 @@
                           <i class="iconfont icon-jia1 cur"></i>
                         </span>
                         <span class="icon"
-                              @click="delPartition(element,index)">
+                              @click="openDelPartition(element,index)"
+                              v-if="element.partitionId!==0">
                           <i class="iconfont icon-delete cur"></i>
                         </span>
                       </span>
@@ -118,7 +120,24 @@
                                 v-model="element.partitionTitle"
                                 style="resize:none"
                                 @blur="stageBlur(element.partitionTitle,element,index)"></textarea>
+
                     </div>
+                    <!-- 空白占位 -->
+                    <span v-if="element.isBlank"
+                          class="stageBox">
+                      <span class="stageLists">
+                        <textarea class="stageName"
+                                  style="resize:none"
+                                  v-model="element.newStageName"
+                                  @blur="newStageBlur(element,element.newStageName)">
+                        </textarea>
+                      </span>
+                      <div class="stageListsBox">
+                        <div v-for="(list,index) in stageList"
+                             :key="list.pkid"
+                             class="stage"></div>
+                      </div>
+                    </span>
                     <draggable v-model="element.taskList"
                                :move='getdata2'
                                @update="datadragEnd2"
@@ -129,9 +148,10 @@
                                  draggable: '.dragging'
                                  }">
                       <transition-group class="taskLists">
+                        <!-- 任务及阶段 -->
                         <li v-for="(item,index) in element.taskList"
+                            v-if='item.taskId'
                             :key="item.taskId"
-                            v-if="item.taskId"
                             :class="{'stageBox':!leftFixed,'stageBoxFixed':leftFixed,'dragging':item.taskId!==''}">
                           <span class="stageLists cur">
                             <span class="iconBox_">
@@ -145,39 +165,38 @@
                                 <i class="iconfont icon-jia1 cur"></i>
                               </span>
                               <span class="icon"
-                                    @click="delStage(element.taskList,index)">
+                                    @click="delStage(element.taskList,index,item)">
                                 <i class="iconfont icon-delete cur"></i>
                               </span>
                             </span>
                             <textarea v-model="item.taskTitle"
                                       class="stageName"
                                       style="resize:none"
-                                      @blur="stageNameBlur(item.taskTitle,element,index)">
+                                      @blur="stageNameBlur(item.taskTitle,item,element,index)">
                             </textarea>
                           </span>
                           <div class="stageListsBox">
+                            <span v-for="(lists,index) in startime"
+                                  :key="index">
+                              <!-- {{lists}} -->
+                            </span>
                             <div class="stage cur"
-                                 v-for="(lists,index) in  item.stageTaskList"
+                                 v-for="(lists,index) in item.stageTaskList"
                                  :key="lists.stageId">
+                              {{nowYear}} -{{endtime}}
                               <div class="stageBg"></div>
                               <div class="stageInfo cur">
                                 <span class="participantImg">
-                                  <span class="img">
-                                    <img src=""
-                                         alt="">
-                                  </span>
-                                  <span class="img">
-                                    <img src=""
-                                         alt="">
-                                  </span>
-                                  <span class="img">
-                                    <img src=""
+                                  <span class="img"
+                                        v-for="(i,index) in lists.userList"
+                                        :key="index">
+                                    <img :src="i.userPic"
                                          alt="">
                                   </span>
                                 </span>
                                 <div class="participantMain">
                                   <span class="pieChart"></span>
-                                  <span class="">12/21 23:37 - 06/22 24:36</span>
+                                  <span class="">{{lists.startTime}}-{{lists.endTime}}</span>
                                   <i class="iconfont icon-wenjian1">2</i>
                                   <span></span>
                                 </div>
@@ -186,6 +205,7 @@
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="参与任务"
+                                            @click.native="enter()"
                                             placement="top-start">
                                   <el-button>
                                     <span class="iconBg">
@@ -206,6 +226,7 @@
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="进入详情"
+                                            @click.native="enterDetail()"
                                             placement="top-start">
                                   <el-button>
                                     <span class="iconBg">
@@ -250,34 +271,6 @@
                             </div>
                           </div>
                         </li>
-                        {{element}}
-                        <li v-if='element.taskList[0]'>
-                          <span class="stageLists cur">
-                            <span class="iconBox_">
-                              <span class="icon"
-                                    @click="move">
-                                <i class="iconfont icon-pailie cur"
-                                   @click="movePartitions"></i>
-                              </span>
-                              <span class="icon"
-                                    @click="addStage(element.taskList,index)">
-                                <i class="iconfont icon-jia1 cur"></i>
-                              </span>
-                              <span class="icon"
-                                    @click="delStage(element.taskList,index)">
-                                <i class="iconfont icon-delete cur"></i>
-                              </span>
-                            </span>
-                            <textarea 
-                                      class="stageName"
-                                      style="resize:none"
-                                      @blur="stageNameBlur(item.taskTitle,element,index)">
-                            </textarea>
-                          </span>
-                          <div class="stageListsBox">
-                            hehehe
-                          </div>
-                        </li>
                       </transition-group>
                     </draggable>
                   </div>
@@ -287,7 +280,8 @@
                      v-if="element.autoExpand">
                   <div class="iconBox_">
                     <span class="icon"
-                          @click="move">
+                          @click="move"
+                          v-if="element.partitionId!==0">
                       <i class="iconfont icon-pailie cur"
                          @click="movePartitions"></i>
                     </span>
@@ -296,7 +290,8 @@
                       <i class="iconfont icon-jia1 cur"></i>
                     </span>
                     <span class="icon"
-                          @click="delPartition(element,index)">
+                          @click="openDelPartition(element,index)"
+                          v-if="element.partitionId!==0">
                       <i class="iconfont icon-delete cur"></i>
                     </span>
                   </div>
@@ -314,12 +309,10 @@
               </div>
             </transition-group>
           </draggable>
-
           <div>
           </div>
         </div>
       </div>
-
     </div>
     <transition name="fade1">
       <Info v-if="itemInformationShow"
@@ -356,6 +349,7 @@ export default {
     return {
       reminder2Flag: false, //确认删除弹框
       errMessage: 'hahh',
+      newStageName: '',
       buttonMes: '确认',
       itemInformationShow: false, //INFO是否显示
       projectId: JSON.parse(localStorage.getItem('projectItem')).projectid,
@@ -383,53 +377,140 @@ export default {
       projectItem: JSON.parse(localStorage.getItem('projectItem')), // 当前选择的项目
       loginUser: JSON.parse(localStorage.getItem('staffInfo')), // 当前登录者的信息
       userPkid: JSON.parse(localStorage.getItem('staffInfo')).userPkid, // 当前登录者的ID
-      stageList: '',
+      stageList: [], //阶段设置
       partitionsList: [],
-      EmptyData: {        'partitionTitle': '', 'partitionId': '', 'autoExpand': false,
-        taskList: [
-          {
-            taskTitle: '', taskId: '', isnew: true,
-            stageTaskList: [
-              { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-              { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-              { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-              { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-            ]
-          },
-        ]
-      },
+      // 新建分区
+      EmptyData: '',
       // 添加任务
-      newTask: {
-        taskTitle: '', taskId: '',
-        stageTaskList: [
-          { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-          { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-          { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-          { enabled: '', endTime: '', fileCont: '', stageTaskId: '' },
-        ]      },
+      newTask: '',
+      delPartitionLists: [], //当前删除的分区
+      delIndex: '', //当前删除的分区的index
+      nowYear: (new Date()).getYear(), //当前年
     };
   },
   watch: {
 
   },
+  computed: {
+    stageTaskLists() {
+      let stageList = [];
+      for (let list of this.partitionsList) {
+        for (let task of list.taskList) {
+          stageList.push(task.stageTaskList)
+          for (let item of task.stageTaskList) {
+            console.log(item.startTime.split('/')[0])
+            // let startTime = item.startTime.split('/')[0].splice(2,2);
+            // console.log(startTime)
+            // item.startTime = item.startTime.split('/');
+          }
+        }
+      }
+      // return stageList
+    },
+    startime() {
+      let startime = [];
+
+      for (let list of this.partitionsList) {
+        for (let task of list.taskList) {
+          for (let item of task.stageTaskList) {
+            startime.push(item.startTime);
+          }
+        }
+      }
+      let time = []
+      for (let i of startime) {
+        // i = i.splice(1, 1);
+        // time = i.splice(1, 1)
+        console.log(i)
+        if (i) {
+          // i.splice(1,1)
+        }
+
+      }
+      console.log(startime)
+
+      return startime
+    },
+    endtime() {
+      return 1
+    },
+    startTimes() {
+      let stagelist = [];
+      for (let list of this.partitionsList) {
+        for (let task of list.taskList) {
+          stagelist = task.stageTaskList;
+        }
+      }
+      console.log(this.partitionsList, 'eddddddddddd')
+      let startime = [];
+      for (let item of stagelist) {
+
+        if (item.startTim || item.endTime) {
+          item.startTime = item.startTime.split(' ');
+          item.startTime[0] = item.startTime[0].split('/')[0].substring(2, 4) + '/' + item.startTime[0].split('/')[1] + '/' + item.startTime[0].split('/')[2];
+          item.startTime[1] = item.startTime[1].split(':')[0] + ':' + item.startTime[1].split(':')[1];
+          // if()
+          console.log(item.endTime, item.startTim)
+
+          item.endTime = item.endTime.split(' ');
+          item.endTime[0] = item.endTime[0].split('/')[0].substring(2, 4) + '/' + item.endTime[0].split('/')[1] + '/' + item.startTime[0].split('/')[2];
+          item.endTime[1] = item.endTime[1].split(':')[0] + ':' + item.endTime[1].split(':')[1];
+        }
+
+      }
+      console.log(stagelist)
+
+      return stagelist;
+
+    }
+  }
+
+  ,
   methods: {
     ...mapMutations(['DETAILS_CHANGE', 'TASKITEM_CHANGE', 'TASK_POSITION', 'PROJECT_CHANGE']),
     // 展开详情
+    enterDetail() {
+      this.$router.push({
+        name: 'TaskDetail',
+        params: {
+          projectId: 1252,
+          stageId: 38,
+          taskId: 118,
+        }
+      });
+    },
     // 取消
+    enter() {
+      console.log(12)
+    },
     reminderCancel() {
       this.reminder2Flag = false;
     },
     //  确认
     reminderSure() {
-      this.delPartition();
+      this.delPartition(this.delPartitionLists, this.delIndex);
+      // this.partitionsList.splice(index, 1);
     },
+    // 新建任务光标离开
+    newStageBlur(el, title) {
+      console.log(el.taskList == true, title, el.isnew);
 
-
-
+      if (el.isnew === false) {
+        // 旧的 空的
+        if (title == '') {
+          return
+        } else {
+          // 判断 名字是否需要修改 
+          let data = { 'myUserId': this.userPkid, 'projectId': this.projectId, 'partitionId': el.partitionId, 'title': title, 'iSort': 0 }
+          this.$HTTP('post', '/task_add', data).then(res => {
+            this.getProjectAll();
+          })
+        }
+      }
+    },
     projectChange(val) {
       // this.PROJECT_CHANGE(val);
     },
-
     searchChange(val) {
       if (val) {
         this.searchLists = [...searchList];
@@ -455,34 +536,36 @@ export default {
       })
     },
 
-    // 删除分区
-    delPartition(element, index) {
-      let taskIds = [];
-      for (let list of element.taskList) {
-        // taskId=='' 时 说明没有任务 可以直接删除 不用移动
-        if (list.taskId !== '') {
-          taskIds.push(list.taskId);
-        }
-      }
-
-      // this.partitionsList.splice(index, 1);
-
-      console.log(taskIds)
-      return
+    // 删除分区弹框打开
+    openDelPartition(element, index) {
+      this.delPartitionLists = element;
+      this.delIndex = index;
       this.reminder2Flag = true;
+    },
+    // 删除分区 操作
+    delPartition(element, index) {
 
+      // 判断如果有list列表
+      if (element.taskList == '') {
+        this.partitionsList.splice(index, 1);
+      } else {
+        let taskIds = [];
+        for (let list of element.taskList) {
+          // taskId=='' 时 说明没有任务 可以直接删除 不用移动
+          if (list.taskId !== '') {
+            taskIds.push(list.taskId);
+          }
+        }
+        let arr = { 'vals': taskIds.join(','), 'type': 0 }
+        this.$HTTP('post', '/partition_updateType', arr).then(res => {
+          this.partitionsList.splice(index, 1);
+        })
+      }
       let obj = { 'partitionId': element.partitionId }
       this.$HTTP('post', '/partition_delete', obj).then(res => {
-        this.partitionsList.splice(index, 1);
+        this.reminder2Flag = false;
 
       })
-
-      let arr = { 'vals': taskIds.join(','), 'type': 0 }
-      this.$HTTP('post', '/partition_updateType', arr).then(res => {
-        this.partitionsList.splice(index, 1);
-
-      })
-
     },
     // 分区移动
     getdata(evt) {
@@ -499,7 +582,6 @@ export default {
     // 添加分区 判断是否有内容
     stageBlur(name, el, index) {
       // 旧的
-      console.log(el.isnew)
       if (el.isnew === false) {
         // 旧的 空的
         if (name == '') {
@@ -513,8 +595,7 @@ export default {
         if (name == '') {
           this.partitionsList.splice(index, 1);
         } else {
-          console.log('执行了，创建新的一条')
-          let obj = { 'myUserId': this.userPkid, 'projectId': this.projectItem.projectid, title: name }
+          let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, title: name }
           this.$HTTP('post', '/partition_add', obj).then(res => {
             this.EmptyData.partitionId = res.result.partitionId;
           })
@@ -545,34 +626,30 @@ export default {
       })
     },
     // 添加项目 光标离开判断
-    stageNameBlur(name, el, index) {
-      if (el.isnew === false) {
+    stageNameBlur(name, item, el, index) {
+      if (item.isnew === false) {
         // 旧的 空的
         if (name == '') {
           return
         } else {
           // 判断 名字是否需要修改 
-          this.ModifyTaskName(el.taskId, name);
+          this.ModifyTaskName(item.taskId, name);
         }
         // 新建的
       } else {
-        if (name == '') {
+        if (name == '' || name == undefined) {
           el.taskList.splice(index, 1);
         } else {
-          console.log('执行了，创建新的一条')
-          let obj = { 'myUserId': this.userPkid, 'projectId': this.projectItem.projectid, partitionId: el.partitionId, 'title': name, 'iSort': index }
+          let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, partitionId: el.partitionId, 'title': name, 'iSort': index }
           this.$HTTP('post', '/task_add', obj).then(res => {
-            // el.taskList.taskId = res.result.taskId;
-            console.log(res)
           })
         }
       }
     },
     // 删除任务
-    delStage(el, index) {
-      console.log(el, index, '888');
+    delStage(el, index, item) {
       el.splice(index, 1)
-      let obj = { 'taskId': '' }
+      let obj = { 'taskId': item.taskId }
       this.$HTTP('post', '/task_del', obj).then(res => {
 
       })
@@ -598,7 +675,7 @@ export default {
     goFlod(el) {
       el.autoExpand = !el.autoExpand;
 
-      let obj = { 'myUserId': this.userPkid, 'projectId': this.projectItem.projectid, 'partitionId': el.partitionId, 'isState': !el.autoExpand }
+      let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, 'partitionId': el.partitionId, 'isState': !el.autoExpand }
       this.$HTTP('post', '/partition_operation', obj).then(res => {
 
       })
@@ -633,30 +710,41 @@ export default {
     },
     // 获取阶段列表
     getstageList() {
-      let data = { 'projectId': this.projectItem.projectid, 'state': 0 };
+      let data = { 'projectId': this.projectId, 'state': 0 };
       this.$HTTP('post', '/stage_list_get', data).then(res => {
         this.stageList = res.result;
-      
+        let newList = [];
+        for (var i = 0; i < this.stageList.length; i++) {
+          newList.push({ 'stageId': i });
+        }
+        this.EmptyData =
+          {            'partitionId': -1, 'partitionTitle': '', 'autoExpand': false, 'taskList': [
+              { 'taskId': -1, 'stageTaskList': newList },
+            ]          }
+
+        this.newTask = { 'taskId': -1, 'stageTaskList': newList }
       })
     },
     // 获取项目所有列表
     getProjectAll() {
-      let data = { project: this.projectItem.projectid, 'myUserId': this.userPkid }
+      let data = { project: this.projectId, 'myUserId': this.userPkid }
       this.$HTTP('post', '/project_get_info', data).then(res => {
-              console.log(res.result)
-        
-        this.partitionsList = res.result;
 
+        this.partitionsList = res.result;
         for (let list of this.partitionsList) {
-              console.log(list)
-          
           list.isnew = false;
           if (list.taskList !== '') {
             for (let i of list.taskList) {
               i.isnews = false;
+              if (i.taskId === '') {
+                list.isBlank = true;
+                list.taskList.splice(i, 1)
+              }
+              this.stageTaskList = i.stageTaskList;
             }
           }
         }
+        console.log(this.partitionsList)
       })
     },
 
@@ -687,6 +775,7 @@ export default {
 
 <style lang="less">
 @import "../../../assets/css/base.less";
+// @import "vue-easytable/libs/themes-base/index.css";
 
 .fade-enter-active,
 .fade-leave-active {
@@ -846,7 +935,6 @@ export default {
       .topTable {
         height: 40px;
         background: #fff;
-        border-bottom: 1px solid #eeeeee;
         z-index: 100;
         .topBar {
           display: flex;
@@ -867,6 +955,7 @@ export default {
           height: 40px;
           border-right: 1px solid #eeeeee;
           border-bottom: 1px solid #eeeeee;
+          .box_sizing;
           background: #fff;
           text-align: center;
           line-height: 40px;
@@ -886,12 +975,12 @@ export default {
           background: #fff;
           text-align: center;
           line-height: 40px;
+          .box_sizing;
         }
       }
       .topTableFixed {
         height: 40px;
         background: #fff;
-        border-bottom: 1px solid #eeeeee;
         position: fixed;
         // box-shadow:
         z-index: 99;
@@ -910,12 +999,12 @@ export default {
             flex-direction: row;
           }
         }
-
         .label {
           width: 112px;
           height: 40px;
           border-right: 1px solid #eeeeee;
           border-bottom: 1px solid #eeeeee;
+          .box_sizing;
           background: #fff;
           text-align: center;
           line-height: 40px;
@@ -935,6 +1024,7 @@ export default {
           background: #fff;
           text-align: center;
           line-height: 40px;
+          .box_sizing;
         }
       }
 
@@ -953,7 +1043,29 @@ export default {
           .partitionsAndStages {
             display: flex;
             flex-direction: row;
-            // position: fixed;
+            // height: 72px;
+            // 阶段标题内容
+            .stageBox {
+              display: flex;
+              flex-direction: row;
+              .stageLists {
+                height: 72px;
+                width: 112px;
+                line-height: 72px;
+                background: #fff;
+                border-left: 1px solid rgba(153, 153, 153, 0);
+                border-top: 1px solid rgba(153, 153, 153, 0);
+                border-right: 1px solid #eeeeee;
+                border-bottom: 1px solid #eeeeee;
+                text-align: center;
+              }
+              .stage {
+                width: 252px;
+                height: 72px;
+                border-right: 1px solid #eeeeee;
+                border-bottom: 1px solid #eeeeee;
+              }
+            }
           }
           .defaultMainBox {
             display: flex;
@@ -1101,7 +1213,6 @@ export default {
                     display: inline-block;
                     width: 20px;
                     height: 20px;
-                    background: red;
                     border-radius: 3px;
                     overflow: hidden;
                     img {
@@ -1160,6 +1271,7 @@ export default {
               padding: 20px 0;
               width: 100px;
               border: none;
+              .box_sizing;
             }
           }
           .stageMain {
@@ -1243,7 +1355,8 @@ export default {
                     height: 20px;
                     border-radius: 3px;
                     overflow: hidden;
-                    background: red;
+                    margin: 0 4px;
+                    // background: red;
                     img {
                       width: 20px;
                       height: 20px;
@@ -1292,6 +1405,8 @@ export default {
             border-top: 1px solid rgba(153, 153, 153, 0);
             border-right: 1px solid #eeeeee;
             border-bottom: 1px solid #eeeeee;
+            .box_sizing;
+
             text-align: center;
             position: relative;
             .stageName {
@@ -1350,6 +1465,7 @@ export default {
             height: 72px;
             border-right: 1px solid #eeeeee;
             border-bottom: 1px solid #eeeeee;
+            .box_sizing;
           }
         }
         .partitionsLabel {
@@ -1361,6 +1477,8 @@ export default {
           border-left: 1px solid rgba(153, 153, 153, 0);
           border-top: 1px solid rgba(153, 153, 153, 0);
           border-bottom: 1px solid #eeeeee;
+          .box_sizing;
+
           text-align: center;
           position: relative;
           .unfold {
@@ -1429,6 +1547,7 @@ export default {
           background: #fff;
           border-right: 1px solid #eeeeee;
           border-bottom: 1px solid #eeeeee;
+          .box_sizing;
           text-align: center;
           .unfold {
             position: absolute;
@@ -1462,6 +1581,8 @@ export default {
           background: #fff;
           border-right: 1px solid #eeeeee;
           border-bottom: 1px solid #eeeeee;
+          .box_sizing;
+
           text-align: center;
           .iconBox {
             opacity: 1;
