@@ -100,19 +100,19 @@
                       ></i>
                     <span class="line"></span>
                     <el-checkbox 
-                      v-if='checkedList.length' 
+                      v-if='checkedFileList.length' 
                       class="all_checked" 
                       v-model="fileCheckbox" 
                       @change='fileCheckboxAll'
                       >
-                      已选<span class="mainColor">{{checkedList.length}}</span>项
+                      已选<span class="mainColor">{{checkedFileList.length}}</span>项
                     </el-checkbox>
                     <el-checkbox 
                       v-else 
                       class="all_checked" 
                       v-model="fileCheckbox" 
                       @change='fileCheckboxAll'>全选</el-checkbox>
-                      <template v-if='checkedList.length'>
+                      <template v-if='checkedFileList.length'>
                         <i class="iconfont icon-xiazai"></i>
                         <i class="iconfont icon-shoucang1"></i>
                         <i class="iconfont icon-jihuayijiao"></i>
@@ -475,6 +475,7 @@
                 <!-- 切换视图 另一个视图 -->
                 <other-view
                   v-if='!viewToggle'
+                  :list='fileList'
                   ref="otherView"
                 />
               </div>
@@ -646,7 +647,7 @@ import draggable from "vuedraggable";
 import FullPreview from './fullPreview';
 import OtherView from './otherView';
 import DemandView from './demandView';
-import { mapMutations } from 'vuex';
+import { mapState, mapMutations } from 'vuex';
 export default {
   components: {
     draggable,
@@ -962,11 +963,13 @@ export default {
   },
   watch: {
     checkedList(val) {
-      // this.CHECKEDLIST_CHANGE(val);
+      this.CHECKEDLIST_CHANGE(val);
     }
   },
   computed: {
-    
+    ...mapState([
+      'checkedFileList'
+    ]),
   },
   methods: {
     ...mapMutations([
@@ -977,12 +980,28 @@ export default {
       this.viewToggle = !this.viewToggle;
       if(this.viewToggle) {
         const list = this.$refs.otherView.close();
-        this.CHECKEDLIST_CHANGE(list);
         // 进行文件多选的回选
+        this.returnSelection(list);
+
+        // this.CHECKEDLIST_CHANGE(list);
       }else {
-        this.CHECKEDLIST_CHANGE(this.checkedList);
+        // this.CHECKEDLIST_CHANGE(this.checkedList);
       }
     },
+    // 文件时图切换后，复选框的回选
+    returnSelection(list) {
+      for(let x of this.parthsGroup) {
+        for(let y  of x.fileList) {
+          let indexs = list.findIndex(ele => ele.FilePkid == y.FilePkid);
+          indexs !== -1 && (y.checked = list[indexs].checked);
+        }
+      }
+      for(let y  of this.notGroupedList) {
+        let indexs = list.findIndex(ele => ele.FilePkid == y.FilePkid);
+        indexs !== -1 && (y.checked = list[indexs].checked);
+      }
+    },
+
     // 输入文字的显示/隐藏
     inputTextShowToggle(flag) {
       if(flag === 'left') { // 任务文件
@@ -2002,7 +2021,6 @@ export default {
       if(this.fullPreviewShow) {
         this.fullPreviewShow = false;
       }
-      // this.parthsGroup = [];
       for(let y of this.notGroupedList) {
         y.Count = 0;
         y.Desc = '0'; // 文字描述
@@ -2031,25 +2049,35 @@ export default {
       this.taskId = taskId;
       this.stageId = stageId;
       let obj = {
+        myUserId: '1184',
         projectId: this.projectId,
         stageId: this.stageId,
         taskId: this.taskId,
       }
-
       this.$HTTP("post", "/stagetask_get", obj)
       .then(res => {
+        // this.parthsGroup = [];
         this.stageList = [...res.result.stageList];
         this.stageList.map(ele => ele.stagePkid = ele.stagePkid.toString());
+        this.fileList = [...res.result.fileList]
+        this.fileList[0].fileList = this.notGroupedList;
+        this.fileList[1] = this.parthsGroup[0];
+        this.fileList[1].pkid = 111;
+        // console.log("获取任务详情", this.parthsGroup);
+
         return;
         this.fileList = [...res.result.fileList];
         for(let ele of this.fileList) {
+          for(let y of ele.fileList) {
+            y.checked = false;
+            y.hover = false;
+          }
           if(ele.pkid === 0) {
             this.notGroupedList = ele.fileList;
           }else {
             this.parthsGroup.push(ele);
           }
         }
-        console.log("获取任务详情",  this.notGroupedList, this.parthsGroup);
       })
       .catch(err => {
         console.log("获取任务详情失败", err);

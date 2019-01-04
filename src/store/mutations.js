@@ -133,7 +133,7 @@ export default {
 
     // new_yun
     [CHECKEDLIST_CHANGE](state, list) {
-        state.checkedList = list;
+        state.checkedFileList = list;
     },
 
 

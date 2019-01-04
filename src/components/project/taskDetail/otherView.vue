@@ -28,22 +28,22 @@
 				<i class="iconfont icon-gengduo"></i>
 			</div>
 		</div>
-		<div class="group_box">
+    <!-- 有分组 -->
+		<div v-if='sortType === 0' class="group_box">
 			<div 
-				v-if='sortType === 0'
 				class="parths_group"
 				v-for="group in fileGroup"
-				:key="group.id"
+				:key="group.pkid"
 				>
 				<!-- 分组的头部操作 -->
 				<div class="group_top">
-						<span v-if='!group.edit' class="group_name">{{group.groupTitle}}</span>
+						<span v-if='!group.edit' class="group_name">{{group.groupName}}</span>
 							<input 
 								v-else 
 								:ref="group.createdGroup ? 'createdGroup' : ''" 
 								class="group_name edit" 
 								type="text" 
-								v-model='group.groupTitle'
+								v-model='group.groupName'
 								@blur='groupTitleBlur(group)'
 								/>
 						<div class="group_operate">
@@ -63,16 +63,16 @@
 				<div class="group_file">
 					<div 
 						class="every_files"
-						v-for="file in group.list"
-						:key='file.Pkid'
+						v-for="file in group.fileList"
+						:key='file.FilePkid'
 						>
 						<div class="file_name every_common">
-							<el-checkbox v-model='checked'></el-checkbox>
+							<el-checkbox v-model='file.checked' @change='checkboxChange($event, file, 0)'></el-checkbox>
 							<img :src="'http://server.apexgame.cn'+file.Url" alt="">
-							<span class="file_title">{{file.Title}}</span>
+							<span class="file_title">{{file.FileName}}</span>
 						</div>
 						<div class="file_from every_common">
-							<span>{{file.Uname}}</span>
+							<span>{{file.userName}}</span>
 						</div>
 						<div class="file_time every_common">
 							<span>2018/12/29 19:20</span>
@@ -86,236 +86,49 @@
 						</div>
 					</div>
 				</div>
-			</div>
-			<div v-else class="no_group parths_group">
-				<div class="group_file">
-					<div 
-						class="every_files"
-						v-for="file in fileList"
-						:key='file.Pkid'
-						>
-						<div class="file_name every_common">
-							<el-checkbox v-model='checked'></el-checkbox>
-							<img :src="'http://server.apexgame.cn'+file.Url" alt="">
-							<span class="file_title">{{file.Title}}</span>
-						</div>
-						<div class="file_from every_common">
-							<span>{{file.Uname}}</span>
-						</div>
-						<div class="file_time every_common">
-							<span>2018/12/29 19:20</span>
-						</div>
-						<div class="file_message every_common">
-							<i class="iconfont icon-pinglun"></i>
-							<span>12</span>
-						</div>
-						<div class="file_more every_common">
-							<i class="iconfont icon-gengduo"></i>
-						</div>
-					</div>
-				</div>
-			</div>
+      </div>
 		</div>
-			
+    <!-- 无分组 -->
+    <div v-else class="group_box">
+      <div class="no_group parths_group">
+        <div class="group_file">
+          <div 
+            class="every_files"
+            v-for="file in fileList"
+            :key='file.FilePkid'
+            >
+            <div class="file_name every_common">
+              <el-checkbox v-model='file.checked' @change='checkboxChange($event, file, 1)'></el-checkbox>
+              <img :src="'http://server.apexgame.cn'+file.Url" alt="">
+              <span class="file_title">{{file.FileName}}</span>
+            </div>
+            <div class="file_from every_common">
+              <span>{{file.userName}}</span>
+            </div>
+            <div class="file_time every_common">
+              <span>2018/12/29 19:20</span>
+            </div>
+            <div class="file_message every_common">
+              <i class="iconfont icon-pinglun"></i>
+              <span>12</span>
+            </div>
+            <div class="file_more every_common">
+              <i class="iconfont icon-gengduo"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 	</div>
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex';
 
 export default {
-  
+  props: ['list'],
   data() {
     return {
-      fileList: [
-        {
-          Pkid: "4085",
-          Title: "egLogo1.png",
-          Url:
-            "/upload/file/20181227065330/63f7b3f6-f448-448f-b26a-6d6a12741f03/7f31dfb2-196a-48b6-89bc-aa2652013506.png",
-          FileType: "png",
-          Uname: "祝建云"
-        },
-        {
-          Pkid: "6575",
-          Title: "详情页面1",
-          Url:
-            "/upload/file/20180524103014/41735179-c2d4-45b8-85ca-da4681d5b3af/01.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6573",
-          Title: "详情页面-2",
-          Url:
-            "/upload/file/20181226081958/5e77da48-39a0-491f-a5db-c23cd5a4023d/b4f00229-8439-4f78-b0a1-957644a58492_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6574",
-          Title: "详情页面-3",
-          Url:
-            "/upload/file/20180524103014/489053b4-6574-47b0-ace3-22101721e612/2.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6572",
-          Title: "详情页面-4",
-          Url:
-            "/upload/file/20181226081939/d8e7a662-6f0a-4b41-ba0d-f359aaa3fb5b/2113c63f-2b0b-487a-a3cc-d78b301001b8_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6570",
-          Title: "详情页面-5",
-          Url:
-            "/upload/file/20181226081938/90571b62-18cb-45aa-a8f0-1f3e30178176/ae3a890a-f693-4023-8b14-f4d960ca0c73_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6571",
-          Title: "详情页面-6",
-          Url:
-            "/upload/file/20181226081938/ea47a6ae-e9f8-43d6-a63f-08d3c2bb3373/bdca1df3-3343-4381-bed0-8eecf050cd98_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6569",
-          Title: "详情页面-无分组",
-          Url:
-            "/upload/file/20181226081938/e29e3cec-30ce-4670-8d12-acd4c6a372c3/0d4dfecd-439b-418d-b368-0e2ec3d6206d_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6568",
-          Title: "详情页面-文件分组最小化",
-          Url:
-            "/upload/file/20181226081938/95216f40-6b6f-43e7-b8ab-a62c285f8b00/a1ec02b1-a3bd-4cb1-afc2-8bd9787c4d03_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6567",
-          Title: "详情页面-文件移动n",
-          Url:
-            "/upload/file/20181226081938/8f8daa93-ffb1-4445-b4cb-7f79ed5fd2ce/5bc9a050-5e1a-44df-8ac2-0f52d5030175_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6566",
-          Title: "详情页面-输入文字",
-          Url:
-            "/upload/file/20181226081938/3afc6cd3-72ce-45c0-b4a2-e9e47b73a6d2/82dfd666-49a2-4c15-928c-6dc9b5dfeea3_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6565",
-          Title: "详情页面-上传文件to成果文件",
-          Url:
-            "/upload/file/20181226081931/55e92e54-1075-43ab-a8ba-74ced18d6121/9a56d16e-6246-4b48-9ea4-3276bc2cdce9_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6564",
-          Title: "详情页面-上传文件to个人文档",
-          Url:
-            "/upload/file/20181226081931/5ff72ed8-1c2d-4323-bfe4-7e3d45ee83dc/7fd6baae-cb04-4207-9cbf-fa53d399a978_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6563",
-          Title: "详情页面-删除文件夹与删除文件提示",
-          Url:
-            "/upload/file/20181226081931/819c9db1-70a8-453d-b739-a978be80585f/ce970ac7-d760-4be3-8969-316e22cf6efd_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣",
-          Edition: "1"
-        },
-        {
-          Pkid: "6562",
-          Title: "详情页面-空页面",
-          Url:
-            "/upload/file/20181226081930/14707eb6-6f74-4819-844c-76afc08de9b9/8f37b596-48ae-4262-b241-b	eee53d646a3_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6561",
-          Title: "详情页面-进入文件夹--文件夹为空",
-          Url:
-            "/upload/file/20181226081930/83ecf1e5-5f21-44c6-bcf7-48e391b99e19/fe95c51a-3ab0-4ab2-8826-c5e925447b4a_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6560",
-          Title: "详情页面-进入文件夹--出现面包屑---文件hover的操作",
-          Url:
-            "/upload/file/20181226081930/5db23181-724c-42c0-b036-7d4471ec6247/f391c292-ac6b-4ab2-b787-94ea6cd07e26_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6559",
-          Title: "详情页面-分组文件的展开与收起样式",
-          Url:
-            "/upload/file/20181226081929/4cf89dc7-18e1-456b-ad93-8b687cbf48e4/9713e604-fec5-4298-a28b-9e2eb11fe414_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6558",
-          Title: "详情页面-成果文件分组更多操作",
-          Url:
-            "/upload/file/20181226081929/82b8f088-2c08-4728-a739-97760c0c3d61/dd3b3458-ddf1-415e-9b75-af241125224e_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        },
-        {
-          Pkid: "6557",
-          Title: "详情页面-多选文件样式",
-          Url:
-            "/upload/file/20181226081929/729c03fc-fd7c-41c1-99e8-2fcd1e63dd3a/c96654d0-0582-4809-8359-ecea14d26148_s1.png",
-          FileType: "png",
-          Uname: "卢洪臣"
-        }
-      ], // 未分组文件列表
-      parthsGroup: [
-        {
-          id: 1,
-          groupTitle: "分组1",
-          border: false,
-          dragDisabled: false,
-          packUp: null,
-          list: [
-            {
-              Pkid: "404",
-              Title: "附件1",
-              Url:
-                "/upload/file/20181227072023/3c36843c-24be-4d34-9f88-38aadcd9e617/ced7bc91-99d6-4345-ba44-292e4a206593.png",
-              FileType: "png",
-              Uname: "祝建云"
-            },
-            {
-              Pkid: "403",
-              Title: "赫本",
-              Url:
-                "/upload/file/20181227072001/e9e95bcc-11f0-4470-914e-87cb65be398b/4e822aa0-2b99-4bc0-b58d-48725929ef4b.png",
-              FileType: "png",
-              Uname: "祝建云"
-            }
-          ]
-        }
-      ], // 分组文件列表
+      fileList: [], // 未分组文件列表
 			fileGroup: [], // 文件分组
 			checked: false,
       sortType: 0, // 0--按文件名排序 2--按上传者排序 3--按上传时间排序
@@ -323,15 +136,56 @@ export default {
       selectedList: [], // 获取
     };
   },
+  watch: {
+    sortType(val) {
+      if(val) { // 2--按上传者排序 3--按上传时间排序
+        for(let y  of this.fileList) {
+          let indexs = this.selectedList.findIndex(ele => ele.FilePkid == y.FilePkid);
+          indexs !== -1 && (y.checked = this.selectedList[indexs].checked);
+        }
+      }else { // 0--按文件名排序
+        for(let x of this.fileGroup) {
+          for(let y  of x.fileList) {
+            let indexs = this.selectedList.findIndex(ele => ele.FilePkid == y.FilePkid);
+            indexs !== -1 && (y.checked = this.selectedList[indexs].checked);
+          }
+        }
+      }
+    },
+    selectedList(val) {
+      this.CHECKEDLIST_CHANGE(val);
+      // console.log(val);
+    }
+    
+  },
   computed: {
     ...mapState([
-      'checkedList'
+      'checkedFileList'
     ]),
   },
   methods: {
     ...mapMutations([
       'CHECKEDLIST_CHANGE',
     ]),
+    // 文件选中状态改变
+    checkboxChange(val, item, flag) {
+      this.selectedListChange(val, item, flag);
+      if(flag) { // 没有分组
+        this.fileList = this.fileList.concat();
+      }else { // 有分组
+        this.fileGroup = this.fileGroup.concat();
+      }
+    },
+    // 已选列表改变
+    selectedListChange(val, item, flag) {
+      if(val) { // 选中
+        this.selectedList.push(item);
+      }else { // 取消
+        let x = this.selectedList.findIndex(ele => ele.FilePkid === item.FilePkid);
+        x !== -1 && (this.selectedList.splice(x, 1));
+      }
+    },
+
 		// 文件排序
 		sortHandle(type, sort) {
 			if(type) { // 按上传者/上传日期排序
@@ -367,8 +221,8 @@ export default {
       } else {
         // 编辑
         // 先判重，如果有重复的名字--提示，否则--发送请求
-        let repeat = this.parthsGroup.findIndex(
-          ele => ele.groupTitle === group.groupTitle
+        let repeat = this.fileGroup.findIndex(
+          ele => ele.groupName === group.groupName
         );
         if (repeat !== -1) {
           this.$message.warning("已含有同名分组名！");
@@ -443,20 +297,14 @@ export default {
     },
   },
   created() {
-    let obj = {
-      id: 0,
-      groupTitle: "未分组文件",
-      border: false,
-      dragDisabled: false,
-      packUp: null,
-      // list: this.fileList.splice(0, 2)
-      list: this.fileList
-		};
-    this.fileGroup.push(obj);
-    this.fileGroup.push(...this.parthsGroup);
+    this.selectedList = [...this.checkedFileList];
+    this.fileGroup = [...this.list];
+    this.fileList = [];
 
-    this.selectedList = [...this.checkedList];
-     // 进行文件多选的回选
+    for(let x of this.list) {
+      this.fileList.push(...x.fileList);
+    }
+    // 进行文件多选的回选
   },
   mounted() {
   }
