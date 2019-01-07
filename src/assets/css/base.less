@@ -224,7 +224,10 @@ input{
 .cur {
   cursor: pointer;
 }
-
+.cur_dis {
+  cursor: not-allowed;
+  color: @grayNight;
+}
 .word_over {
   overflow: hidden;
   text-overflow:ellipsis;
@@ -798,7 +801,7 @@ not supported by any browser */
   position: fixed;
   right: 0;
   bottom:  0;
-  width: 600px;
+  width: 390px;
   min-height: 100px;
   .border_radius(@br: 2px);
   background-color: #fff;
@@ -811,7 +814,6 @@ not supported by any browser */
     top: 16px;
     font-size:  16px;
     color: @grayNight;
-    font-weight: bold;
     .cur;
   }
 
@@ -824,7 +826,7 @@ not supported by any browser */
   }
   .upload_progress_ul {
     width: 100%;
-    max-height: 310px;
+    max-height: 210px;
     overflow: auto;
     padding: 10px 24px;
     .box_sizing;
@@ -905,7 +907,7 @@ not supported by any browser */
         top: 0px;
         right: 6px;
         color: @grayNight;
-        font-size: 16px;
+        font-size: 12px;
         height: 42px;
         line-height: 42px;
         display: inline;
@@ -960,6 +962,14 @@ not supported by any browser */
     text-decoration: none;
     color:inherit;
   }
+  .upload_file {
+    .el-upload {
+      width: 100%;
+      text-align: left !important;
+
+    }
+  }
+  
 }
 
 .parth_el_dropdown_move {

@@ -93,26 +93,39 @@
               <div v-if='demandOrGain' id="operateFile" class="operate_file">
                 <div class="top_box">
                   <div class="left fl">
-                    <i class='iconfont icon-shangchuan'></i>
+                    <el-upload ref="fileUpload"
+                      class="upload_file"
+                      :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId=0'"
+                      :show-file-list="false"
+                      :on-error="uploadError"
+                      :on-success="uploadSuccess"
+                      :on-progress="uploadProgress"
+                      :limit="9"
+                      :on-exceed="handleExceed"
+                      :before-upload="beforeUpload"
+                      >
+                     <i class='iconfont icon-shangchuan'></i>
+                    </el-upload>
+                   
                     <i 
                       class='iconfont icon-tianjiawenzi'
                       @click.stop="inputTextShowToggle('left')"
                       ></i>
                     <span class="line"></span>
                     <el-checkbox 
-                      v-if='checkedFileList.length' 
+                      v-if='checkedFileList && checkedFileList.length' 
                       class="all_checked" 
                       v-model="fileCheckbox" 
                       @change='fileCheckboxAll'
                       >
-                      已选<span class="mainColor">{{checkedFileList.length}}</span>项
+                      已选<span class="mainColor">{{checkedFileList && checkedFileList.length}}</span>项
                     </el-checkbox>
                     <el-checkbox 
                       v-else 
                       class="all_checked" 
                       v-model="fileCheckbox" 
                       @change='fileCheckboxAll'>全选</el-checkbox>
-                      <template v-if='checkedFileList.length'>
+                      <template v-if='checkedFileList && checkedFileList.length'>
                         <i class="iconfont icon-xiazai"></i>
                         <i class="iconfont icon-shoucang1"></i>
                         <i class="iconfont icon-jihuayijiao"></i>
@@ -174,7 +187,7 @@
                         >
                             <div 
                                 class="every_file"
-                                v-for="(ele) in notGroupedList"
+                                v-for="(ele, index) in notGroupedList"
                                 :key="ele.FilePkid"
                                 :id='ele.FilePkid'
                                 :filename='ele.FileName'
@@ -182,12 +195,24 @@
                                 @mouseleave="leaveFile(ele)"
                                 >
                                 <span class="file_pic">
-                                  <img :src="'http://server.apexgame.cn'+ele.Url" alt="">
+                                  <template v-if='ele.FileType === 11'>
+                                    <span class="text_desc"><span>{{ele.Desc}}</span></span>
+                                  </template>
+                                  <template v-else>
+                                    <img :src="ele.UrlMin" alt="">
+                                  </template>
                                   <span class="none"></span>
                                 </span>
                                 <div class="file_info">
-                                  <p class="title">{{ele.FileName}}</p>
-                                  <img :src="ele.userPic" alt="" class="from_header">
+                                  <p v-if='!ele.edit' class="title">{{ele.FileName}}</p>
+                                  <input 
+                                    v-else 
+                                    class="title edit" 
+                                    v-model='ele.FileTitle' 
+                                    id="fileNameEdit"
+                                    @blur="fileNameEditBlur($event, ele)"
+                                    />
+                                  <img :src="ele.UserPic" alt="" class="from_header">
                                   <span class="file_message fr">
                                     <i class='iconfont icon-pinglun'></i>
                                       {{ele.Count}}
@@ -198,11 +223,11 @@
                                   <el-dropdown class="fixed file_more">
                                     <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                     <el-dropdown-menu slot="dropdown">
-                                      <el-dropdown-item @click.native="fileCommand('download')">下载</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('collect')">收藏</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('transfer')">移交</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('rename')">重命名</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('delete')">删除</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('rename', index, ele, 0)">重命名</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('delete', index, ele, 0)">删除</el-dropdown-item>
                                     </el-dropdown-menu>
                                   </el-dropdown>
                                 </div>
@@ -220,6 +245,25 @@
                   <!-- 右侧分组 -->
                   <div id="rightBox" class="right_box">
                       <div v-if='(parthsGroup && parthsGroup.length) || dragItem.fromGroup' class="parths">
+                        <p class="mainColor_underline_text go_back_sort" v-if='groupSortFlag' @click='backParthSort'>退出分组排序</p>
+                        <template v-if='groupSortFlag'>
+                          <draggable
+                           v-model="parthsGroup"
+                           :options="{ghostClass: 'ghost_parth_sort', dragClass: 'drag_parth_sort'}"
+                           @end='dragEndParth'
+                          >
+                            <div 
+                              class="parths_group is_sort"
+                              v-for="group in parthsGroup"
+                              :key="group.pkid"
+                              :ids="group.pkid"
+                              >
+                              <i class="iconfont icon-paixu"></i>
+                              <span class="group_name">{{group.groupName}}</span>
+                            </div>
+                          </draggable>
+                        </template>
+                        <template v-else>
                           <div 
                             class="parths_group"
                             v-for="(group, index) in parthsGroup"
@@ -230,7 +274,7 @@
                                 <span v-if='!group.edit' class="group_name">{{group.groupName}}</span>
                                   <input 
                                     v-else 
-                                    :ref="group.createdGroup ? 'createdGroup' : ''" 
+                                    :ref="group.createdGroup || group.edit ? 'createdGroup' : ''" 
                                     class="group_name edit" 
                                     type="text" 
                                     v-model='group.groupName'
@@ -245,12 +289,20 @@
                                     <el-dropdown class="fixed file_more">
                                       <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
                                       <el-dropdown-menu slot="dropdown">
-                                        <el-dropdown-item @click.native="fileGroupCommand('upload')">上传文件</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('download')">下载</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('collect')">收藏</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('transfer')">整组移交</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('rename')">重命名</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('delete')">删除</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('upload', index, group)">
+                                          <el-upload ref="fileUpload"
+                                            class="upload_file"
+                                            :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                                            :show-file-list="false"
+                                            :multiple="true">
+                                            <span class="slot_title">上传</span>
+                                          </el-upload>
+                                        </el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('download', index, group)">下载</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('collect', index, group)">收藏</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('transfer', index, group)">整组移交</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('rename', index, group)">重命名</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileGroupCommand('delete', index, group)">删除</el-dropdown-item>
                                       </el-dropdown-menu>
                                     </el-dropdown>
                                 </div>
@@ -291,11 +343,12 @@
                                     <span class="file_pic">
                                       <span
                                         class="more" 
-                                        v-for='(pic, index) in item.Url'
+                                        v-for='(pic, index) in item.UrlMin'
                                         :key='index'
                                         >
-                                          <img :src="'http://server.apexgame.cn' + pic" alt="
+                                          <img :src="pic" alt="
                                         ">
+                                        <span class="none"></span>
                                       </span>
                                       <span class="more"><img class="more" src="./style/more.png" alt=""></span>
                                       <span class="none"></span>
@@ -311,7 +364,7 @@
 
                             <!-- 折叠成一行的时候 -->
                             <div 
-                              v-else-if='group.overList && !leftCenterFlag'
+                              v-else-if='group.overList'
                               :key="group.pkid"
                               class="group_file"
                               :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
@@ -334,7 +387,7 @@
                                   <div 
                                     class="every_file fold_up"
                                     :class="item.overLength ? '' : 'draged'"
-                                    v-for="item in group.overList"
+                                    v-for="(item, index1) in group.overList"
                                     :key="item.FilePkid"
                                     :groupid='group.pkid'
                                     :id='item.FilePkid'
@@ -347,14 +400,16 @@
                                       <span class="file_pic">
                                         <span
                                           class="more" 
-                                          v-for='(pic, index) in item.Url'
+                                          v-for='(pic, index) in item.UrlMin'
                                           :key='index'
                                           >
-                                            <img :src="'http://server.apexgame.cn' + pic" alt="
+                                            <img :src="pic" alt="
                                           ">
+                                          <span class="none"></span>
                                         </span>
                                         <span class="more"><img class="more" src="./style/more.png" alt=""></span>
                                         <span class="none"></span>
+                                        
                                       </span>
                                       <div class="file_info">
                                         <p class="file_length underline_text">展开更多<span class="mainColor">{{item.overLength}}</span>个文件</p>
@@ -362,12 +417,24 @@
                                     </template>
                                     <template v-else>
                                       <span class="file_pic">
-                                        <img :src="'http://server.apexgame.cn'+item.Url" alt="">
+                                        <template v-if='item.FileType === 11'>
+                                          <span class="text_desc"><span>{{item.Desc}}</span></span>
+                                        </template>
+                                        <template v-else>
+                                          <img :src="item.UrlMin" alt="">
+                                        </template>
                                         <span class="none"></span>
                                       </span>
                                       <div class="file_info">
-                                        <p class="title">{{item.FileName}}</p>
-                                        <img :src="item.userPic" alt="" class="from_header">
+                                        <p v-if='!item.edit' class="title">{{item.FileName}}</p>
+                                        <input 
+                                          v-else 
+                                          class="title edit" 
+                                          v-model='item.FileTitle' 
+                                          id="fileNameEdit"
+                                          @blur="fileNameEditBlur($event, item)"
+                                          />
+                                        <img :src="item.UserPic" alt="" class="from_header">
                                         <span class="file_message fr">
                                           <i class='iconfont icon-pinglun'></i>
                                           {{item.Count}}
@@ -378,9 +445,9 @@
                                         <el-dropdown class="fixed file_more">
                                           <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                           <el-dropdown-menu slot="dropdown">
-                                            <el-dropdown-item @click.native="fileCommand('download')">下载</el-dropdown-item>
-                                            <el-dropdown-item @click.native="fileCommand('rename')">重命名</el-dropdown-item>
-                                            <el-dropdown-item @click.native="fileCommand('delete')">删除</el-dropdown-item>
+                                            <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
+                                            <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                            <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
                                           </el-dropdown-menu>
                                         </el-dropdown>
                                       </div>
@@ -415,7 +482,7 @@
                                 >
                                 <div 
                                   class="every_file fold_up draged"
-                                  v-for="item in group.fileList"
+                                  v-for="(item, index1) in group.fileList"
                                   :key="item.FilePkid"
                                   :groupid='group.pkid'
                                   :id='item.FilePkid'
@@ -424,12 +491,24 @@
                                   @mouseleave="leaveFile(item)"
                                   >
                                   <span class="file_pic">
-                                    <img :src="'http://server.apexgame.cn'+item.Url" alt="">
+                                    <template v-if='item.FileType === 11'>
+                                      <span class="text_desc"><span>{{item.Desc}}</span></span>
+                                    </template>
+                                    <template v-else>
+                                      <img :src="item.UrlMin" alt="">
+                                    </template>
                                     <span class="none"></span>
                                   </span>
                                   <div class="file_info">
-                                    <p class="title">1--{{item.FileName}}</p>
-                                    <img :src="item.userPic" alt="" class="from_header">
+                                    <p v-if='!item.edit' class="title">{{item.FileName}}</p>
+                                    <input 
+                                      v-else 
+                                      class="title edit" 
+                                      v-model='item.FileTitle' 
+                                      id="fileNameEdit"
+                                      @blur="fileNameEditBlur($event, item)"
+                                      />
+                                    <img :src="item.UserPic" alt="" class="from_header">
                                     <span class="file_message fr">
                                       <i class='iconfont icon-pinglun'></i>
                                       {{item.Count}}
@@ -440,9 +519,9 @@
                                     <el-dropdown class="fixed file_more">
                                       <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                       <el-dropdown-menu slot="dropdown">
-                                        <el-dropdown-item @click.native="fileCommand('download')">下载</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('rename')">重命名</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('delete')">删除</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
                                       </el-dropdown-menu>
                                     </el-dropdown>
                                   </div>
@@ -454,6 +533,7 @@
 
                             <div class="group_line"></div>
                           </div>
+                        </template>
                       </div>
                       
                       <div v-else class="file_empty">
@@ -566,7 +646,7 @@
                         >
                         <div 
                             :class="file.children ? 'every_file' : 'draged every_file'"
-                            v-for="file in personalFiles"
+                            v-for="(file, index) in personalFiles"
                             :key="file.FilePkid"
                             :id='file.FilePkid'
                             :filename='file.FileName'
@@ -599,10 +679,23 @@
                             <!-- 文件 -->
                             <template v-else>
                                 <span class="file_pic">
-                                <img :src="'http://server.apexgame.cn'+file.Url" alt="">
+                                  <template v-if='file.FileType === 11'>
+                                    <span class="text_desc"><span>{{file.Desc}}</span></span>
+                                  </template>
+                                  <template v-else>
+                                    <img :src="file.UrlMin" alt="">
+                                  </template>
                                 <span class="none"></span>
                               </span>
                               <div class="file_info">
+                                <!-- <p v-if='!file.edit' class="title">{{file.FileName}}</p>
+                                <input 
+                                  v-else 
+                                  class="title edit" 
+                                  v-model='file.FileTitle' 
+                                  id="fileNameEdit"
+                                  @blur="fileNameEditBlur($event, file)"
+                                  /> -->
                                 <p class="title">{{file.FileName}}</p>
                                 <p class="file_num">123KB</p>
                                 <span class="fixed file_checkbox">
@@ -615,9 +708,9 @@
                                 <el-dropdown class="fixed file_more">
                                   <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                   <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item @click.native="fileCommand('download')">下载</el-dropdown-item>
-                                    <el-dropdown-item @click.native="fileCommand('rename')">重命名</el-dropdown-item>
-                                    <el-dropdown-item @click.native="fileCommand('delete')">删除</el-dropdown-item>
+                                    <el-dropdown-item @click.native="fileCommand('download', index, file)">下载</el-dropdown-item>
+                                    <el-dropdown-item @click.native="fileCommand('rename', index, file)">重命名</el-dropdown-item>
+                                    <el-dropdown-item @click.native="fileCommand('delete', index, file)">删除</el-dropdown-item>
                                   </el-dropdown-menu>
                                 </el-dropdown>
                               </div>
@@ -639,10 +732,35 @@
             taskId='1'
           />
       </div>
-
+      <!-- 温馨提示2_删除分组的提示 -->
+      <transition name="fade1">
+        <Reminder2 v-if="delGroupFlag"
+            :type="1"
+            :text="reminderText"
+            @handleCancle="delGroupCancel"
+            @handleSure="delGroupSure" />
+      </transition>
+      <!-- 温馨提示2_删除文件的提示 -->
+      <transition name="fade1">
+        <Reminder2 v-if="delFileFlag"
+            :type="1"
+            :text="reminderText"
+            @handleCancle="delFileCancel"
+            @handleSure="delFileSure" />
+      </transition>
+          <!-- 文件上传进度条 -->
+    <upload-progress v-if="uploadProgressFlag"
+      :fileProgressList="fileProgressList"
+      @closeProgress="closeProgress"
+      @handleCancel="cancelUpload"
+      @handleRe="reUpload" />
     </div>
 </template>
 <script>
+
+import Reminder2 from "../../common/reminder2";
+import UploadProgress from "../../common/uploadProgress";
+
 import draggable from "vuedraggable";
 import FullPreview from './fullPreview';
 import OtherView from './otherView';
@@ -650,6 +768,8 @@ import DemandView from './demandView';
 import { mapState, mapMutations } from 'vuex';
 export default {
   components: {
+    Reminder2,
+    UploadProgress,
     draggable,
     FullPreview,
     OtherView,
@@ -657,10 +777,17 @@ export default {
   },
   data() {
     return {
-      // http://server.apexgame.cn/upload/user/20180719110629240.jpeg
+      userId: 1184, // 登录这ID
       projectId: 0, // 项目ID
       stageId: '0', // 阶段ID
       taskId: 0, // 任务ID
+      stageTaskId: 1, // 阶段ID + 任务ID
+      filePartitionId: 0, // 任务文件分组ID
+      // 文件上传
+      uploadProgressFlag: false,
+      fileProgressList: [],
+
+
       stageList: [], // 阶段列表
       tasksList: [], // 左侧分组任务列表
       fileList: [], // 分组+未分组列表
@@ -668,11 +795,13 @@ export default {
       fileCheckbox: false, // 文件全选
       viewToggle: true, // true--视图1  false--视图2
       fileCheckboxSelf: false, // 个人文档
-      notGroupedList: [
+      notGroupedList: [], // 未分组文件列表 
+      parthsGroup: [], // 分组文件列表
+      notGroupedList_1: [
         {
           FilePkid: "4085",
           FileName: "egLogo1.png",
-          Url:
+          UrlMin:
             "/upload/file/20181227065330/63f7b3f6-f448-448f-b26a-6d6a12741f03/7f31dfb2-196a-48b6-89bc-aa2652013506.png",
           FileType: "png",
           userName: "祝建云",
@@ -680,7 +809,7 @@ export default {
         {
           FilePkid: "6575",
           FileName: "详情页面1",
-          Url:
+          UrlMin:
             "/upload/file/20180524103014/41735179-c2d4-45b8-85ca-da4681d5b3af/01.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -688,7 +817,7 @@ export default {
         {
           FilePkid: "6573",
           FileName: "详情页面-2",
-          Url:
+          UrlMin:
             "/upload/file/20181226081958/5e77da48-39a0-491f-a5db-c23cd5a4023d/b4f00229-8439-4f78-b0a1-957644a58492_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -696,7 +825,7 @@ export default {
         {
           FilePkid: "6574",
           FileName: "详情页面-3",
-          Url:
+          UrlMin:
             "/upload/file/20180524103014/489053b4-6574-47b0-ace3-22101721e612/2.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -704,7 +833,7 @@ export default {
         {
           FilePkid: "6572",
           FileName: "详情页面-4",
-          Url:
+          UrlMin:
             "/upload/file/20181226081939/d8e7a662-6f0a-4b41-ba0d-f359aaa3fb5b/2113c63f-2b0b-487a-a3cc-d78b301001b8_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -712,7 +841,7 @@ export default {
         {
           FilePkid: "6570",
           FileName: "详情页面-5",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/90571b62-18cb-45aa-a8f0-1f3e30178176/ae3a890a-f693-4023-8b14-f4d960ca0c73_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -720,7 +849,7 @@ export default {
         {
           FilePkid: "6571",
           FileName: "详情页面-6",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/ea47a6ae-e9f8-43d6-a63f-08d3c2bb3373/bdca1df3-3343-4381-bed0-8eecf050cd98_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -728,7 +857,7 @@ export default {
         {
           FilePkid: "6569",
           FileName: "详情页面-无分组",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/e29e3cec-30ce-4670-8d12-acd4c6a372c3/0d4dfecd-439b-418d-b368-0e2ec3d6206d_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -736,7 +865,7 @@ export default {
         {
           FilePkid: "6568",
           FileName: "详情页面-文件分组最小化",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/95216f40-6b6f-43e7-b8ab-a62c285f8b00/a1ec02b1-a3bd-4cb1-afc2-8bd9787c4d03_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -744,7 +873,7 @@ export default {
         {
           FilePkid: "6567",
           FileName: "详情页面-文件移动n",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/8f8daa93-ffb1-4445-b4cb-7f79ed5fd2ce/5bc9a050-5e1a-44df-8ac2-0f52d5030175_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -752,7 +881,7 @@ export default {
         {
           FilePkid: "6566",
           FileName: "详情页面-输入文字",
-          Url:
+          UrlMin:
             "/upload/file/20181226081938/3afc6cd3-72ce-45c0-b4a2-e9e47b73a6d2/82dfd666-49a2-4c15-928c-6dc9b5dfeea3_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -760,7 +889,7 @@ export default {
         {
           FilePkid: "6565",
           FileName: "详情页面-上传文件to成果文件",
-          Url:
+          UrlMin:
             "/upload/file/20181226081931/55e92e54-1075-43ab-a8ba-74ced18d6121/9a56d16e-6246-4b48-9ea4-3276bc2cdce9_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -768,7 +897,7 @@ export default {
         {
           FilePkid: "6564",
           FileName: "详情页面-上传文件to个人文档",
-          Url:
+          UrlMin:
             "/upload/file/20181226081931/5ff72ed8-1c2d-4323-bfe4-7e3d45ee83dc/7fd6baae-cb04-4207-9cbf-fa53d399a978_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -776,7 +905,7 @@ export default {
         {
           FilePkid: "6563",
           FileName: "详情页面-删除文件夹与删除文件提示",
-          Url:
+          UrlMin:
             "/upload/file/20181226081931/819c9db1-70a8-453d-b739-a978be80585f/ce970ac7-d760-4be3-8969-316e22cf6efd_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -785,7 +914,7 @@ export default {
         {
           FilePkid: "6562",
           FileName: "详情页面-空页面",
-          Url:
+          UrlMin:
             "/upload/file/20181226081930/14707eb6-6f74-4819-844c-76afc08de9b9/8f37b596-48ae-4262-b241-beee53d646a3_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -793,7 +922,7 @@ export default {
         {
           FilePkid: "6561",
           FileName: "详情页面-进入文件夹--文件夹为空",
-          Url:
+          UrlMin:
             "/upload/file/20181226081930/83ecf1e5-5f21-44c6-bcf7-48e391b99e19/fe95c51a-3ab0-4ab2-8826-c5e925447b4a_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -801,7 +930,7 @@ export default {
         {
           FilePkid: "6560",
           FileName: "详情页面-进入文件夹--出现面包屑---文件hover的操作",
-          Url:
+          UrlMin:
             "/upload/file/20181226081930/5db23181-724c-42c0-b036-7d4471ec6247/f391c292-ac6b-4ab2-b787-94ea6cd07e26_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -809,7 +938,7 @@ export default {
         {
           FilePkid: "6559",
           FileName: "详情页面-分组文件的展开与收起样式",
-          Url:
+          UrlMin:
             "/upload/file/20181226081929/4cf89dc7-18e1-456b-ad93-8b687cbf48e4/9713e604-fec5-4298-a28b-9e2eb11fe414_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -817,7 +946,7 @@ export default {
         {
           FilePkid: "6558",
           FileName: "详情页面-成果文件分组更多操作",
-          Url:
+          UrlMin:
             "/upload/file/20181226081929/82b8f088-2c08-4728-a739-97760c0c3d61/dd3b3458-ddf1-415e-9b75-af241125224e_s1.png",
           FileType: "png",
           userName: "卢洪臣",
@@ -825,13 +954,13 @@ export default {
         {
           FilePkid: "6557",
           FileName: "详情页面-多选文件样式",
-          Url:
+          UrlMin:
             "/upload/file/20181226081929/729c03fc-fd7c-41c1-99e8-2fcd1e63dd3a/c96654d0-0582-4809-8359-ecea14d26148_s1.png",
           FileType: "png",
           userName: "卢洪臣",
         }
       ], // 未分组文件列表
-      parthsGroup: [
+      parthsGroup_1: [
         {
           pkid: 0,
           groupName: "分组1",
@@ -842,7 +971,7 @@ export default {
             {
               FilePkid: "404",
               FileName: "附件1",
-              Url:
+              UrlMin:
                 "/upload/file/20181227072023/3c36843c-24be-4d34-9f88-38aadcd9e617/ced7bc91-99d6-4345-ba44-292e4a206593.png",
               FileType: "png",
               userName: "祝建云"
@@ -850,7 +979,7 @@ export default {
             {
               FilePkid: "403",
               FileName: "赫本",
-              Url:
+              UrlMin:
                 "/upload/file/20181227072001/e9e95bcc-11f0-4470-914e-87cb65be398b/4e822aa0-2b99-4bc0-b58d-48725929ef4b.png",
               FileType: "png",
               userName: "祝建云"
@@ -863,7 +992,7 @@ export default {
         {
           FilePkid: "408",
           FileName: "bg",
-          Url:
+          UrlMin:
             "/upload/file/20181213070700/d0b06e24-5111-497c-a512-8d4b139fd475/55924df2-63b6-4914-ade4-0ba667d577db_s1.png",
           FileType: "svg",
           userName: "祝建云"
@@ -871,7 +1000,7 @@ export default {
         {
           FilePkid: "406",
           FileName: "video2",
-          Url:
+          UrlMin:
             "/upload/file/20180817071340/5e0dba23-b76a-43a6-9589-1aee0ae38fdb/f7088adf-dbc4-4b83-994a-5d69c4a66c0d_s1.png",
           FileType: "mp4",
           userName: "祝建云"
@@ -879,7 +1008,7 @@ export default {
         {
           FilePkid: 2,
           FileName: "我的文件",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           default: true,
@@ -887,7 +1016,7 @@ export default {
             {
               FilePkid: "407",
               FileName: "WX20181220-170213",
-              Url:
+              UrlMin:
                 "/upload/file/20180528070747/8b10d083-a85b-45a4-825a-9437fd47fa4a/logo-3.png",
               FileType: "png",
               userName: "祝建云"
@@ -895,7 +1024,7 @@ export default {
             {
               FilePkid: "405",
               FileName: "video",
-              Url:
+              UrlMin:
                 "/upload/file/20180711020446/9ccd7618-5010-40f4-ac2e-008e64108a22/165310yogoihqr63svh6tm.jpg",
               FileType: "mp4",
               userName: "祝建云"
@@ -905,7 +1034,7 @@ export default {
         {
           FilePkid: 3,
           FileName: "我的收藏",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           default: true,
@@ -913,7 +1042,7 @@ export default {
             {
               FilePkid: "408",
               FileName: "bg",
-              Url:
+              UrlMin:
                 "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
               FileType: "svg",
               userName: "祝建云"
@@ -921,7 +1050,7 @@ export default {
             {
               FilePkid: 5,
               FileName: "文件夹2--第二个文件夹中文件夹",
-              Url: null,
+              UrlMin: null,
               FileType: 0,
               userName: null,
               children: []
@@ -931,7 +1060,7 @@ export default {
         {
           FilePkid: 4,
           FileName: "文件夹3--工作文件夹之我的项目",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           children: []
@@ -950,7 +1079,7 @@ export default {
       fileBoxW: 182, // 188 // 文件元素盒子的宽度
       leftBoxW: 210, // 未分组盒子的宽度
       personalBoxW: 388, // 个人文档盒子的宽度
-      leftCenterFlag: false, // true--未分组占大份 false--分组区域占大份
+      leftCenterFlag: true, // true--未分组占大份 false--分组区域占大份
       inputTextShow1: false, // 输入文字弹窗——任务文件
       inputTextShow2: false, // 输入文字弹窗——个人文档
       inputText: '', // 添加文字的内容
@@ -959,11 +1088,91 @@ export default {
       oneCheckedSelf: false, // 个人文档--是否有一个文件被选中
       checkedList: [], // 已选中的文件列表
       checkedListSelf: [], // 个人文档--已选中的文件列表
+      fileTypeImg: [
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/2.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/3.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/4.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/5.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/6.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/7.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/8.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/9.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/10.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/11.png")
+        }
+      ], // 附件icon
+      delGroupFlag: false, // 删除分组的提示
+      delFileFlag: false, // 删除文件的提示
+      reminderText: '您确定要删除吗？', // 输出提示框的默认文字
+      operateParth: {}, // 当前操作的文件分组信息
+      operateFile: {}, // 当前操作的文件信息
+      groupNameCopy: '', // copy文件分组的名字
+      fileNameCopy: '', // copy文件的名字
+      groupSortFlag: false, // 分组排序展示
     };
   },
   watch: {
     checkedList(val) {
       this.CHECKEDLIST_CHANGE(val);
+    },
+    leftCenterFlag(val) {
+      if (val) {
+        // 未分组占大份
+        $("#leftBox").removeClass("left_box_toggle");
+        $("#rightBox").removeClass("right_box_toggle");
+        this.countFileOne();
+        for (let x of this.parthsGroup) {
+          x.packUp = false;
+          if (x.overList) {
+            delete x.overList;
+          }
+        }
+        this.parthsGroup = this.parthsGroup.concat();
+      } else {
+        // 分组区域占大份
+        $("#leftBox").addClass("left_box_toggle");
+        $("#rightBox").addClass("right_box_toggle");
+        for (let x of this.parthsGroup) {
+          if (x.allList) {
+            delete x.allList;
+          }
+          if (x.overList) {
+            delete x.overList;
+          }
+        }
+        for (let i = 0; i < this.parthsGroup.length; i++) {
+          let x = this.parthsGroup[i];
+          if (!x.overList) {
+            this.countFileMore(i);
+          }
+        }
+        this.parthsGroup = this.parthsGroup.concat();
+      }
     }
   },
   computed: {
@@ -1045,11 +1254,28 @@ export default {
         return;
       }
       if(flag === 'left') { // 任务文件
-        this.inputTextShow1 = false;
+        let obj = {
+          myUserId: this.userId,
+          projectId: this.projectId,
+          stageTaskId: this.stageTaskId,
+          filePartitionId: true ? 0 : this.filePartitionId, // 现在只能给未分组添加文字
+          desc: this.inputText,
+        };
+        this.$HTTP('post', '/stageTaskInfo_add', obj).then(res => {
+          this.inputTextShow1 = false;
+          this.inputText = '';
+          let returnObj = this.addFileAttr(res.result);
+          returnObj = Object.assign(res.result, returnObj);
+          this.notGroupedList.push(returnObj);
+          this.$message.success('添加文字内容成功!');
+          console.log('添加文字内容成功', res);
+        }).catch(err => {
+          console.log(err);
+        });
       }else { // 个人文档
         this.inputTextShow2 = false;
       }
-      this.inputText = '';
+      
     },
 
     // 添加文字--取消
@@ -1089,38 +1315,6 @@ export default {
     // 左右文件视图大小转换
     leftRightToggle() {
       this.leftCenterFlag = !this.leftCenterFlag;
-      if (this.leftCenterFlag) {
-        // 未分组占大份
-        $("#leftBox").addClass("left_box_toggle");
-        $("#rightBox").addClass("right_box_toggle");
-        this.countFileOne();
-        for (let x of this.parthsGroup) {
-          x.packUp = false;
-          if (x.overList) {
-            delete x.overList;
-          }
-        }
-        this.parthsGroup = this.parthsGroup.concat();
-      } else {
-        // 分组区域占大份
-        $("#leftBox").removeClass("left_box_toggle");
-        $("#rightBox").removeClass("right_box_toggle");
-        for (let x of this.parthsGroup) {
-          if (x.allList) {
-            delete x.allList;
-          }
-          if (x.overList) {
-            delete x.overList;
-          }
-        }
-        for (let i = 0; i < this.parthsGroup.length; i++) {
-          let x = this.parthsGroup[i];
-          if (!x.overList) {
-            this.countFileMore(i);
-          }
-        }
-        this.parthsGroup = this.parthsGroup.concat();
-      }
     },
 
     // 文件组折叠/展开
@@ -1179,7 +1373,7 @@ export default {
 
         let others = [...list].splice(x - 1);
         let urls = [];
-        others.map(ele => urls.push(ele.Url));
+        others.map(ele => urls.push(ele.UrlMin));
 
         if (urls.length > 3) {
           urls.splice(0, 3);
@@ -1187,7 +1381,7 @@ export default {
         overList.push({
           FilePkid: `group${i}`,
           FileName: null,
-          Url: urls,
+          UrlMin: urls,
           FileType: null,
           userName: null,
           overLength: over + 1
@@ -1216,7 +1410,7 @@ export default {
 
           let others = [...list].splice(x - 1);
           let urls = [];
-          others.map(ele => urls.push(ele.Url));
+          others.map(ele => urls.push(ele.UrlMin));
 
           if (urls.length > 3) {
             urls.splice(0, 3);
@@ -1225,7 +1419,7 @@ export default {
           overList.push({
             FilePkid: `group${i}`,
             FileName: null,
-            Url: urls,
+            UrlMin: urls,
             FileType: null,
             userName: null,
             overLength: over + 1
@@ -1288,14 +1482,14 @@ export default {
         let urls = [];
         for(let x of ele.fileList) {
           if(urls.length < 3) {
-            urls.push(x.Url);
+            urls.push(x.UrlMin);
           } 
         }
         let allList = [
           {
             FilePkid: `group${i}`,
             FileName: null,
-            Url: urls,
+            UrlMin: urls,
             FileType: null,
             userName: null,
             overLength: ele.fileList.length
@@ -1308,49 +1502,50 @@ export default {
     },
 
     // 整体的分组管理
-    groupCommand(type, drag) {
+    groupCommand(type) {
+      let title = '新建分组';
+      let repeat = this.parthsGroup.findIndex(ele => ele.groupName === title);
+      // 分组名称判断
+      if(repeat !== -1) { // 文件名重复
+        let repeatNum = [];
+        for(let x of this.parthsGroup) {
+          let y = 0;
+          if(x.groupName.indexOf('新建分组') !== -1 && x.groupName.length > 4) {
+            y = x.groupName.slice(4);
+            y = parseInt(y);
+            !isNaN(y) && repeatNum.push(y);
+          }
+        }
+        if(repeatNum.length) {
+          repeatNum.sort();
+          title = title + (repeatNum[repeatNum.length - 1] + 1);
+        } else {
+          title = title + 1;
+        }
+      }
       // 文件拖拽时默认临时加的分组
-      if(drag) {
+      if(type === 'temporary') {
         this.parthsGroup.push({
-          pkid: this.parthsGroup.length,
-          groupName: `分组${this.parthsGroup.length + 1}`,
+          pkid: 'new',
+          groupName: title,
           border: false,
           packUp: null,
           fileList: [],
           dragDisabled: false,
+          edit: false,
           temporary: true
         });
         return;
       }
       // 新建分组
       if(type === 'create') {
-        let title = '新建分组';
-        let repeat = this.parthsGroup.findIndex(ele => ele.groupName === title);
-        // 分组名称判断
-        if(repeat !== -1) { // 文件名重复
-          let repeatNum = [];
-          for(let x of this.parthsGroup) {
-            let y = 0;
-            if(x.groupName.indexOf('新建分组') !== -1 && x.groupName.length > 4) {
-              y = x.groupName.slice(4);
-              y = parseInt(y);
-              repeatNum.push(y);
-            }
-          }
-          if(repeatNum.length) {
-            repeatNum.sort();
-            title = title + (repeatNum[repeatNum.length - 1] + 1);
-          } else {
-            title = title + 1;
-          }
-        }
         // 添加一条数据
         this.parthsGroup.push({
-          pkid: this.parthsGroup.length,
+          pkid: 'new',
           groupName: title,
+          fileList: [],
           border: false,
           packUp: null,
-          fileList: [],
           dragDisabled: false,
           edit: true,
           createdGroup: true
@@ -1366,31 +1561,105 @@ export default {
 
        // 分组排序
       if(type === 'sort') {
+        this.groupSortFlag = true;
         return;
       }
     },
+    // 退出分组排序
+    backParthSort() {
+      this.groupSortFlag = false;
+    },
 
-    // 新建/编辑分组
+    // 分组排序
+    dragEndParth(e) {
+      const ids = $(e.item).attr('ids');
+       let obj = {
+        filePartitionId: ids,
+        isSort: e.newIndex
+      };
+      this.$HTTP("post", "/filePartition_update_isSort", obj)
+        .then(res => {
+          console.log("移动分组成功", res);
+        })
+        .catch(err => {
+          console.log("移动分组失败", err);
+          this.$message.error("移动分组失败，请检查网络");
+        });
+    },
+
+    // 新建/编辑分组名
     groupTitleBlur(group) {
+      if(group.groupName == '') {
+        this.$message.warning('分组名不能为空！');
+        this.$nextTick(() => {
+          const ele = $(this.$refs.createdGroup[0]);
+          ele.focus();
+        });
+      }
       if(group.createdGroup) { // 新建
         // 发送请求---新建分组
-        group.edit = false;
-        delete group.createdGroup;
-        console.log('新建分组成功');
+        this.addParth(group.groupName);
       }else { // 编辑
         // 先判重，如果有重复的名字--提示，否则--发送请求
-        let repeat = this.parthsGroup.findIndex(ele => ele.groupName === group.groupName);
+        let repeat = this.parthsGroup.findIndex(ele => (ele.groupName === group.groupName && ele.pkid !== group.pkid));
         if(repeat !== -1) {
           this.$message.warning('已含有同名分组名！');
         }else {
           // 发送修改分组名的接口
-          console.log('分组名修改成功');
+          if(this.groupNameCopy !== group.groupName) {
+            let obj = {
+              filePartitionId: group.pkid,
+              title: group.groupName
+            };
+            this.$HTTP('post', '/filePartition_update', obj).then(res => {
+              console.log('文件分组名修改成功', res);
+              this.$message.success('文件分组名修改成功!');
+            }).catch(err => {
+              console.log(err);
+            });
+          }
+          group.edit = false;
+          this.parthsGroup = this.parthsGroup.concat();
         }
       }
     },
 
+    // 发送请求，添加分组
+    addParth(title, item) {
+      return new Promise((resolve) => {
+        let obj = {
+          stageTaskId: this.stageTaskId,
+          title: title
+        };
+        let data = {
+          border: false,
+          packUp: null,
+          dragDisabled: false,
+          edit: false,
+        }
+        this.$HTTP('post', '/filePartition_add', obj).then(res => {
+          let objs = {};
+          if(item) {
+            const lists = Object.assign({}, res.result);
+            lists.fileList = item.fileList;
+            lists.allList = item.allList;
+            objs = Object.assign({}, lists, data);
+          }else {
+            objs = Object.assign({}, res.result, data);
+          }
+          this.parthsGroup.splice(this.parthsGroup.length - 1, 1, objs);
+          this.$message.success('添加分组成功！');
+          console.log('添加分组成功！', objs);
+
+        }).catch(err => {
+          console.log('err', err);
+        });
+      });
+    },
+
     // 文件的更多操作
-    fileCommand(type) {
+    fileCommand(type, index1, item, groupId, index) {
+      this.operateFile = Object.assign({}, item, {index: index1, groupId: groupId, groupIndex: index});
       if(type === 'download') { // 下载
         return;
       }
@@ -1402,17 +1671,99 @@ export default {
         return;
       }
       if(type === 'rename') { // 重命名
-
+        item.edit = true;
+        this.fileNameCopy = item.FileTitle;
+        if(groupId) {
+          this.parthsGroup = this.parthsGroup.concat();
+        }else {
+          this.notGroupedList = this.notGroupedList.concat();
+        }
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        
+        });
         return;
       }
       if(type === 'delete') { // 删除
-
+        this.delFileFlag = true;
+        this.reminderText = '您确定要删除该文件吗？';
         return;
       }
     },
+    // 修改文件名失焦--保存
+    fileNameEditBlur(e, item) {
+      const { index, groupId, groupIndex } = this.operateFile;
+      const newTitle = item.FileTitle + '.' + item.Type;
+      if(item.FileTitle == '') {
+        this.$message.warning('文件名不能为空！');
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        });
+        return;
+      }
+      // 先判重，如果有重复的名字--提示，否则--发送请求
+      let repeat = -1;
+      if(groupId) {
+        repeat = this.parthsGroup[groupIndex].fileList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
+      }else {
+        repeat = this.notGroupedList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
+      }
+      if(repeat !== -1) {
+        this.$message.warning('已含有同名文件！');
+      }else {
+        // 发送修改分组名的接口
+        if(this.fileNameCopy !== item.FileTitle) {
+          let obj = {
+            FilePkid: item.FilePkid,
+            newTitle: item.FileTitle + '.' + item.Type
+          };
+          this.$HTTP('post', '/stageTaskFile_update', obj).then(res => {
+            console.log('修改文件名成功', res);
+            this.$message.success('修改文件名成功');
+          }).catch(err => {
+            console.log('修改文件名失败', err);
+          });
+          item.FileName = newTitle;
+        }
+        item.edit = false;
+        if(groupId) {
+          this.parthsGroup = this.parthsGroup.concat();
+        }else {
+          this.notGroupedList = this.notGroupedList.concat();
+        }
+      }
+    },
+    // 取消删除文件
+    delFileCancel() {
+      this.delFileFlag = false;
+
+    },
+    // 确认删除文件
+    delFileSure() {
+      this.delFileFlag = false;
+      const { FilePkid, index, groupId, groupIndex } = this.operateFile;
+      let obj = {
+        FilePkid: FilePkid
+      };
+      this.$HTTP('post', '/stageTaskFile_delete', obj).then(res => {
+        console.log('删除文件成功', res, this.operateFile);
+        if(groupId === 0) { // 未分组文件
+          this.notGroupedList.splice(index, 1);
+        }else { // 分组文件
+          this.parthsGroup[groupIndex].fileList.splice(index, 1);
+        }
+      }).catch(err => {
+        console.log('删除文件失败', err);
+      });
+    },
 
     // 组的更多操作
-    fileGroupCommand(type) {
+    fileGroupCommand(type, index, group) {
+      this.filePartitionId = group.pkid;
+      this.operateParth = Object.assign({}, group, {index: index});
+
       if(type === 'upload') { // 上传文件
         return;
       }
@@ -1427,13 +1778,49 @@ export default {
         return;
       }
       if(type === 'rename') { // 重命名
-
+        group.edit = true;
+        this.groupNameCopy = group.groupName;
+        this.parthsGroup = this.parthsGroup.concat();
+        this.$nextTick(() => {
+          const ele = $(this.$refs.createdGroup[0]);
+          ele.focus();
+        });
         return;
       }
       if(type === 'delete') { // 删除
-
+        if(group.fileList.length) {
+          this.delGroupFlag = true;
+          this.reminderText = '您确认要删除该分组么？ 删除后，分组内的文件将移入到未分组内';
+        }else {
+          let obj = {
+            filePartitionId: group.pkid
+          };
+          this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
+            console.log('文件分组删除成功', res);
+            this.parthsGroup.splice(index, 1);
+          }).catch(err => {
+            console.log(err);
+          });
+        }
         return;
       }
+    },
+    // 文件组取消删除
+    delGroupCancel() {
+      this.delGroupFlag = false;
+    },
+    // 文件组确认删除
+    delGroupSure() {
+      let obj = {
+        filePartitionId: this.filePartitionId
+      };
+      this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
+        console.log('文件分组删除成功', res);
+        this.parthsGroup.splice(this.operateParth.index, 1);
+      }).catch(err => {
+        console.log(err);
+      });
+      this.delGroupFlag = false;
     },
 
     // 鼠标移入文件
@@ -1515,7 +1902,8 @@ export default {
       this.parthsGroup = this.parthsGroup.concat();
     },
 
-    // 文件拖拽操作-------------
+
+    // 文件拖拽---------------------------------start
     // 文件移动时的回调函数
     fileMove(e, under) {
       // e.dragged 拖拽的元素
@@ -1525,7 +1913,7 @@ export default {
       // e.to: 拖入区域
       // e.relatedContext: 拖入区域的上下文
 
-      // console.log("fileMove", e);
+      // console.log("fileMove", e, this.dragItem.item.FileName);
       if (!this.dragItem.item.FileName) {
         const item = e.draggedContext.element;
         this.dragItem.item = Object.assign({}, item);
@@ -1542,37 +1930,40 @@ export default {
           ele.addClass("dragging");
         }
       });
+      // 临时添加的一个分组
+      this.groupCommand('temporary');
 
-      // console.log("dragStart----", e);
-      this.parthsGroup.push({
-        pkid: this.parthsGroup.length,
-        groupName: `分组${this.parthsGroup.length + 1}`,
-        border: false,
-        packUp: null,
-        fileList: [],
-        dragDisabled: false,
-        temporary: true
-      });
+      // console.log("dragStart----",  e.oldIndex);
+
       // 判断是否重复
       this.judegRepeat(groupid, filename);
     },
     // 文件结束移动时的回调函数
     async dragEnd(e) {
+      // 当未分组之间的排序时，如果oldIndex > newIndex时，且中间相差不止一个的时候，顺序会错，有时候还不会成果，但在未分组里面没有这种问题 很奇怪
       this.dragItem.toGroup = $(e.to).attr("groupid");
-      const from = this.dragItem.fromGroup;
-      const to = this.dragItem.toGroup;
-      const item = this.dragItem.item;
+      const { fromGroup: from, toGroup: to, item } = this.dragItem;
+      // console.log('---', e.newIndex, from, to);
+
+      if(to === 'new') { // 先新增一个分组，再添加文件
+        let last = this.parthsGroup[this.parthsGroup.length - 1];
+        this.addParth(last.groupName, last);
+      }
       if (from !== "personal" && to === "personal") {
         // 添加到个人文档--copy
       } else if (from === "personal" && to !== "personal") {
         // 从个人文档添加到我的操作中--copy
+      } else if (from === "noGroup" && to === "noGroup") {
+        // 未分组之间的拖拽
       } else if (from !== to) {
         // 移动--move
         let indexs = null;
         if (from === "noGroup") {
           indexs = this.notGroupedList.findIndex(x => x.FilePkid === item.FilePkid);
+
           indexs != -1 && this.notGroupedList.splice(indexs, 1);
         } else if (parseInt(from) !== NaN) {
+
           const id = parseInt(from);
           let ids = this.parthsGroup.findIndex(x => parseInt(x.pkid) === id);
 
@@ -1584,8 +1975,32 @@ export default {
           }
         }
       }
-      await this.parthsGroupChange(e.newIndex);
-      await this.dragEndInit();
+      this.fileIsSort(e.newIndex, to);
+      if(from === to) {
+        this.dragEndInit();
+      }else {
+        await this.parthsGroupChange(e.newIndex);
+        await this.dragEndInit();
+      }
+    },
+
+    // 文件移动排序
+    fileIsSort(newIndex, parthId) {
+      return new Promise((resolve, reject) => {
+        let obj = {
+          FilePkid: this.dragItem.item.FilePkid,
+          filePartitionId: parthId === 'noGroup' ? 0 : parthId,
+          isSort: newIndex
+        };
+        this.$HTTP("post", "/stageTaskFile_group_update_isSort", obj)
+          .then(res => {
+            console.log("移动文件成功", res);
+          })
+          .catch(err => {
+            console.log("移动文件失败", err);
+            this.$message.error("移动文件失败，请检查网络");
+          });
+        });
     },
     // 开始拖拽时判断是否有重复区域放置
     judegRepeat(groupid, filename) {
@@ -1624,7 +2039,6 @@ export default {
             // 当前组的ID 拖拽到目的地组的ID
             if (x.pkid != this.dragItem.toGroup) {
               if(x.packUp === false) {
-                // console.log(111);
                 this.countFileMore(i);
               } else {
               const h = $(".parths_group")
@@ -1666,6 +2080,7 @@ export default {
             }
           }
           this.parthsGroup = [...list];
+          console.log(this.parthsGroup[0].fileList);
           resolve(true);
         });
       });
@@ -1725,8 +2140,11 @@ export default {
         // 如果flag === false （半折叠状态）重新计算一行还能展示下吗：可以的话让flag = null；否则 flag还是false，但折叠的个数需改变
         // 如果flag === null 不需要操作
     },
+    // 文件拖拽---------------------------------end
 
-    // 个人文档的操作-------------
+
+
+    // 个人文档的操作---------------------------------start
     // 是否显示个人文件
     personalFilesPull() {
       this.personalFilesShow = !this.personalFilesShow;
@@ -1763,7 +2181,7 @@ export default {
         {
           FilePkid: "408",
           FileName: "bg",
-          Url:
+          UrlMin:
             "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
           FileType: "svg",
           userName: "祝建云"
@@ -1771,7 +2189,7 @@ export default {
         {
           FilePkid: "406",
           FileName: "video2",
-          Url:
+          UrlMin:
             "/upload/file/20181224063835/472243c2-382a-423c-80ab-9ce41a6d790f/b3c9bc00-538f-4167-83b9-879676690519.mp4",
           FileType: "mp4",
           userName: "祝建云"
@@ -1779,14 +2197,14 @@ export default {
         {
           FilePkid: 2,
           FileName: "文件夹1",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           children: [
             {
               FilePkid: "407",
               FileName: "WX20181220-170213",
-              Url:
+              UrlMin:
                 "/upload/file/20181224063844/2288995a-d1c0-4144-9c94-a8eb2a1c568c/3ab87050-c290-40df-9171-f2543be97c68.png",
               FileType: "png",
               userName: "祝建云"
@@ -1795,7 +2213,7 @@ export default {
             {
               FilePkid: "405",
               FileName: "video",
-              Url:
+              UrlMin:
                 "/upload/file/20181224063835/e85c7a46-b564-46d5-8743-18e63e4a6588/eeb294ad-6ce7-4b86-950a-2869fd7814e8.mp4",
               FileType: "mp4",
               userName: "祝建云"
@@ -1805,14 +2223,14 @@ export default {
         {
           FilePkid: 3,
           FileName: "文件夹2--这是我的文件夹中的第二个",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           children: [
             {
               FilePkid: "408",
               FileName: "bg",
-              Url:
+              UrlMin:
                 "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
               FileType: "svg",
               userName: "祝建云"
@@ -1820,7 +2238,7 @@ export default {
             {
               FilePkid: 5,
               FileName: "文件夹2--第二个文件夹中文件夹",
-              Url: null,
+              UrlMin: null,
               FileType: 0,
               userName: null,
               children: []
@@ -1830,7 +2248,7 @@ export default {
         {
           FilePkid: 4,
           FileName: "文件夹3--工作文件夹之我的项目",
-          Url: null,
+          UrlMin: null,
           FileType: 0,
           userName: null,
           children: []
@@ -1863,7 +2281,7 @@ export default {
       this.personalFiles.push({
         FilePkid: this.personalFiles.length,
         FileName: title,
-        Url: null,
+        UrlMin: null,
         FileType: 0,
         userName: null,
         children: [],
@@ -1967,14 +2385,217 @@ export default {
           y.SystemType = 0; // 0--上传的文件 1--文字描述
           let indexs = y.FileName.lastIndexOf('.');
           y.Type = y.FileName.slice(indexs + 1);
-          y.userPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
+          y.UserPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
           y.userPkid = 0;
           y.checked = false;
           y.hover = false;
         }
       }
     },
+    // 个人文档的操作--------------------------------start
 
+
+
+
+    
+    // 文件上传--------------------------------start
+    // 关闭文件上传视图
+    closeProgress() {
+      this.uploadProgressFlag = false;
+      this.fileProgressList = [];
+    },
+
+    // 取消上传
+    cancelUpload(file) {
+      this.getDelFile(file.uid, true);
+      if (file.reUploadXhr) {
+        file.reUploadXhr.abort();
+      } else {
+        this.$refs.fileUpload.abort(file);
+      }
+
+    },
+    // 重新上传
+    reUpload(file) {
+      file.status = 1;
+      file.reUploadXhr = 1;
+      var formData = new FormData();
+      formData.append('file', file.file);
+      this.$refs.fileUpload.httpRequest = this.uploadFile(formData, file);
+
+    },
+    // 重新上传的请求
+    uploadFile(formData, file) {
+      let _ = this;
+      file.reUploadXhr = $.ajax({
+        url:`/ProjectFile.ashx?&myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=${this.filePartitionId}`,
+        type: "post",
+        dataType: "json",
+        data: formData,
+        // async: false,
+        cache: false,
+        contentType: false,
+        processData: false,
+        xhr: function (e) {
+          let uploadXhr = $.ajaxSettings.xhr();
+          if (uploadXhr.upload) { // check if upload property exists 
+            uploadXhr.upload.addEventListener('progress', function (e) {
+              let loaded = e.loaded;//已经上传大小情况
+              let tot = e.total;//附件总大小
+              let per = Math.floor(100 * loaded / tot);  //已经上传的百分比
+              _.uploadProgress({ percent: per }, file);
+            }, false); // for handling the progress of the upload
+
+          }
+          return uploadXhr;
+        }, success(data) {
+          _.uploadSuccess(data, file);
+        }, error(err) {
+          _.uploadError('err', file);
+          if (file.reUploadXhr) {
+            file.reUploadXhr = null;
+          }
+        }
+      });
+    },
+
+    // 判断是否上传完
+    popFileProgress(list) {
+      let indexs = list.findIndex(ele => {
+        return ele.progress < 100;
+      });
+      if (indexs == -1) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    // 文件上传超出提示
+    handleExceed(files, fileList) {
+      this.$message.warning("最多只能选择9个文件");
+    },
+    // 文件上传前
+    beforeUpload(file) {
+      // 先判断有没有重复--------
+      // let index = this.demandFile.findIndex(ele => {
+      //   return ele.name == file.name;
+      // });
+      // if (index !== -1) {
+      //   this.$message("文件重复");
+      //   return false;
+      // }
+
+      if (!this.uploadProgressFlag) {
+        this.uploadProgressFlag = true;
+      }
+
+      let sizes = this.conver(file.size);
+      let FileTypeNum = this.getSuffix(file.name);
+      FileTypeNum = this.getFlieTyle(FileTypeNum);
+      let obj = {
+        uid: file.uid,
+        size: file.size,
+        sizes: sizes,
+        nowSize: 0,
+        name: file.name,
+        type: 2,
+        progress: 0,
+        status: 1,
+        FileTypeNum: FileTypeNum,
+        imgUrl: "",
+        file: file
+      };
+      this.fileProgressList.unshift(obj);
+    },
+
+    // 文件上传中
+    uploadProgress(event, file, fileList) {
+      let percents = parseInt(event.percent);
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+
+      if (ids !== -1) {
+        this.fileProgressList[ids].progress = percents;
+        this.fileProgressList[ids].nowSize = this.conver(percents / 100 * this.fileProgressList[ids].size);
+
+        // 测试重新上传
+        if (percents > 30 && percents < 35) {
+          if (file.reUploadXhr) {
+            file.reUploadXhr.abort();
+            file.reUploadXhr = null;
+          } else {
+            this.$refs.fileUpload.abort(file);
+          }
+          this.uploadError('err', file);
+        }
+
+        if (
+          !this.fileProgressList[ids].imgUrl &&
+          this.fileProgressList[ids].FileTypeNum == 1
+        ) {
+          this.fileProgressList[ids].imgUrl = file.url;
+        }
+      }
+    },
+
+    // 文件上传成功
+    uploadSuccess(res, _file) {
+      let file = Object.assign({}, _file.response.result);
+      // let type = file.name.split(".")[1];
+      // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
+      let file1 = this.addFileAttr(file);
+      file1 = Object.assign({}, file, file1);
+
+      this.notGroupedList = this.notGroupedList.concat(file1); // 需要修改+++++++++++
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === _file.uid;
+      });
+      if (ids !== -1) {
+        this.fileProgressList[ids].status = 2;
+      }
+      let returns = this.popFileProgress(this.fileProgressList);
+      if (this.uploadProgressFlag && returns) {
+        setTimeout(() => {
+          this.closeProgress();
+        }, 2000);
+      }
+    },
+
+
+    // 文件上传失败
+    uploadError(err, file) {
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+      if (ids !== -1) {
+        this.fileProgressList[ids].status = 3;
+      }
+    },
+
+    // 删除文件时改变数组，触发父组件的方法
+    getDelFile(fileid, cancel) {
+      // fileProgressList
+      let indexs1 = this.fileProgressList.findIndex(el => {
+        return el.uid == fileid;
+      });
+      if (indexs1 !== -1) {
+        if (
+          cancel == undefined &&
+          this.fileProgressList[indexs1].progress < 100
+        ) {
+          this.cancelUpload(this.fileProgressList[indexs1]);
+        }
+        this.fileProgressList.splice(indexs1, 1);
+        if (!this.fileProgressList.length) {
+          this.closeProgress();
+        }
+      }
+    },
+    // 文件上传--------------------------------end
+
+
+    // 获取数据及处理--------------------------------start
     // 获取个人文档列表
     getPersonalFile() {
       
@@ -1986,7 +2607,7 @@ export default {
           y.SystemType = 0; // 0--上传的文件 1--文字描述
           let indexs = y.FileName.lastIndexOf('.');
           y.Type = y.FileName.slice(indexs + 1);
-          y.userPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
+          y.UserPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
           y.userPkid = 0;
           y.checked = false;
           y.hover = false;
@@ -2021,31 +2642,6 @@ export default {
       if(this.fullPreviewShow) {
         this.fullPreviewShow = false;
       }
-      for(let y of this.notGroupedList) {
-        y.Count = 0;
-        y.Desc = '0'; // 文字描述
-        y.SystemType = 0; // 0--上传的文件 1--文字描述
-        let indexs = y.FileName.lastIndexOf('.');
-        y.Type = y.FileName.slice(indexs + 1);
-        y.userPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
-        y.userPkid = 0;
-        y.checked = false;
-        y.hover = false;
-      }
-      for(let x of this.parthsGroup) {
-        for(let y of x.fileList) {
-          y.Count = 0;
-          y.Desc = '0'; // 文字描述
-          y.SystemType = 0; // 0--上传的文件 1--文字描述
-          let indexs = y.FileName.lastIndexOf('.');
-          y.Type = y.FileName.slice(indexs + 1);
-          y.userPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
-          y.userPkid = 0;
-          y.checked = false;
-          y.hover = false;
-        }
-      }
-      
       this.taskId = taskId;
       this.stageId = stageId;
       let obj = {
@@ -2056,36 +2652,61 @@ export default {
       }
       this.$HTTP("post", "/stagetask_get", obj)
       .then(res => {
-        // this.parthsGroup = [];
-        this.stageList = [...res.result.stageList];
-        this.stageList.map(ele => ele.stagePkid = ele.stagePkid.toString());
-        this.fileList = [...res.result.fileList]
-        this.fileList[0].fileList = this.notGroupedList;
-        this.fileList[1] = this.parthsGroup[0];
-        this.fileList[1].pkid = 111;
-        // console.log("获取任务详情", this.parthsGroup);
+        this.dataProcessing(res.result);
+        // console.log("获取任务详情", this.fileList);
 
-        return;
-        this.fileList = [...res.result.fileList];
-        for(let ele of this.fileList) {
-          for(let y of ele.fileList) {
-            y.checked = false;
-            y.hover = false;
-          }
-          if(ele.pkid === 0) {
-            this.notGroupedList = ele.fileList;
-          }else {
-            this.parthsGroup.push(ele);
-          }
-        }
       })
       .catch(err => {
         console.log("获取任务详情失败", err);
         this.$message.error("获取任务详情失败，请检查网络");
       });
+
     },
+    // 对获取的数据进行处理
+    dataProcessing(res) {
+      this.parthsGroup = [];
+      this.stageTaskId = res.stageTaskId;
+      this.stageList = [...res.stageList];
+      this.stageList.map(ele => ele.stagePkid = ele.stagePkid.toString());
+      this.fileList = [...res.fileList]
+      for(let ele of this.fileList) {
+        for(let y of ele.fileList) {
+          let returnObj = this.addFileAttr(y);
+          y = Object.assign(y, returnObj);
+        }
+        if(ele.pkid === 0) {
+          this.notGroupedList = ele.fileList;
+        }else {
+          this.parthsGroup.push(ele);
+        }
+      }
+      this.countFileOne();
+      // console.log("获取任务详情", this.fileList);
+
+    },
+    // 添加文件时，对文件的属性进行处理
+    addFileAttr(obj) {
+      let len = obj.Type.length;
+      let title = obj.FileName.slice(0, obj.FileName.length - (len + 1));
+      let data = {
+        checked: false,
+        hover: false,
+        edit: false,
+        FileTitle: title,
+        FileType: this.getFlieTyle(obj.Type)
+      }
+      if (data.FileType !== 1) {
+        data.UrlMin = this.fileTypeImg[data.FileType].src;
+      }
+      return data;
+    },
+    // 获取数据及处理--------------------------------end
+
+
+
+    
   },
-  created() {
+  async created() {
     let params = this.$route.params;
      params = {
           projectId: 1252,
@@ -2095,7 +2716,7 @@ export default {
     this.projectId = params.projectId;
     this.stageId = params.stageId;
     this.taskId = params.taskId;
-    this.getTaskList( this.projectId); // 获取任务列表
+    this.getTaskList(this.projectId); // 获取任务列表
     this.getPersonalFile(); // 获取个人文档列表
     
   },

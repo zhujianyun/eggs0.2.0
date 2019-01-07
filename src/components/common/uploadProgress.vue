@@ -3,7 +3,7 @@
     <transition name="fade">
         <div class="upload_progress">
         <p class="upload_progress_title">上传进度</p>
-        <i class="upload_progress_close el-icon-close" @click="close"></i>
+        <i class="upload_progress_close iconfont icon-guanbijiantou" @click="close"></i>
         <ul class="upload_progress_ul">
             <li class="upload_progress_li" v-for="(progress, index) in fileProgressList" :key="index">
             <span class="upload_progress_img">
@@ -15,7 +15,7 @@
             <span v-if="Number(progress.progress) < 100" class="upload_progress_size">{{progress.nowSize}}/{{progress.sizes}}</span>
             <span v-else class="upload_progress_size">{{progress.sizes}}</span>
             <el-tooltip v-if="progress.status == 1" class="item" effect="dark" content="取消上传" placement="top">
-                <i class="iconfont icon-close" @click.stop="cancel(progress)"></i>
+                <i class="iconfont icon-guanbijiantou" @click.stop="cancel(progress)"></i>
             </el-tooltip>
             <i v-if="progress.status == 2" class="iconfont icon-xuanzhong"></i>
              <el-tooltip v-if="progress.status == 3" class="item" effect="dark" content="重新上传" placement="top">
