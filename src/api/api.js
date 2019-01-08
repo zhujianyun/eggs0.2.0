@@ -30,6 +30,7 @@ MyApi.install = function (Vue, options) {
                     'Content-Type': urls === 'file' ? 'application/x-www-form-urlencoded' : 'application/x-www-form-urlencoded; charset=UTF-8'
                 }
             };
+
             return this.$axios(axios).then(res => {
                  if(load) {
                   loading.close();

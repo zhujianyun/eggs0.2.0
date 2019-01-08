@@ -385,6 +385,7 @@
       width: 100%;
       height: calc(100% - 51px);
       overflow: hidden;
+      position: relative;
         .line {
             display: inline-block;
             width: 1px;
@@ -812,10 +813,46 @@
         .self_file_show {
           width: calc(100% - 390px);
         }
+
      
       
     }
+    .stage_close_box {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 2555, 255, 0.6);
+      .stage_close {
+        position: absolute;
+        width: 74px;
+        top: 35%;
+        left: 50%;
+        margin-left: -30px;
+        .close_img {
+          display: inline-block;
+          width: 60px;
+          height: 60px;
+          background: #FBFBFF;
+          border-radius: 2px;
+          position: relative;
+          margin-left: 7px;
+          img {
+            width: 60px;
+            height: 60px;
+          }
+        }
+        p {
+          font-size: 12px;
+          margin-top: 12px;
+          color: #666;
+          text-align: center;
+        }
+      }
+    }
   }
+
  
   .icon_rotate {
     transform: rotate(-180deg);

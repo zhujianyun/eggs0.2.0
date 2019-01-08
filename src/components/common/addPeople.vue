@@ -312,7 +312,7 @@ export default {
       if(ids.length) {
         return {ids: ids, arr: arr};
       }
-      return;
+      return {ids: ids, arr: arr};
       if(ids.sort().toString() === this.defaultTreeKeys.sort().toString()) {
         // 人员没用变动
         return null;

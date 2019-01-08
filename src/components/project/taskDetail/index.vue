@@ -64,6 +64,8 @@
           </div>
           
       </div>
+          
+
       <div class="detail_main">
           <!-- 头部操作按钮 -->
           <div class="top_operate">
@@ -88,315 +90,279 @@
             </div>
           </div>
           <!-- 文件的所有展示 -->
-          <div class="detail_file">
-              <!-- 成果文件 -->
-              <div v-if='demandOrGain' id="operateFile" class="operate_file">
-                <div class="top_box">
-                  <div class="left fl">
-                    <el-upload ref="fileUpload"
-                      class="upload_file"
-                      :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId=0'"
-                      :show-file-list="false"
-                      :on-error="uploadError"
-                      :on-success="uploadSuccess"
-                      :on-progress="uploadProgress"
-                      :limit="9"
-                      :on-exceed="handleExceed"
-                      :before-upload="beforeUpload"
-                      >
-                     <i class='iconfont icon-shangchuan'></i>
-                    </el-upload>
-                   
-                    <i 
-                      class='iconfont icon-tianjiawenzi'
-                      @click.stop="inputTextShowToggle('left')"
-                      ></i>
-                    <span class="line"></span>
-                    <el-checkbox 
-                      v-if='checkedFileList && checkedFileList.length' 
-                      class="all_checked" 
-                      v-model="fileCheckbox" 
-                      @change='fileCheckboxAll'
-                      >
-                      已选<span class="mainColor">{{checkedFileList && checkedFileList.length}}</span>项
-                    </el-checkbox>
-                    <el-checkbox 
-                      v-else 
-                      class="all_checked" 
-                      v-model="fileCheckbox" 
-                      @change='fileCheckboxAll'>全选</el-checkbox>
-                      <template v-if='checkedFileList && checkedFileList.length'>
-                        <i class="iconfont icon-xiazai"></i>
-                        <i class="iconfont icon-shoucang1"></i>
-                        <i class="iconfont icon-jihuayijiao"></i>
-                      </template>
-                  </div>
-                  <div class="right fr">
-                    <span class="">
-                      <el-dropdown class="fixed file_more">
-                        <span class="el-dropdown-link"><i class='iconfont icon-fenzu1'></i>分组管理</span>
-                        <el-dropdown-menu slot="dropdown">
-                          <el-dropdown-item @click.native="groupCommand('create')">新建分组</el-dropdown-item>
-                          <el-dropdown-item @click.native="groupCommand('sort')">分组排序</el-dropdown-item>
-                        </el-dropdown-menu>
-                      </el-dropdown>
-                    </span>
-                      <span class="toggle" @click='viewToggles'>
-                      <i class='iconfont icon-liebiao'></i>
-                      视图切换
-                    </span>
-                  </div>
-
-                  <!-- 输入文字 -->
-                  <div 
-                    v-if='inputTextShow1'
-                    class="input_text"
-                    @click.stop='() => {}'
-                    >
-                    <textarea 
-                      id="inputText"
-                      class="textarea" 
-                      rows="4"
-                      placeholder="请输入文字内容"
-                      v-model='inputText'
-                      @focus="inputTextFocus"
-                      @blur="inputTextBlur"
-                      ></textarea>
-                    <button class="main_button_bg fr" @click="inputTextSure('left')">添加</button>
-                    <button class="main_button fr" @click="inputTextCancel('left')">取消</button>
-                  </div>
-                </div>
-                <div v-if='viewToggle' class="view">
-                  <!-- 左侧未分组 -->
-                  <div id="leftBox" class="left_box">
-                    <div v-if='(notGroupedList && notGroupedList.length) || dragItem.fromGroup' class="left_file_list">
-                        <draggable
-                            class='draggable'
-                            groupid='noGroup'
-                            v-model="notGroupedList"
-                            :options="{
-                              group:{name: 'file',pull: 'clone'}, 
-                              ghostClass: 'ghost_file', 
-                              dragClass: 'drag_file',
-                              chosenClass: 'chosen_file',
-                              disabled: dragDisabled
-                            }"
-                            :move='fileMove'
-                            @start='dragStart($event, "noGroup")'
-                            @end='dragEnd'
+          <template v-if='stageState === 6'>
+            <div class="stage_close_box">
+              <div class="stage_close">
+                <span class="close_img">
+                    <img src="./style/stage_close.png" alt="">
+                </span>
+                <p>该阶段已关闭</p>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div class="detail_file">
+                <!-- 成果文件 -->
+                <div v-if='demandOrGain' id="operateFile" class="operate_file">
+                  <div class="top_box">
+                    <div class="left fl">
+                      <el-upload 
+                        :ref="filePartitionId === 0 ? 'fileUpload' : ''"
+                        class="upload_file"
+                        :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                        :show-file-list="false"
+                        :multiple="true"
+                        :on-error="uploadError"
+                        :on-success="uploadSuccess"
+                        :on-progress="uploadProgress"
+                        :limit="9"
+                        :on-exceed="handleExceed"
+                        :before-upload="beforeUpload"
                         >
-                            <div 
-                                class="every_file"
-                                v-for="(ele, index) in notGroupedList"
-                                :key="ele.FilePkid"
-                                :id='ele.FilePkid'
-                                :filename='ele.FileName'
-                                @mouseenter="enterFile(ele)"
-                                @mouseleave="leaveFile(ele)"
-                                >
-                                <span class="file_pic">
-                                  <template v-if='ele.FileType === 11'>
-                                    <span class="text_desc"><span>{{ele.Desc}}</span></span>
-                                  </template>
-                                  <template v-else>
-                                    <img :src="ele.UrlMin" alt="">
-                                  </template>
-                                  <span class="none"></span>
-                                </span>
-                                <div class="file_info">
-                                  <p v-if='!ele.edit' class="title">{{ele.FileName}}</p>
-                                  <input 
-                                    v-else 
-                                    class="title edit" 
-                                    v-model='ele.FileTitle' 
-                                    id="fileNameEdit"
-                                    @blur="fileNameEditBlur($event, ele)"
-                                    />
-                                  <img :src="ele.UserPic" alt="" class="from_header">
-                                  <span class="file_message fr">
-                                    <i class='iconfont icon-pinglun'></i>
-                                      {{ele.Count}}
-                                  </span>
-                                  <span class="fixed file_checkbox" v-if='oneChecked || ele.hover'>
-                                    <el-checkbox v-model="ele.checked" @change="everyFileCheckbox($event, ele)"></el-checkbox>
-                                  </span>
-                                  <el-dropdown class="fixed file_more">
-                                    <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
-                                    <el-dropdown-menu slot="dropdown">
-                                      <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('rename', index, ele, 0)">重命名</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('delete', index, ele, 0)">删除</el-dropdown-item>
-                                    </el-dropdown-menu>
-                                  </el-dropdown>
-                                </div>
-                            </div>
-                            <div class="null"></div>
-                        </draggable>
+                      <i class='iconfont icon-shangchuan' @click="handleClickUpload(0)"></i>
+                      </el-upload>
+                    
+                      <i 
+                        class='iconfont icon-tianjiawenzi'
+                        @click.stop="inputTextShowToggle('left')"
+                        ></i>
+                      <span class="line"></span>
+                      <el-checkbox 
+                        v-if='checkedFileList && checkedFileList.length' 
+                        class="all_checked" 
+                        v-model="fileCheckbox" 
+                        @change='fileCheckboxAll'
+                        >
+                        已选<span class="mainColor">{{checkedFileList && checkedFileList.length}}</span>项
+                      </el-checkbox>
+                      <el-checkbox 
+                        v-else 
+                        class="all_checked" 
+                        v-model="fileCheckbox" 
+                        @change='fileCheckboxAll'>全选</el-checkbox>
+                        <template v-if='checkedFileList && checkedFileList.length'>
+                          <i class="iconfont icon-xiazai"></i>
+                          <i class="iconfont icon-shoucang1"></i>
+                          <i class="iconfont icon-jihuayijiao"></i>
+                        </template>
                     </div>
-                    <div v-else class="file_empty">
-                      <div class="empty_img">
-                        <img src="./style/file_empty.png" alt="">
-                      </div>
-                      <p class="title">文件拖到此区域即可上传，支持批量上传</p>
+                    <div class="right fr">
+                      <span class="">
+                        <el-dropdown class="fixed file_more">
+                          <span class="el-dropdown-link"><i class='iconfont icon-fenzu1'></i>分组管理</span>
+                          <el-dropdown-menu slot="dropdown">
+                            <el-dropdown-item @click.native="groupCommand('create')">新建分组</el-dropdown-item>
+                            <el-dropdown-item @click.native="groupCommand('sort')">分组排序</el-dropdown-item>
+                          </el-dropdown-menu>
+                        </el-dropdown>
+                      </span>
+                        <span class="toggle" @click='viewToggles'>
+                        <i :class="viewToggle ? 'iconfont icon-liebiao' : 'iconfont icon-fenzu'"></i>
+                        视图切换
+                      </span>
+                    </div>
+
+                    <!-- 输入文字 -->
+                    <div 
+                      v-if='inputTextShow1'
+                      class="input_text"
+                      @click.stop='() => {}'
+                      >
+                      <textarea 
+                        id="inputText"
+                        class="textarea" 
+                        rows="4"
+                        placeholder="请输入文字内容"
+                        v-model='inputText'
+                        @focus="inputTextFocus"
+                        @blur="inputTextBlur"
+                        ></textarea>
+                      <button class="main_button_bg fr" @click="inputTextSure('left')">添加</button>
+                      <button class="main_button fr" @click="inputTextCancel('left')">取消</button>
                     </div>
                   </div>
-                  <!-- 右侧分组 -->
-                  <div id="rightBox" class="right_box">
-                      <div v-if='(parthsGroup && parthsGroup.length) || dragItem.fromGroup' class="parths">
-                        <p class="mainColor_underline_text go_back_sort" v-if='groupSortFlag' @click='backParthSort'>退出分组排序</p>
-                        <template v-if='groupSortFlag'>
+                  <div v-if='viewToggle' class="view">
+                    <!-- 左侧未分组 -->
+                    <div id="leftBox" class="left_box">
+                      <div v-if='(notGroupedList && notGroupedList.length) || dragItem.fromGroup' class="left_file_list">
                           <draggable
-                           v-model="parthsGroup"
-                           :options="{ghostClass: 'ghost_parth_sort', dragClass: 'drag_parth_sort'}"
-                           @end='dragEndParth'
+                              class='draggable'
+                              groupid='noGroup'
+                              v-model="notGroupedList"
+                              :options="{
+                                group:{name: 'file',pull: 'clone'}, 
+                                ghostClass: 'ghost_file', 
+                                dragClass: 'drag_file',
+                                chosenClass: 'chosen_file',
+                                disabled: dragDisabled
+                              }"
+                              :move='fileMove'
+                              @start='dragStart($event, "noGroup")'
+                              @end='dragEnd'
                           >
-                            <div 
-                              class="parths_group is_sort"
-                              v-for="group in parthsGroup"
-                              :key="group.pkid"
-                              :ids="group.pkid"
-                              >
-                              <i class="iconfont icon-paixu"></i>
-                              <span class="group_name">{{group.groupName}}</span>
-                            </div>
-                          </draggable>
-                        </template>
-                        <template v-else>
-                          <div 
-                            class="parths_group"
-                            v-for="(group, index) in parthsGroup"
-                            :key="group.pkid"
-                            >
-                            <!-- 分组的头部操作 -->
-                            <div class="group_top">
-                                <span v-if='!group.edit' class="group_name">{{group.groupName}}</span>
-                                  <input 
-                                    v-else 
-                                    :ref="group.createdGroup || group.edit ? 'createdGroup' : ''" 
-                                    class="group_name edit" 
-                                    type="text" 
-                                    v-model='group.groupName'
-                                    @blur='groupTitleBlur(group)'
-                                    />
-                                <div class="group_operate">
-                                  <span 
-                                    v-if='group.packUp' 
-                                    @click='groupExtendToggle(index)'
-                                    class='mainColor_underline_text'
-                                    >收起</span>{{group.packUp}}
+                              <div 
+                                  class="every_file"
+                                  v-for="(ele, index) in notGroupedList"
+                                  :key="ele.FilePkid"
+                                  :id='ele.FilePkid'
+                                  :filename='ele.FileName'
+                                  @mouseenter="enterFile(ele)"
+                                  @mouseleave="leaveFile(ele)"
+                                  >
+                                  <span class="file_pic">
+                                    <template v-if='ele.FileType === 11'>
+                                      <span class="text_desc"><span>{{ele.Desc}}</span></span>
+                                    </template>
+                                    <template v-else>
+                                      <img :src="ele.UrlMin" alt="">
+                                    </template>
+                                    <span class="none"></span>
+                                  </span>
+                                  <div class="file_info">
+                                    <p v-if='!ele.edit' class="title">{{ele.FileName}}</p>
+                                    <input 
+                                      v-else 
+                                      class="title edit" 
+                                      v-model='ele.FileTitle' 
+                                      id="fileNameEdit"
+                                      @blur="fileNameEditBlur($event, ele)"
+                                      />
+                                    <img :src="ele.UserPic" alt="" class="from_header">
+                                    <span class="file_message fr">
+                                      <i class='iconfont icon-pinglun'></i>
+                                        {{ele.Count}}
+                                    </span>
+                                    <span class="fixed file_checkbox" v-if='oneChecked || ele.hover'>
+                                      <el-checkbox v-model="ele.checked" @change="everyFileCheckbox($event, ele)"></el-checkbox>
+                                    </span>
                                     <el-dropdown class="fixed file_more">
-                                      <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
+                                      <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                       <el-dropdown-menu slot="dropdown">
-                                        <el-dropdown-item @click.native="fileGroupCommand('upload', index, group)">
-                                          <el-upload ref="fileUpload"
-                                            class="upload_file"
-                                            :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
-                                            :show-file-list="false"
-                                            :multiple="true">
-                                            <span class="slot_title">上传</span>
-                                          </el-upload>
-                                        </el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('download', index, group)">下载</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('collect', index, group)">收藏</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('transfer', index, group)">整组移交</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('rename', index, group)">重命名</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileGroupCommand('delete', index, group)">删除</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('rename', index, ele, 0)">重命名</el-dropdown-item>
+                                        <el-dropdown-item @click.native="fileCommand('delete', index, ele, 0)">删除</el-dropdown-item>
                                       </el-dropdown-menu>
                                     </el-dropdown>
-                                </div>
-                            </div>
-
-                            <!-- 折叠成一个的时候 -->
-                            <div 
-                              v-if='group.allList'
-                              :key="group.pkid"
-                              class="group_file"
-                              :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
-                              >
-                              <draggable
-                                class="draggable"
-                                :groupid='group.pkid'
-                                v-model="group.allList"
-                                :options="{
-                                  group:{name: 'file',pull:'clone'},
-                                  ghostClass: 'ghost_file', 
-                                  dragClass: 'drag_file',
-                                  draggable: '.draged',
-                                  disabled: group.dragDisabled
-                                }"
-                                :move='fileMove'
-                                @start='dragStart($event, group.pkid)'
-                                @end='dragEnd'
+                                  </div>
+                              </div>
+                              <div class="null"></div>
+                          </draggable>
+                      </div>
+                      <div v-else class="file_empty">
+                        <div class="empty_img">
+                          <img src="./style/file_empty.png" alt="">
+                        </div>
+                        <p class="title">文件拖到此区域即可上传，支持批量上传</p>
+                      </div>
+                    </div>
+                    <!-- 右侧分组 -->
+                    <div id="rightBox" class="right_box">
+                        <div v-if='(parthsGroup && parthsGroup.length) || dragItem.fromGroup' class="parths">
+                          <p class="mainColor_underline_text go_back_sort" v-if='groupSortFlag' @click='backParthSort'>退出分组排序</p>
+                          <template v-if='groupSortFlag'>
+                            <draggable
+                            v-model="parthsGroup"
+                            :options="{ghostClass: 'ghost_parth_sort', dragClass: 'drag_parth_sort'}"
+                            @end='dragEndParth'
+                            >
+                              <div 
+                                class="parths_group is_sort"
+                                v-for="group in parthsGroup"
+                                :key="group.pkid"
+                                :ids="group.pkid"
                                 >
-                                <div 
-                                  class="every_file fold_up"
-                                    v-if='item.overLength'
-                                  v-for="item in group.allList"
-                                  :key="item.FilePkid"
+                                <i class="iconfont icon-paixu"></i>
+                                <span class="group_name">{{group.groupName}}</span>
+                              </div>
+                            </draggable>
+                          </template>
+                          <template v-else>
+                            <div 
+                              class="parths_group"
+                              v-for="(group, index) in parthsGroup"
+                              :key="group.pkid"
+                              >
+                              <!-- 分组的头部操作 -->
+                              <div class="group_top">
+                                  <span v-if='!group.edit' class="group_name">{{group.groupName}}</span>
+                                    <input 
+                                      v-else 
+                                      :ref="group.createdGroup || group.edit ? 'createdGroup' : ''" 
+                                      class="group_name edit" 
+                                      type="text" 
+                                      v-model='group.groupName'
+                                      @blur='groupTitleBlur(group)'
+                                      />
+                                  <div class="group_operate">
+                                    <span 
+                                      v-if='group.packUp' 
+                                      @click='groupExtendToggle(index)'
+                                      class='mainColor_underline_text'
+                                      >收起</span>{{group.packUp}}
+                                      <el-dropdown class="fixed file_more">
+                                        <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
+                                        <el-dropdown-menu slot="dropdown">
+                                          <el-dropdown-item @click.native="fileGroupCommand('upload', index, group)">
+                                            <el-upload 
+                                              :ref="filePartitionId === group.pkid ? 'fileUpload' : ''"
+                                              class="upload_file"
+                                              :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                                              :show-file-list="false"
+                                              :multiple="true"
+                                              :on-error="uploadError"
+                                              :on-success="uploadSuccess"
+                                              :on-progress="uploadProgress"
+                                              :limit="9"
+                                              :on-exceed="handleExceed"
+                                              :before-upload="beforeUpload"
+                                              >
+                                              <span class="slot_title" @click="handleClickUpload(group.pkid)">上传</span>
+                                            </el-upload>
+                                          </el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('download', index, group)">下载</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('collect', index, group)">收藏</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('transfer', index, group)">整组移交</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('rename', index, group)">重命名</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('delete', index, group)">删除</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                      </el-dropdown>
+                                  </div>
+                              </div>
+
+                              <!-- 折叠成一个的时候 -->
+                              <div 
+                                v-if='group.allList'
+                                :key="group.pkid"
+                                class="group_file"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
+                                >
+                                <draggable
+                                  class="draggable"
                                   :groupid='group.pkid'
-                                  :id='item.FilePkid'
-                                  :filename='item.FileName'
-                                  @click='groupExtendToggle(index)'
+                                  v-model="group.allList"
+                                  :options="{
+                                    group:{name: 'file',pull:'clone'},
+                                    ghostClass: 'ghost_file', 
+                                    dragClass: 'drag_file',
+                                    draggable: '.draged',
+                                    disabled: group.dragDisabled
+                                  }"
+                                  :move='fileMove'
+                                  @start='dragStart($event, group.pkid)'
+                                  @end='dragEnd'
                                   >
-                                    <span class="file_pic">
-                                      <span
-                                        class="more" 
-                                        v-for='(pic, index) in item.UrlMin'
-                                        :key='index'
-                                        >
-                                          <img :src="pic" alt="
-                                        ">
-                                        <span class="none"></span>
-                                      </span>
-                                      <span class="more"><img class="more" src="./style/more.png" alt=""></span>
-                                      <span class="none"></span>
-                                    </span>
-                                    <div class="file_info">
-                                      <p class="file_length"><span class="mainColor">{{group.fileList.length}}</span>个文件</p>
-                                    </div>
-
-                                </div>
-                                <div class="null"></div>
-                              </draggable>
-                            </div>
-
-                            <!-- 折叠成一行的时候 -->
-                            <div 
-                              v-else-if='group.overList'
-                              :key="group.pkid"
-                              class="group_file"
-                              :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
-                              >
-                              <draggable
-                                class="draggable"
-                                :groupid='group.pkid'
-                                v-model="group.overList"
-                                :options="{
-                                  group:{name: 'file',pull:'clone'},
-                                  ghostClass: 'ghost_file', 
-                                  dragClass: 'drag_file',
-                                  draggable: '.draged',
-                                  disabled: group.dragDisabled
-                                }"
-                                :move='fileMove'
-                                @start='dragStart($event, group.pkid)'
-                                @end='dragEnd'
-                                >
                                   <div 
                                     class="every_file fold_up"
-                                    :class="item.overLength ? '' : 'draged'"
-                                    v-for="(item, index1) in group.overList"
+                                      v-if='item.overLength'
+                                    v-for="item in group.allList"
                                     :key="item.FilePkid"
                                     :groupid='group.pkid'
                                     :id='item.FilePkid'
                                     :filename='item.FileName'
                                     @click='groupExtendToggle(index)'
-                                    @mouseenter="enterFile(item)"
-                                    @mouseleave="leaveFile(item)"
                                     >
-                                    <template v-if='item.overLength'>
                                       <span class="file_pic">
                                         <span
                                           class="more" 
@@ -409,328 +375,386 @@
                                         </span>
                                         <span class="more"><img class="more" src="./style/more.png" alt=""></span>
                                         <span class="none"></span>
-                                        
                                       </span>
                                       <div class="file_info">
-                                        <p class="file_length underline_text">展开更多<span class="mainColor">{{item.overLength}}</span>个文件</p>
+                                        <p class="file_length"><span class="mainColor">{{group.fileList.length}}</span>个文件</p>
                                       </div>
-                                    </template>
-                                    <template v-else>
-                                      <span class="file_pic">
-                                        <template v-if='item.FileType === 11'>
-                                          <span class="text_desc"><span>{{item.Desc}}</span></span>
-                                        </template>
-                                        <template v-else>
-                                          <img :src="item.UrlMin" alt="">
-                                        </template>
-                                        <span class="none"></span>
-                                      </span>
-                                      <div class="file_info">
-                                        <p v-if='!item.edit' class="title">{{item.FileName}}</p>
-                                        <input 
-                                          v-else 
-                                          class="title edit" 
-                                          v-model='item.FileTitle' 
-                                          id="fileNameEdit"
-                                          @blur="fileNameEditBlur($event, item)"
-                                          />
-                                        <img :src="item.UserPic" alt="" class="from_header">
-                                        <span class="file_message fr">
-                                          <i class='iconfont icon-pinglun'></i>
-                                          {{item.Count}}
-                                        </span>
-                                        <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
-                                          <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
-                                        </span>
-                                        <el-dropdown class="fixed file_more">
-                                          <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
-                                          <el-dropdown-menu slot="dropdown">
-                                            <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
-                                            <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
-                                            <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
-                                          </el-dropdown-menu>
-                                        </el-dropdown>
-                                      </div>
-                                    </template>
-                                    <div class="null"></div>
+
                                   </div>
-                              </draggable>
+                                  <div class="null"></div>
+                                </draggable>
+                              </div>
 
-                            </div>
-
-                            <!-- 展开的时候 -->
-                            <div 
-                              v-else-if='group.fileList'
-                              :key="group.pkid"
-                              class="group_file"
-                              :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : 'drag_in') : 'drag_dis') : ''"
-                              >
-                              <draggable
-                                class="draggable"
-                                :groupid='group.pkid'
-                                v-model="group.fileList"
-                                :options="{
-                                  group:{name: 'file',pull:'clone'},
-                                  ghostClass: 'ghost_file', 
-                                  dragClass: 'drag_file',
-                                  draggable: '.draged',
-                                  disabled: group.dragDisabled
-                                }"
-                                :move='fileMove'
-                                @start='dragStart($event, group.pkid)'
-                                @end='dragEnd'
+                              <!-- 折叠成一行的时候 -->
+                              <div 
+                                v-else-if='group.overList'
+                                :key="group.pkid"
+                                class="group_file"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
                                 >
-                                <div 
-                                  class="every_file fold_up draged"
-                                  v-for="(item, index1) in group.fileList"
-                                  :key="item.FilePkid"
+                                <draggable
+                                  class="draggable"
                                   :groupid='group.pkid'
-                                  :id='item.FilePkid'
-                                  :filename='item.FileName'
-                                  @mouseenter="enterFile(item)"
-                                  @mouseleave="leaveFile(item)"
+                                  v-model="group.overList"
+                                  :options="{
+                                    group:{name: 'file',pull:'clone'},
+                                    ghostClass: 'ghost_file', 
+                                    dragClass: 'drag_file',
+                                    draggable: '.draged',
+                                    disabled: group.dragDisabled
+                                  }"
+                                  :move='fileMove'
+                                  @start='dragStart($event, group.pkid)'
+                                  @end='dragEnd'
                                   >
+                                    <div 
+                                      class="every_file fold_up"
+                                      :class="item.overLength ? '' : 'draged'"
+                                      v-for="(item, index1) in group.overList"
+                                      :key="item.FilePkid"
+                                      :groupid='group.pkid'
+                                      :id='item.FilePkid'
+                                      :filename='item.FileName'
+                                      @click='groupExtendToggle(index)'
+                                      @mouseenter="enterFile(item)"
+                                      @mouseleave="leaveFile(item)"
+                                      >
+                                      <template v-if='item.overLength'>
+                                        <span class="file_pic">
+                                          <span
+                                            class="more" 
+                                            v-for='(pic, index) in item.UrlMin'
+                                            :key='index'
+                                            >
+                                              <img :src="pic" alt="
+                                            ">
+                                            <span class="none"></span>
+                                          </span>
+                                          <span class="more"><img class="more" src="./style/more.png" alt=""></span>
+                                          <span class="none"></span>
+                                          
+                                        </span>
+                                        <div class="file_info">
+                                          <p class="file_length underline_text">展开更多<span class="mainColor">{{item.overLength}}</span>个文件</p>
+                                        </div>
+                                      </template>
+                                      <template v-else>
+                                        <span class="file_pic">
+                                          <template v-if='item.FileType === 11'>
+                                            <span class="text_desc"><span>{{item.Desc}}</span></span>
+                                          </template>
+                                          <template v-else>
+                                            <img :src="item.UrlMin" alt="">
+                                          </template>
+                                          <span class="none"></span>
+                                        </span>
+                                        <div class="file_info">
+                                          <p v-if='!item.edit' class="title">{{item.FileName}}</p>
+                                          <input 
+                                            v-else 
+                                            class="title edit" 
+                                            v-model='item.FileTitle' 
+                                            id="fileNameEdit"
+                                            @blur="fileNameEditBlur($event, item)"
+                                            />
+                                          <img :src="item.UserPic" alt="" class="from_header">
+                                          <span class="file_message fr">
+                                            <i class='iconfont icon-pinglun'></i>
+                                            {{item.Count}}
+                                          </span>
+                                          <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
+                                            <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
+                                          </span>
+                                          <el-dropdown class="fixed file_more">
+                                            <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
+                                            <el-dropdown-menu slot="dropdown">
+                                              <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
+                                              <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                              <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
+                                            </el-dropdown-menu>
+                                          </el-dropdown>
+                                        </div>
+                                      </template>
+                                      <div class="null"></div>
+                                    </div>
+                                </draggable>
+
+                              </div>
+
+                              <!-- 展开的时候 -->
+                              <div 
+                                v-else-if='group.fileList'
+                                :key="group.pkid"
+                                class="group_file"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : 'drag_in') : 'drag_dis') : ''"
+                                >
+                                <draggable
+                                  class="draggable"
+                                  :groupid='group.pkid'
+                                  v-model="group.fileList"
+                                  :options="{
+                                    group:{name: 'file',pull:'clone'},
+                                    ghostClass: 'ghost_file', 
+                                    dragClass: 'drag_file',
+                                    draggable: '.draged',
+                                    disabled: group.dragDisabled
+                                  }"
+                                  :move='fileMove'
+                                  @start='dragStart($event, group.pkid)'
+                                  @end='dragEnd'
+                                  >
+                                  <div 
+                                    class="every_file fold_up draged"
+                                    v-for="(item, index1) in group.fileList"
+                                    :key="item.FilePkid"
+                                    :groupid='group.pkid'
+                                    :id='item.FilePkid'
+                                    :filename='item.FileName'
+                                    @mouseenter="enterFile(item)"
+                                    @mouseleave="leaveFile(item)"
+                                    >
+                                    <span class="file_pic">
+                                      <template v-if='item.FileType === 11'>
+                                        <span class="text_desc"><span>{{item.Desc}}</span></span>
+                                      </template>
+                                      <template v-else>
+                                        <img :src="item.UrlMin" alt="">
+                                      </template>
+                                      <span class="none"></span>
+                                    </span>
+                                    <div class="file_info">
+                                      <p v-if='!item.edit' class="title">{{item.FileName}}</p>
+                                      <input 
+                                        v-else 
+                                        class="title edit" 
+                                        v-model='item.FileTitle' 
+                                        id="fileNameEdit"
+                                        @blur="fileNameEditBlur($event, item)"
+                                        />
+                                      <img :src="item.UserPic" alt="" class="from_header">
+                                      <span class="file_message fr">
+                                        <i class='iconfont icon-pinglun'></i>
+                                        {{item.Count}}
+                                      </span>
+                                      <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
+                                        <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
+                                      </span>
+                                      <el-dropdown class="fixed file_more">
+                                        <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
+                                        <el-dropdown-menu slot="dropdown">
+                                          <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                      </el-dropdown>
+                                    </div>
+                                  </div>
+                                  <div class="null"></div>
+                                </draggable>
+
+                              </div>
+
+                              <div class="group_line"></div>
+                            </div>
+                          </template>
+                        </div>
+                        
+                        <div v-else class="file_empty">
+                          <div class="empty_img">
+                            <img src="./style/group_empty.png" alt="">
+                          </div>
+                          <p class="title">文件拖到此区域设置分组</p>
+                        </div>
+
+                        <div v-if='notGroupedList.length || parthsGroup.length' class="left_right_toggle" @click='leftRightToggle'>
+                          <i 
+                            class="iconfont icon-tubiaozhizuomoban"
+                            :class="leftCenterFlag ? 'icon_rotate' : ''"
+                            ></i>
+                        </div>
+                    </div>
+                  </div>
+
+                  <!-- 切换视图 另一个视图 -->
+                  <other-view
+                    v-if='!viewToggle'
+                    :ids='idList'
+                    ref="otherView"
+                  />
+                </div>
+                <!-- 相关需求 -->
+                <div v-else id="operateFile" class="operate_file">
+                  <demand-view/>
+                </div>
+                <!-- 个人文档 -->
+                <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
+                  <div class="top_box">
+                    <div class="left fl">
+                      <i class='iconfont icon-shangchuan'></i>
+                      <i 
+                        class='iconfont icon-tianjiawenzi'
+                        @click.stop="inputTextShowToggle()"
+                        ></i>
+                      <i 
+                        class='iconfont icon-xinjianfenzu'
+                        @click='newFolder'
+                        ></i>
+                      <span class="line"></span>
+                      <el-checkbox 
+                        v-if='checkedListSelf.length' 
+                        v-model="fileCheckboxSelf" 
+                        @change='fileCheckboxAllSelf'
+                        >
+                        已选<span class="mainColor">{{checkedListSelf.length}}</span>项
+                      </el-checkbox>
+                      <el-checkbox 
+                        v-else 
+                        v-model="fileCheckboxSelf" 
+                        @change='fileCheckboxAllSelf'>全选</el-checkbox>
+                        <template v-if='checkedListSelf.length'>
+                          <i class="iconfont icon-xiazai"></i>
+                          <i class="iconfont icon-delete"></i>
+                        </template>
+                    </div>
+                    <div class="right fr">
+                      <i class='iconfont icon-sousuo'></i>
+                      <i class='iconfont icon-filter'></i>
+                    </div>
+
+                    <!-- 输入文字 -->
+                    <div 
+                      v-if='inputTextShow2'
+                      class="input_text"
+                      @click.stop='() => {}'
+                      >
+                      <textarea 
+                        id="inputText"
+                        class="textarea" 
+                        rows="4"
+                        placeholder="请输入文字内容"
+                        v-model='inputText'
+                        @focus="inputTextFocus"
+                        @blur="inputTextBlur"
+                        ></textarea>
+                      <button class="main_button_bg fr" @click="inputTextSure()">添加</button>
+                      <button class="main_button fr" @click="inputTextCancel()">取消</button>
+                    </div>
+                  </div>
+                  <div class="personal_files_main">
+                    <div class="p_f_list">
+                        <div class="nav_bar" v-if='navBar.length - 1'>
+                          <span
+                            v-for="(bar, index) in navBar"
+                            :key='bar.id'
+                            @click='goBack(index)'
+                          >
+                            <span v-if='index' class='span1 fl'>></span>
+                            <span class='cur fl' :class="index === navBar.length - 1 ? 'mainColor' : ''">{{bar.name}}</span>
+                          </span>
+                        </div>
+                        <draggable
+                          class="draggable"
+                          groupid='personal'
+                          v-model="personalFiles"
+                          :options="{
+                            group:{name: 'file',pull:'clone'},
+                            ghostClass: 'ghost_file', 
+                            dragClass: 'drag_file',
+                            draggable: '.draged',
+                            disabled: dragDisabled_personal
+                          }"
+                          :move='fileMove'
+                          @start='dragStart($event, "personal")'
+                          @end='dragEnd'
+                          >
+                          <div 
+                              :class="file.children ? 'every_file' : 'draged every_file'"
+                              v-for="(file, index) in personalFiles"
+                              :key="file.FilePkid"
+                              :id='file.FilePkid'
+                              :filename='file.FileName'
+                              @dblclick='dbFolder(file)'
+                              @mouseenter="enterFileSelf(file)"
+                              @mouseleave="leaveFileSelf(file)"
+                              >
+                              <!-- 文件夹 -->
+                              <template v-if='file.children'>
+                                <span class="file_pic">
+                                  <img src="./style/wenjianjia.png" alt="">
+                                  <span class="none"></span>
+                                </span>
+                                <div class="file_info">
+                                  <p v-if='!file.edit' class="title">{{file.FileName}}</p>
+                                  <input 
+                                    v-else 
+                                    :ref="file.createdFolder ? 'createdFolder' : ''" 
+                                    class="title edit" 
+                                    type="text" 
+                                    v-model='file.FileName'
+                                    @blur='folderBlur(file)'
+                                    />
+                                  <p class="file_num">{{file.children.length}}个文件</p>
+                                  <!-- <span class="fixed file_checkbox">
+                                    <el-checkbox v-model="fileCheckbox"></el-checkbox>
+                                  </span> -->
+                                </div>
+                              </template>
+                              <!-- 文件 -->
+                              <template v-else>
                                   <span class="file_pic">
-                                    <template v-if='item.FileType === 11'>
-                                      <span class="text_desc"><span>{{item.Desc}}</span></span>
+                                    <template v-if='file.FileType === 11'>
+                                      <span class="text_desc"><span>{{file.Desc}}</span></span>
                                     </template>
                                     <template v-else>
-                                      <img :src="item.UrlMin" alt="">
+                                      <img :src="file.UrlMin" alt="">
                                     </template>
-                                    <span class="none"></span>
+                                  <span class="none"></span>
+                                </span>
+                                <div class="file_info">
+                                  <!-- <p v-if='!file.edit' class="title">{{file.FileName}}</p>
+                                  <input 
+                                    v-else 
+                                    class="title edit" 
+                                    v-model='file.FileTitle' 
+                                    id="fileNameEdit"
+                                    @blur="fileNameEditBlur($event, file)"
+                                    /> -->
+                                  <p class="title">{{file.FileName}}</p>
+                                  <p class="file_num">123KB</p>
+                                  <span class="fixed file_checkbox">
+                                    <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
                                   </span>
-                                  <div class="file_info">
-                                    <p v-if='!item.edit' class="title">{{item.FileName}}</p>
-                                    <input 
-                                      v-else 
-                                      class="title edit" 
-                                      v-model='item.FileTitle' 
-                                      id="fileNameEdit"
-                                      @blur="fileNameEditBlur($event, item)"
-                                      />
-                                    <img :src="item.UserPic" alt="" class="from_header">
-                                    <span class="file_message fr">
-                                      <i class='iconfont icon-pinglun'></i>
-                                      {{item.Count}}
-                                    </span>
-                                    <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
-                                      <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
-                                    </span>
-                                    <el-dropdown class="fixed file_more">
-                                      <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
-                                      <el-dropdown-menu slot="dropdown">
-                                        <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
-                                      </el-dropdown-menu>
-                                    </el-dropdown>
-                                  </div>
+
+                                  <span class="fixed file_checkbox" v-if='oneCheckedSelf || file.hover'>
+                                    <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
+                                  </span>
+                                  <el-dropdown class="fixed file_more">
+                                    <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
+                                    <el-dropdown-menu slot="dropdown">
+                                      <el-dropdown-item @click.native="fileCommand('download', index, file)">下载</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('rename', index, file)">重命名</el-dropdown-item>
+                                      <el-dropdown-item @click.native="fileCommand('delete', index, file)">删除</el-dropdown-item>
+                                    </el-dropdown-menu>
+                                  </el-dropdown>
                                 </div>
-                                <div class="null"></div>
-                              </draggable>
-
-                            </div>
-
-                            <div class="group_line"></div>
+                              </template>
                           </div>
-                        </template>
-                      </div>
-                      
-                      <div v-else class="file_empty">
-                        <div class="empty_img">
-                          <img src="./style/group_empty.png" alt="">
-                        </div>
-                        <p class="title">文件拖到此区域设置分组</p>
-                      </div>
-
-                      <div v-if='notGroupedList.length || parthsGroup.length' class="left_right_toggle" @click='leftRightToggle'>
-                        <i 
-                          class="iconfont icon-tubiaozhizuomoban"
-                          :class="leftCenterFlag ? 'icon_rotate' : ''"
-                          ></i>
-                      </div>
+                          <div v-if='navBar.length - 1 && !personalFiles.length' class="folder_empty">
+                            <p>该文件夹为空</p>
+                            <p>您可以从任务中拖拽或从本地上传</p>
+                          </div>
+                        </draggable>
+                    </div>
                   </div>
                 </div>
-
-                <!-- 切换视图 另一个视图 -->
-                <other-view
-                  v-if='!viewToggle'
-                  :list='fileList'
-                  ref="otherView"
-                />
-              </div>
-              <!-- 相关需求 -->
-              <div v-else id="operateFile" class="operate_file">
-                <demand-view/>
-              </div>
-              <!-- 个人文档 -->
-              <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
-                <div class="top_box">
-                  <div class="left fl">
-                    <i class='iconfont icon-shangchuan'></i>
-                    <i 
-                      class='iconfont icon-tianjiawenzi'
-                      @click.stop="inputTextShowToggle()"
-                      ></i>
-                    <i 
-                      class='iconfont icon-xinjianfenzu'
-                      @click='newFolder'
-                      ></i>
-                    <span class="line"></span>
-                    <el-checkbox 
-                      v-if='checkedListSelf.length' 
-                      v-model="fileCheckboxSelf" 
-                      @change='fileCheckboxAllSelf'
-                      >
-                      已选<span class="mainColor">{{checkedListSelf.length}}</span>项
-                    </el-checkbox>
-                    <el-checkbox 
-                      v-else 
-                      v-model="fileCheckboxSelf" 
-                      @change='fileCheckboxAllSelf'>全选</el-checkbox>
-                      <template v-if='checkedListSelf.length'>
-                        <i class="iconfont icon-xiazai"></i>
-                        <i class="iconfont icon-delete"></i>
-                      </template>
-                  </div>
-                  <div class="right fr">
-                    <i class='iconfont icon-sousuo'></i>
-                    <i class='iconfont icon-filter'></i>
-                  </div>
-
-                  <!-- 输入文字 -->
-                  <div 
-                    v-if='inputTextShow2'
-                    class="input_text"
-                    @click.stop='() => {}'
-                    >
-                    <textarea 
-                      id="inputText"
-                      class="textarea" 
-                      rows="4"
-                      placeholder="请输入文字内容"
-                      v-model='inputText'
-                      @focus="inputTextFocus"
-                      @blur="inputTextBlur"
-                      ></textarea>
-                    <button class="main_button_bg fr" @click="inputTextSure()">添加</button>
-                    <button class="main_button fr" @click="inputTextCancel()">取消</button>
-                  </div>
-                </div>
-                <div class="personal_files_main">
-                  <div class="p_f_list">
-                      <div class="nav_bar" v-if='navBar.length - 1'>
-                        <span
-                          v-for="(bar, index) in navBar"
-                          :key='bar.id'
-                          @click='goBack(index)'
-                        >
-                          <span v-if='index' class='span1 fl'>></span>
-                          <span class='cur fl' :class="index === navBar.length - 1 ? 'mainColor' : ''">{{bar.name}}</span>
-                        </span>
-                      </div>
-                      <draggable
-                        class="draggable"
-                        groupid='personal'
-                        v-model="personalFiles"
-                        :options="{
-                          group:{name: 'file',pull:'clone'},
-                          ghostClass: 'ghost_file', 
-                          dragClass: 'drag_file',
-                          draggable: '.draged',
-                          disabled: dragDisabled_personal
-                        }"
-                        :move='fileMove'
-                        @start='dragStart($event, "personal")'
-                        @end='dragEnd'
-                        >
-                        <div 
-                            :class="file.children ? 'every_file' : 'draged every_file'"
-                            v-for="(file, index) in personalFiles"
-                            :key="file.FilePkid"
-                            :id='file.FilePkid'
-                            :filename='file.FileName'
-                            @dblclick='dbFolder(file)'
-                            @mouseenter="enterFileSelf(file)"
-                            @mouseleave="leaveFileSelf(file)"
-                            >
-                            <!-- 文件夹 -->
-                            <template v-if='file.children'>
-                              <span class="file_pic">
-                                <img src="./style/wenjianjia.png" alt="">
-                                <span class="none"></span>
-                              </span>
-                              <div class="file_info">
-                                <p v-if='!file.edit' class="title">{{file.FileName}}</p>
-                                <input 
-                                  v-else 
-                                  :ref="file.createdFolder ? 'createdFolder' : ''" 
-                                  class="title edit" 
-                                  type="text" 
-                                  v-model='file.FileName'
-                                  @blur='folderBlur(file)'
-                                  />
-                                <p class="file_num">{{file.children.length}}个文件</p>
-                                <!-- <span class="fixed file_checkbox">
-                                  <el-checkbox v-model="fileCheckbox"></el-checkbox>
-                                </span> -->
-                              </div>
-                            </template>
-                            <!-- 文件 -->
-                            <template v-else>
-                                <span class="file_pic">
-                                  <template v-if='file.FileType === 11'>
-                                    <span class="text_desc"><span>{{file.Desc}}</span></span>
-                                  </template>
-                                  <template v-else>
-                                    <img :src="file.UrlMin" alt="">
-                                  </template>
-                                <span class="none"></span>
-                              </span>
-                              <div class="file_info">
-                                <!-- <p v-if='!file.edit' class="title">{{file.FileName}}</p>
-                                <input 
-                                  v-else 
-                                  class="title edit" 
-                                  v-model='file.FileTitle' 
-                                  id="fileNameEdit"
-                                  @blur="fileNameEditBlur($event, file)"
-                                  /> -->
-                                <p class="title">{{file.FileName}}</p>
-                                <p class="file_num">123KB</p>
-                                <span class="fixed file_checkbox">
-                                  <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
-                                </span>
-
-                                <span class="fixed file_checkbox" v-if='oneCheckedSelf || file.hover'>
-                                  <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
-                                </span>
-                                <el-dropdown class="fixed file_more">
-                                  <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
-                                  <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item @click.native="fileCommand('download', index, file)">下载</el-dropdown-item>
-                                    <el-dropdown-item @click.native="fileCommand('rename', index, file)">重命名</el-dropdown-item>
-                                    <el-dropdown-item @click.native="fileCommand('delete', index, file)">删除</el-dropdown-item>
-                                  </el-dropdown-menu>
-                                </el-dropdown>
-                              </div>
-                            </template>
-                        </div>
-                        <div v-if='navBar.length - 1 && !personalFiles.length' class="folder_empty">
-                          <p>该文件夹为空</p>
-                          <p>您可以从任务中拖拽或从本地上传</p>
-                        </div>
-                      </draggable>
-                  </div>
-                </div>
-              </div>
-          </div>
-
-          <!-- 整体预览 -->
-          <full-preview
-            v-if='fullPreviewShow'
-            taskId='1'
-          />
+            </div>
+            <!-- 整体预览 -->
+            <full-preview
+              v-if='fullPreviewShow'
+              taskId='1'
+              :fullList='fullList'
+            />
+          </template>
       </div>
       <!-- 温馨提示2_删除分组的提示 -->
       <transition name="fade1">
@@ -749,11 +773,11 @@
             @handleSure="delFileSure" />
       </transition>
           <!-- 文件上传进度条 -->
-    <upload-progress v-if="uploadProgressFlag"
-      :fileProgressList="fileProgressList"
-      @closeProgress="closeProgress"
-      @handleCancel="cancelUpload"
-      @handleRe="reUpload" />
+      <upload-progress v-if="uploadProgressFlag"
+        :fileProgressList="fileProgressList"
+        @closeProgress="closeProgress"
+        @handleCancel="cancelUpload"
+        @handleRe="reUpload" />
     </div>
 </template>
 <script>
@@ -777,12 +801,13 @@ export default {
   },
   data() {
     return {
-      userId: 1184, // 登录这ID
+      userId: 1184, // 登录这ID 1189
       projectId: 0, // 项目ID
       stageId: '0', // 阶段ID
       taskId: 0, // 任务ID
       stageTaskId: 1, // 阶段ID + 任务ID
       filePartitionId: 0, // 任务文件分组ID
+      idList: {}, // 各种ID集合
       // 文件上传
       uploadProgressFlag: false,
       fileProgressList: [],
@@ -790,7 +815,8 @@ export default {
 
       stageList: [], // 阶段列表
       tasksList: [], // 左侧分组任务列表
-      fileList: [], // 分组+未分组列表
+      allFileList: [],  // 分组+未分组列表
+      stageState: 0, // 当前阶段的状态
       demandOrGain: true, // false--相关需求 true--成果文件
       fileCheckbox: false, // 文件全选
       viewToggle: true, // true--视图1  false--视图2
@@ -1084,6 +1110,7 @@ export default {
       inputTextShow2: false, // 输入文字弹窗——个人文档
       inputText: '', // 添加文字的内容
       fullPreviewShow: false, // 整体预览是否显示
+      fullList: {}, // 整体预览的数据
       oneChecked: false, // 是否有一个文件被选中
       oneCheckedSelf: false, // 个人文档--是否有一个文件被选中
       checkedList: [], // 已选中的文件列表
@@ -1186,15 +1213,20 @@ export default {
     ]),
     // 文件视图切换
     viewToggles() {
+      this.idList = {
+        userId: this.userId,
+        projectId: this.projectId,
+        stageId: this.stageId,
+        taskId: this.taskId,
+        stageTaskId: this.stageTaskId,
+        filePartitionId: this.filePartitionId
+      }
       this.viewToggle = !this.viewToggle;
       if(this.viewToggle) {
         const list = this.$refs.otherView.close();
+        this.checkedList = [...list];
         // 进行文件多选的回选
         this.returnSelection(list);
-
-        // this.CHECKEDLIST_CHANGE(list);
-      }else {
-        // this.CHECKEDLIST_CHANGE(this.checkedList);
       }
     },
     // 文件时图切换后，复选框的回选
@@ -1202,12 +1234,20 @@ export default {
       for(let x of this.parthsGroup) {
         for(let y  of x.fileList) {
           let indexs = list.findIndex(ele => ele.FilePkid == y.FilePkid);
-          indexs !== -1 && (y.checked = list[indexs].checked);
+          if(indexs === -1) {
+            y.checked = false;
+          }else {
+            y.checked = true;
+          }
         }
       }
       for(let y  of this.notGroupedList) {
         let indexs = list.findIndex(ele => ele.FilePkid == y.FilePkid);
-        indexs !== -1 && (y.checked = list[indexs].checked);
+        if(indexs === -1) {
+          y.checked = false;
+        }else {
+          y.checked = true;
+        }
       }
     },
 
@@ -1299,7 +1339,22 @@ export default {
     // 阶段的整体预览
     fullPreview() {
       this.stageId = null;
-      this.fullPreviewShow = true;
+      this.stageState = 0;
+      let obj = {
+        myUserId: this.userId,
+        projectId: this.projectId,
+        taskId: this.taskId
+      };
+      this.$HTTP("post", "/project_get_view", obj)
+        .then(res => {
+          this.fullList = res.result;
+          this.fullPreviewShow = true;
+          // console.log("阶段的整体预览", res);
+        })
+        .catch(err => {
+          console.log("阶段的整体预览失败", err);
+          // this.$message.error("移动分组失败，请检查网络");
+        });
     },
 
     // 关闭阶段的整体预览
@@ -1872,6 +1927,10 @@ export default {
 
     // 文件全选
     fileCheckboxAll(val) {
+      if(!this.viewToggle) {
+        this.$refs.otherView.fileCheckboxAll(val);
+        return;
+      }
       this.checkedList = [];
       if(val) {
         for(let y of this.notGroupedList) {
@@ -2392,13 +2451,17 @@ export default {
         }
       }
     },
-    // 个人文档的操作--------------------------------start
+    // 个人文档的操作--------------------------------end
 
 
 
 
     
     // 文件上传--------------------------------start
+    // 当前点击的是哪个分组的上传
+    handleClickUpload(groupId) {
+      this.filePartitionId = groupId;
+    },
     // 关闭文件上传视图
     closeProgress() {
       this.uploadProgressFlag = false;
@@ -2408,10 +2471,18 @@ export default {
     // 取消上传
     cancelUpload(file) {
       this.getDelFile(file.uid, true);
+      if(file.error) { return; }
       if (file.reUploadXhr) {
         file.reUploadXhr.abort();
       } else {
-        this.$refs.fileUpload.abort(file);
+        this.$nextTick(() => {
+          if(Array.isArray(this.$refs.fileUpload)) {
+            this.$refs.fileUpload[0].abort(file);
+          }else {
+            this.$refs.fileUpload.abort(file);
+          }
+        });
+        
       }
 
     },
@@ -2421,7 +2492,13 @@ export default {
       file.reUploadXhr = 1;
       var formData = new FormData();
       formData.append('file', file.file);
-      this.$refs.fileUpload.httpRequest = this.uploadFile(formData, file);
+      this.$nextTick(() => {
+        if(Array.isArray(this.$refs.fileUpload)) {
+          this.$refs.fileUpload[0].httpRequest = this.uploadFile(formData, file);
+        }else {
+          this.$refs.fileUpload.httpRequest = this.uploadFile(formData, file);
+        }
+      });
 
     },
     // 重新上传的请求
@@ -2476,19 +2553,10 @@ export default {
     },
     // 文件上传前
     beforeUpload(file) {
-      // 先判断有没有重复--------
-      // let index = this.demandFile.findIndex(ele => {
-      //   return ele.name == file.name;
-      // });
-      // if (index !== -1) {
-      //   this.$message("文件重复");
-      //   return false;
-      // }
-
+      const id = this.filePartitionId;
       if (!this.uploadProgressFlag) {
         this.uploadProgressFlag = true;
       }
-
       let sizes = this.conver(file.size);
       let FileTypeNum = this.getSuffix(file.name);
       FileTypeNum = this.getFlieTyle(FileTypeNum);
@@ -2505,6 +2573,37 @@ export default {
         imgUrl: "",
         file: file
       };
+      // 判重--该目录下已包含同名文件
+      if(id) { // 分组
+        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
+        let index = this.parthsGroup[ids].fileList.findIndex(ele => {
+          return ele.FileName == file.name;
+        });
+        if (index !== -1) {
+          this.$set(obj, 'error', 1);
+          this.fileProgressList.unshift(obj);
+          this.$message.error("该目录下已含有同名文件");
+          return false; // 只写return不能阻止文件继续上传
+        }
+      }else { // 未分组
+        let index = this.notGroupedList.findIndex(ele => {
+          return ele.FileName == file.name;
+        });
+        if (index !== -1) {
+          this.$set(obj, 'error', 1);
+          this.fileProgressList.unshift(obj);
+          this.$message.error("该目录下已含有同名文件");
+          return false;
+        }
+      }
+      // 文件过大--文件大于1G，无法上传
+      const _size = (file.size / (1024 * 1024 * 1024)).toFixed(2);
+      if(_size >= 1) {
+        this.$set(obj, 'error', 2);
+        this.fileProgressList.unshift(obj);
+        this.$message.error("文件大于1G，无法上传");
+        return false;
+      }
       this.fileProgressList.unshift(obj);
     },
 
@@ -2520,15 +2619,15 @@ export default {
         this.fileProgressList[ids].nowSize = this.conver(percents / 100 * this.fileProgressList[ids].size);
 
         // 测试重新上传
-        if (percents > 30 && percents < 35) {
-          if (file.reUploadXhr) {
-            file.reUploadXhr.abort();
-            file.reUploadXhr = null;
-          } else {
-            this.$refs.fileUpload.abort(file);
-          }
-          this.uploadError('err', file);
-        }
+        // if (percents > 30 && percents < 35) {
+        //   if (file.reUploadXhr) {
+        //     file.reUploadXhr.abort();
+        //     file.reUploadXhr = null;
+        //   } else {
+        //     this.$refs.fileUpload.abort(file);
+        //   }
+        //   this.uploadError('err', file);
+        // }
 
         if (
           !this.fileProgressList[ids].imgUrl &&
@@ -2541,13 +2640,20 @@ export default {
 
     // 文件上传成功
     uploadSuccess(res, _file) {
+      const id = this.filePartitionId;
       let file = Object.assign({}, _file.response.result);
       // let type = file.name.split(".")[1];
       // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
       let file1 = this.addFileAttr(file);
       file1 = Object.assign({}, file, file1);
 
-      this.notGroupedList = this.notGroupedList.concat(file1); // 需要修改+++++++++++
+      if(id) { // 分组
+        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
+        this.parthsGroup[ids].fileList = this.parthsGroup[ids].fileList.concat(file1); 
+      }else { // 未分组
+        this.notGroupedList = this.notGroupedList.concat(file1); 
+      }
+      
       let ids = this.fileProgressList.findIndex(ele => {
         return ele.uid === _file.uid;
       });
@@ -2653,7 +2759,7 @@ export default {
       this.$HTTP("post", "/stagetask_get", obj)
       .then(res => {
         this.dataProcessing(res.result);
-        // console.log("获取任务详情", this.fileList);
+        // console.log("获取任务详情", res.result);
 
       })
       .catch(err => {
@@ -2668,8 +2774,13 @@ export default {
       this.stageTaskId = res.stageTaskId;
       this.stageList = [...res.stageList];
       this.stageList.map(ele => ele.stagePkid = ele.stagePkid.toString());
-      this.fileList = [...res.fileList]
-      for(let ele of this.fileList) {
+      let x = this.stageList.findIndex(ele => ele.stagePkid == this.stageId);
+      if(x !== -1) {
+        this.stageState = this.stageList[x].state;
+      }
+
+      let returnList = [...res.fileList]
+      for(let ele of returnList) {
         for(let y of ele.fileList) {
           let returnObj = this.addFileAttr(y);
           y = Object.assign(y, returnObj);
@@ -2681,7 +2792,7 @@ export default {
         }
       }
       this.countFileOne();
-      // console.log("获取任务详情", this.fileList);
+      // console.log("获取任务详情");
 
     },
     // 添加文件时，对文件的属性进行处理
@@ -2699,6 +2810,22 @@ export default {
         data.UrlMin = this.fileTypeImg[data.FileType].src;
       }
       return data;
+    },
+
+    // 分组+未分组列表
+    getFileList() {
+      return new Promise((resolve) => {
+        let arrList = [
+          {
+            pkid: 0,
+            groupName: "未分组的任务",
+            fileList: this.notGroupedList
+          }
+        ];
+        arrList = arrList.concat(this.parthsGroup);
+        this.allFileList = arrList;
+        resolve(arrList);
+      });
     },
     // 获取数据及处理--------------------------------end
 

@@ -858,12 +858,12 @@ not supported by any browser */
       .upload_progress_name {
         display: inline-block;
         vertical-align: top;
-        max-width: calc(~'100% - 140px');
+        max-width: calc(~'100% - 180px');
         .word_over;
         height: 20px;
         line-height: 20px;
-        margin-top: 10px;
-        margin-left: 10px;
+        margin-top: 6px;
+        margin-left: 8px;
 
       }
 
@@ -874,8 +874,8 @@ not supported by any browser */
         margin-top: 10px;
         position: absolute;
         left: 44px;
-        top: 16px;
-        margin-left: 10px;
+        top: 12px;
+        margin-left: 8px;
         .el-progress--line {
           width: calc(~'100% - 25px');
           display: inline-block;
@@ -891,13 +891,25 @@ not supported by any browser */
 
       }
 
+      .upload_progress_error {
+        width: calc(~'100% - 60px');
+        height: 20px;
+        line-height: 20px;
+        margin-top: 7px;
+        position: absolute;
+        left: 44px;
+        top: 16px;
+        margin-left: 8px;
+        font-size: 12px;
+        color: #EA3F33;
+      }
       .upload_progress_size {
         font-size: 12px;
         color: @grayNight;
         display: inline-block;
         height: 20px;
         line-height: 20px;
-        margin-top: 10px;
+        margin-top: 6px;
         margin-right: 20px;
         float: right;
       }

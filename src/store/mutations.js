@@ -134,6 +134,7 @@ export default {
     // new_yun
     [CHECKEDLIST_CHANGE](state, list) {
         state.checkedFileList = list;
+        console.log('-------', state.checkedFileList);
     },
 
 

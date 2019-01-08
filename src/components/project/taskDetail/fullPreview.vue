@@ -12,31 +12,39 @@
         <div class="full_preview_list clearfix">
             <div    
                 class="every_stage"
-                v-for='stage in fullPreview.stageList'
-                :key='stage.stageId'
+                v-for='stage in fullPreview.stageFileList'
+                :key='stage.stageTaskId'
                 >
-                <div class="stage_top">{{stage.stageName}}</div>
+                <div class="stage_top">{{stage.title}}</div>
                 <div class="stage_file">
-                    <div 
-                        class="file_group"
-                        v-for='group in stage.fileGroupList'
-                        :key='group.groupId'
-                        >
-                        <p class="group_title">{{group.groupName ? group.groupName : '未分组文件'}}</p>
-                        <div class="group_list clearfix">
-                            <div class="file_box"
-                                v-for='file in group.fileList'
-                                :key='file.Pkid'
+                    <template v-if='stage.enabled'>
+                        <div 
+                            class="file_group"
+                            v-for='group in stage.fileList'
+                            :key='group.pkid'
                             >
-                                <span class="file_img">
-                                    <img :src="'http://server.apexgame.cn'+file.Url" alt="">
-                                    <span class="none"></span>
-                                </span>
-                                <p class="file_title word_over">{{file.Title}}</p>
+                            <p class="group_title">{{group.groupName ? group.groupName : '未分组文件'}}</p>
+                            <div class="group_list clearfix">
+                                <div class="file_box"
+                                    v-for='file in group.fileList'
+                                    :key='file.FilePkid'
+                                >
+                                    <span class="file_img">
+                                        <img :src="file.UrlMin" alt="">
+                                        <span class="none"></span>
+                                    </span>
+                                    <p class="file_title word_over">{{file.FileName}}</p>
+                                </div>
                             </div>
                         </div>
+                    </template>
+                    <div v-if='!stage.enabled' class="file_group_empty">
+                        <span class="empty_img">
+                            <img src="./style/file_empty.png" alt="">
+                        </span>
+                        <p>该阶段已关闭</p>
                     </div>
-                    <div v-if='!stage.fileGroupList.length' class="file_group_empty">
+                    <div v-if='!stage.fileList.length && stage.enabled' class="file_group_empty">
                         <span class="empty_img">
                             <img src="./style/file_empty.png" alt="">
                         </span>
@@ -49,188 +57,55 @@
 </template>
 <script>
 export default {
-    props: ['taskId'],
+    props: ['taskId', 'fullList'],
     data() {
         return {
+            fileTypeImg: [
+                {
+                    src: require("../../../assets/img/file_m/0.png")
+                }, {
+                    src: require("../../../assets/img/file_m/1.png")
+                }, {
+                    src: require("../../../assets/img/file_m/2.png")
+                }, {
+                    src: require("../../../assets/img/file_m/3.png")
+                }, {
+                    src: require("../../../assets/img/file_m/4.png")
+                }, {
+                    src: require("../../../assets/img/file_m/5.png")
+                }, {
+                    src: require("../../../assets/img/file_m/6.png")
+                }, {
+                    src: require("../../../assets/img/file_m/7.png")
+                }, {
+                    src: require("../../../assets/img/file_m/8.png")
+                }, {
+                    src: require("../../../assets/img/file_m/9.png")
+                }, {
+                    src: require("../../../assets/img/file_m/10.png")
+                }, {
+                    src: require("../../../assets/img/file_m/11.png")
+                },
+            ], // 文件类型图片
             fullPreview: {},
         }
     },
     methods: {
-        // 获取整体预览的信息
-        getFullPreview() {
-            // 发送请求
-            this.fullPreview = {
-                taskTitle: '邮箱注册',
-                stageList: [
-                    {
-                        stageId: 0,
-                        stageName: '产品规划',
-                        fileGroupList: [
-                            {
-                                groupId: 0,
-                                groupName: '',
-                                fileList: [
-                                    {
-                                        Pkid: "4085",
-                                        Title: "egLogo1.png",
-                                        Url:
-                                            "/upload/file/20181227065330/63f7b3f6-f448-448f-b26a-6d6a12741f03/7f31dfb2-196a-48b6-89bc-aa2652013506.png",
-                                        FileType: "png",
-                                        Uname: "祝建云",
-                                    },
-                                    {
-                                        Pkid: "6575",
-                                        Title: "详情页面1",
-                                        Url:
-                                            "/upload/file/20180524103014/41735179-c2d4-45b8-85ca-da4681d5b3af/01.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                ]
-                            },
-                            {
-                                groupId: 1,
-                                groupName: '分组1',
-                                fileList: [
-                                    {
-                                        Pkid: "6573",
-                                        Title: "详情页面-2",
-                                        Url:
-                                            "/upload/file/20181226081958/5e77da48-39a0-491f-a5db-c23cd5a4023d/b4f00229-8439-4f78-b0a1-957644a58492_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                ]
-                            },
-                            {
-                                groupId: 2,
-                                groupName: '这是第二个分组',
-                                fileList: [
-                                    {
-                                        Pkid: "6574",
-                                        Title: "详情页面-3",
-                                        Url:
-                                            "/upload/file/20180524103014/489053b4-6574-47b0-ace3-22101721e612/2.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                    {
-                                        Pkid: "6572",
-                                        Title: "详情页面-4",
-                                        Url:
-                                            "/upload/file/20181226081939/d8e7a662-6f0a-4b41-ba0d-f359aaa3fb5b/2113c63f-2b0b-487a-a3cc-d78b301001b8_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                    {
-                                        Pkid: "6570",
-                                        Title: "详情页面-5",
-                                        Url:
-                                            "/upload/file/20181226081938/90571b62-18cb-45aa-a8f0-1f3e30178176/ae3a890a-f693-4023-8b14-f4d960ca0c73_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                ]
-                            },
-                        ]
-                    },
-                    {
-                        stageId: 1,
-                        stageName: '产品设计',
-                        fileGroupList: [
-                            {
-                                groupId: 3,
-                                groupName: '',
-                                fileList: [
-                                    {
-                                        Pkid: "6571",
-                                        Title: "详情页面-6",
-                                        Url:
-                                            "/upload/file/20181226081938/ea47a6ae-e9f8-43d6-a63f-08d3c2bb3373/bdca1df3-3343-4381-bed0-8eecf050cd98_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                    {
-                                        Pkid: "6569",
-                                        Title: "详情页面-无分组",
-                                        Url:
-                                            "/upload/file/20181226081938/e29e3cec-30ce-4670-8d12-acd4c6a372c3/0d4dfecd-439b-418d-b368-0e2ec3d6206d_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                    {
-                                        Pkid: "6568",
-                                        Title: "详情页面-文件分组最小化",
-                                        Url:
-                                            "/upload/file/20181226081938/95216f40-6b6f-43e7-b8ab-a62c285f8b00/a1ec02b1-a3bd-4cb1-afc2-8bd9787c4d03_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                    {
-                                        Pkid: "6567",
-                                        Title: "详情页面-文件移动n",
-                                        Url:
-                                            "/upload/file/20181226081938/8f8daa93-ffb1-4445-b4cb-7f79ed5fd2ce/5bc9a050-5e1a-44df-8ac2-0f52d5030175_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    },
-                                ]
-                            },
-                        ]
-                    },
-                    {
-                        stageId: 2,
-                        stageName: '开发阶段',
-                        fileGroupList: []
-                    },
-                    {
-                        stageId: 3,
-                        stageName: '测试',
-                        fileGroupList: [
-                            {
-                                groupId: 10,
-                                groupName: '',
-                                fileList: [
-                                    {
-                                        Pkid: "407",
-                                        Title: "WX20181220-170213",
-                                        Url:
-                                            "/upload/file/20180528070747/8b10d083-a85b-45a4-825a-9437fd47fa4a/logo-3.png",
-                                        FileType: "png",
-                                        Uname: "祝建云"
-                                    },
-                                    {
-                                        Pkid: "405",
-                                        Title: "video",
-                                        Url:
-                                            "/upload/file/20180711020446/9ccd7618-5010-40f4-ac2e-008e64108a22/165310yogoihqr63svh6tm.jpg",
-                                        FileType: "mp4",
-                                        Uname: "祝建云"
-                                    }
-                                ]
-                            },
-                            {
-                                groupId: 12,
-                                groupName: '我的分组啊',
-                                fileList: [
-                                    {
-                                        Pkid: "6557",
-                                        Title: "详情页面-多选文件样式",
-                                        Url:
-                                            "/upload/file/20181226081929/729c03fc-fd7c-41c1-99e8-2fcd1e63dd3a/c96654d0-0582-4809-8359-ecea14d26148_s1.png",
-                                        FileType: "png",
-                                        Uname: "卢洪臣",
-                                    }
-                                ]
-                            },
-                        ]
-                    },
-                ]
+        getData() {
+            this.fullPreview = Object.assign({}, this.fullList);
+            for(let x of this.fullPreview.stageFileList) {
+                for(let y of x.fileList) {
+                    for(let z of y.fileList) {
+                        this.$set(z, 'FileType', this.getFlieTyle(z.Type));
+                        this.$set(z, 'UrlMin', this.fileTypeImg[z.FileType].src);
+                    }
+                }
             }
-        },
+
+        }
     },
     created() {
-        this.getFullPreview(this.taskId);
+        this.getData();
     }
 };
 </script>
