@@ -19,6 +19,7 @@ import {
 
     // new_yun
     CHECKEDLIST_CHANGE,
+    FILELENGTH_CHANGE,
 
 } from './mutation-types';
 import Vue from '../../node_modules/vue';
@@ -134,8 +135,11 @@ export default {
     // new_yun
     [CHECKEDLIST_CHANGE](state, list) {
         state.checkedFileList = list;
-        console.log('-------', state.checkedFileList);
     },
+    [FILELENGTH_CHANGE](state, length) {
+        state.fileLength = length;
+    },
+
 
 
 

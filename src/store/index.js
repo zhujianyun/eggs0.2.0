@@ -27,7 +27,8 @@ const state =  {
     projectItem: null, // 当前选择的项目
 
     // new_yun
-    checkedFileList: [],
+    checkedFileList: [], // 已选文件的列表
+    fileLength: 0, // 文件的总数
 
 }
 

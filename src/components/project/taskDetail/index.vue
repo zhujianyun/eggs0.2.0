@@ -8,9 +8,9 @@
             <el-tabs v-model="stageId" @tab-click="taskStageDetail(taskId, stageId)">
               <el-tab-pane 
                 v-for='stage in stageList'
-                :key='stage.stagePkid'
+                :key='stage.stageId'
                 :label="stage.stageTitle" 
-                :name="stage.stagePkid"
+                :name="stage.stageId"
                 >
                   <span slot="label">
                     <span class="round">
@@ -30,7 +30,7 @@
                 <span @click='fullPreview'>整体预览</span> 
             </div>
           </div>
-          <i class='iconfont icon-guanbijiantou'></i>
+          <i class='iconfont icon-guanbijiantou' @click='returnProject'></i>
       </div>
       <!-- 左侧目录 -->
       <div class="detail_left">
@@ -80,8 +80,25 @@
                 状态标记
               </span>
               <span class="line"></span>
-              <i class='iconfont icon-haoyou1'></i>
-              <i class='iconfont icon-rili1'></i>
+              <span class="add_human" @click.stop='addHumanHandle'>
+                <i class='iconfont icon-haoyou1'></i>
+                <!-- 加人 -->
+                <add-human
+                  v-if='addHumanShow'
+                  :defaultList='stageList'
+                  :ids='idList'
+                />
+              </span>
+              <span class="add_time" @click.stop='addTimeHandle'>
+                <i class='iconfont icon-rili1'></i>
+                <!-- 加时间 -->
+                <add-time
+                  v-if='addTimeShow'
+                   :defaultList='stageList'
+                  :ids='idList'
+                />
+              </span>
+              
               <span class="line"></span>
               <span class="self_file" @click='personalFilesPull'>
                 <i class='iconfont icon-gerenwenjianjia'></i>
@@ -131,7 +148,7 @@
                         v-if='checkedFileList && checkedFileList.length' 
                         class="all_checked" 
                         v-model="fileCheckbox" 
-                        @change='fileCheckboxAll'
+                        @click.native='fileCheckboxAll'
                         >
                         已选<span class="mainColor">{{checkedFileList && checkedFileList.length}}</span>项
                       </el-checkbox>
@@ -139,7 +156,7 @@
                         v-else 
                         class="all_checked" 
                         v-model="fileCheckbox" 
-                        @change='fileCheckboxAll'>全选</el-checkbox>
+                        @click.native='fileCheckboxAll'>全选</el-checkbox>
                         <template v-if='checkedFileList && checkedFileList.length'>
                           <i class="iconfont icon-xiazai"></i>
                           <i class="iconfont icon-shoucang1"></i>
@@ -786,9 +803,11 @@ import Reminder2 from "../../common/reminder2";
 import UploadProgress from "../../common/uploadProgress";
 
 import draggable from "vuedraggable";
-import FullPreview from './fullPreview';
-import OtherView from './otherView';
-import DemandView from './demandView';
+import FullPreview from './page/fullPreview';
+import OtherView from './page/otherView';
+import DemandView from './page/demandView';
+import AddHuman from './page/addHuman';
+import AddTime from './page/addTime';
 import { mapState, mapMutations } from 'vuex';
 export default {
   components: {
@@ -797,7 +816,9 @@ export default {
     draggable,
     FullPreview,
     OtherView,
-    DemandView
+    DemandView,
+    AddHuman,
+    AddTime
   },
   data() {
     return {
@@ -818,7 +839,6 @@ export default {
       allFileList: [],  // 分组+未分组列表
       stageState: 0, // 当前阶段的状态
       demandOrGain: true, // false--相关需求 true--成果文件
-      fileCheckbox: false, // 文件全选
       viewToggle: true, // true--视图1  false--视图2
       fileCheckboxSelf: false, // 个人文档
       notGroupedList: [], // 未分组文件列表 
@@ -1111,7 +1131,6 @@ export default {
       inputText: '', // 添加文字的内容
       fullPreviewShow: false, // 整体预览是否显示
       fullList: {}, // 整体预览的数据
-      oneChecked: false, // 是否有一个文件被选中
       oneCheckedSelf: false, // 个人文档--是否有一个文件被选中
       checkedList: [], // 已选中的文件列表
       checkedListSelf: [], // 个人文档--已选中的文件列表
@@ -1161,6 +1180,8 @@ export default {
       groupNameCopy: '', // copy文件分组的名字
       fileNameCopy: '', // copy文件的名字
       groupSortFlag: false, // 分组排序展示
+      addHumanShow: false, // 加人显示/隐藏
+      addTimeShow: false, // 加时间显示/隐藏
     };
   },
   watch: {
@@ -1200,17 +1221,104 @@ export default {
         }
         this.parthsGroup = this.parthsGroup.concat();
       }
+    },
+    notGroupedList(val) {
+      let length = 0;
+      for(let x of this.parthsGroup) {
+        for(let y of x.fileList) {
+          length++;
+        }
+      }
+      this.FILELENGTH_CHANGE(val.length + length);
+    },
+    parthsGroup: {
+      deep: true,
+      handler(list) {
+        let length = 0;
+        for(let x of list) {
+          for(let y of x.fileList) {
+            length++;
+          }
+        }
+        this.FILELENGTH_CHANGE(length + this.notGroupedList.length);
+      }
     }
   },
   computed: {
     ...mapState([
-      'checkedFileList'
+      'checkedFileList',
+      'fileLength'
     ]),
+    fileCheckbox: {
+      get() {
+        if(this.fileLength && this.checkedFileList && (this.checkedFileList.length === this.fileLength)) {
+          return true;
+        }else {
+          return false;
+        }
+      },
+      set() {
+
+      }
+      
+    },
+    // 是否有一个文件被选中
+    oneChecked() {
+      if(this.checkedFileList && this.checkedFileList.length) {
+        return true;
+      }else {
+        return false;
+      }
+    }
   },
   methods: {
     ...mapMutations([
       'CHECKEDLIST_CHANGE',
+      'FILELENGTH_CHANGE'
     ]),
+    // 返回格子任务列表
+    returnProject() {
+      this.$router.push("/project/projectInfo");
+    },
+
+    // 添加人员
+    addHumanHandle() {
+      this.addHumanShow = true;
+      this.addTimeShow = false;
+      this.idList = {
+        userId: this.userId,
+        projectId: this.projectId,
+        stageId: this.stageId,
+        taskId: this.taskId,
+        stageTaskId: this.stageTaskId,
+        filePartitionId: this.filePartitionId
+      }
+      let clickHide = e => {
+        this.addHumanShow = false;
+        $(document).unbind("click", clickHide)
+      };
+      $(document).bind("click", clickHide)
+    },
+
+    // 添加时间
+    addTimeHandle() {
+      this.addTimeShow = true;
+      this.addHumanShow = false;
+      this.idList = {
+        userId: this.userId,
+        projectId: this.projectId,
+        stageId: this.stageId,
+        taskId: this.taskId,
+        stageTaskId: this.stageTaskId,
+        filePartitionId: this.filePartitionId
+      }
+
+      let clickHide = e => {
+        this.addTimeShow = false;
+        $(document).unbind("click", clickHide)
+      };
+      $(document).bind("click", clickHide)
+    },
     // 文件视图切换
     viewToggles() {
       this.idList = {
@@ -1896,37 +2004,42 @@ export default {
     everyFileCheckbox(val, item) {
       let x1,x2, indexs;
       if(val) {
-        this.oneChecked = true;
         this.checkedList.push(item);
-
-        x1 = this.notGroupedList.findIndex(ele => !ele.checked);
-        for(let x of this.parthsGroup) {
-          x2 = x.fileList.findIndex(ele => !ele.checked);
-        }
-        if(x1 === -1 && x2 === -1) {
-          this.fileCheckbox = true;
-        }
+        // this.oneChecked = true;
+        // x1 = this.notGroupedList.findIndex(ele => !ele.checked);
+        // for(let x of this.parthsGroup) {
+        //   x2 = x.fileList.findIndex(ele => !ele.checked);
+        // }
+        // if(x1 === -1 && x2 === -1) {
+        //   this.fileCheckbox = true;
+        // }
 
       }else {
         indexs = this.checkedList.findIndex(ele => ele.FilePkid === item.FilePkid);
         indexs !== -1 && (this.checkedList.splice(indexs, 1));
-        x1 = this.notGroupedList.findIndex(ele => ele.checked);
-        for(let x of this.parthsGroup) {
-          x2 = x.fileList.findIndex(ele => ele.checked);
-        }
-        if(x1 !== -1 || x2 !== -1) {
-          this.oneChecked = true;
-        }else {
-          this.oneChecked = false;
-        }
-        this.fileCheckbox && (this.fileCheckbox = false);
+        // x1 = this.notGroupedList.findIndex(ele => ele.checked);
+        // for(let x of this.parthsGroup) {
+        //   x2 = x.fileList.findIndex(ele => ele.checked);
+        // }
+        // if(x1 !== -1 || x2 !== -1) {
+        //   this.oneChecked = true;
+        // }else {
+        //   this.oneChecked = false;
+        // }
+        // this.fileCheckbox && (this.fileCheckbox = false);
       }
       this.notGroupedList = this.notGroupedList.concat();
       this.parthsGroup = this.parthsGroup.concat();
     },
 
     // 文件全选
-    fileCheckboxAll(val) {
+    fileCheckboxAll() {
+      let val = false;
+      if(this.fileLength && this.checkedFileList && (this.checkedFileList.length === this.fileLength)) {
+        val = false;
+      }else {
+        val = true;
+      }
       if(!this.viewToggle) {
         this.$refs.otherView.fileCheckboxAll(val);
         return;
@@ -1944,7 +2057,7 @@ export default {
 
           }
         }
-        this.oneChecked = true;
+        // this.oneChecked = true;
       }else {
         for(let y of this.notGroupedList) {
           y.checked = false;
@@ -1954,7 +2067,7 @@ export default {
             y.checked = false;
           }
         }
-        this.oneChecked = false;
+        // this.oneChecked = false;
       }
 
       this.notGroupedList = this.notGroupedList.concat();
@@ -2773,8 +2886,8 @@ export default {
       this.parthsGroup = [];
       this.stageTaskId = res.stageTaskId;
       this.stageList = [...res.stageList];
-      this.stageList.map(ele => ele.stagePkid = ele.stagePkid.toString());
-      let x = this.stageList.findIndex(ele => ele.stagePkid == this.stageId);
+      this.stageList.map(ele => ele.stageId = ele.stageId.toString());
+      let x = this.stageList.findIndex(ele => ele.stageId == this.stageId);
       if(x !== -1) {
         this.stageState = this.stageList[x].state;
       }

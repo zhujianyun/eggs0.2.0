@@ -14,7 +14,21 @@
          :class="starFlag ? 'icon-star' : 'icon-shoucang'"></i>
       <i class="iconfont icon-shuxingliebiaoxiangqing"
          @click="itemInformationShow=true"></i>
-      <i class="iconfont icon-rili fr"></i>
+
+      <div class="fr otherButton">
+        <i class="iconfont icon-19daoru"
+           @click="toLead()"></i>
+        <i class="iconfont icon-haoyou"></i>
+        <el-dropdown @click.native.stop="parthCommand()">
+          <span class="el-dropdown-link">
+            <i class="iconfont icon-gengduo"></i>
+          </span>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item @click.native="parthCommand('editStage')">编辑阶段</el-dropdown-item>
+            <el-dropdown-item @click.native="parthCommand('share')">分享</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+      </div>
       <div class="project_search fr">
         <el-input placeholder="请输入搜索的任务标题"
                   clearable
@@ -23,9 +37,7 @@
                   v-model="searchValue"
                   @input="searchChange">
         </el-input>
-        <i class="iconfont icon-19daoru"></i>
-        <i class="iconfont icon-haoyou"></i>
-        <i class="iconfont icon-gengduo"></i>
+
         <el-collapse-transition>
           <div v-if="searchLists && searchLists.length"
                class="search_list">
@@ -58,18 +70,20 @@
     <div class="project_task_list fl"
          id="taskList">
       <div class="tableBox">
-        <div :class="isFixed?'topTableFixed':'topTable'">
+        <div class="topTable"
+             :class="{'topTableFixed':isFixed}">
           <div class="topBar">
-            <div :class="leftFixed?'stageHeader':'stageListBox'"
-                 class="clearfix">
-              <div class="label ">分区</div>
-              <div class="label ">任务/阶段</div>
+            <div :class="{'stageHeader':leftFixed}"
+                 class="clearfix stageListBox">
+              <div class="label partitionTitle">分区</div>
+              <div class="label taskTitle">任务/阶段</div>
             </div>
-            <div :class="leftFixed ?'stageRight':'stageListBox'"
-                 class=" clearfix ">
-              <div v-for="list in stageList"
+            <div :class="{'stageRight':leftFixed}"
+                 class=" clearfix stageListBox">
+              <div v-for="(list,index) in stageList"
                    :key="list.pkid"
-                   class="stageLists">
+                   class="stageTitleLists"
+                   :class="{'hoverBg':mouseTopIndex==index} ">
                 {{list.title}}
               </div>
             </div>
@@ -91,9 +105,9 @@
                   <div class="partitionsAndStages"
                        v-if="!element.autoExpand">
                     <div ref='partitions'
-                         class="cur"
+                         class="cur partitionsLabel"
                          style="heigth:100px;"
-                         :class="leftFixed?'partitionsLabelFixed':'partitionsLabel'"
+                         :class="{'partitionsLabelFixed':leftFixed}"
                          :style="'height:'+ ((element.taskList.length )* 72) +'px;'">
                       <span class="iconBox">
                         <span class="icon"
@@ -139,6 +153,7 @@
                       </div>
                     </span>
                     <draggable v-model="element.taskList"
+                               class="box"
                                :move='getdata2'
                                @update="datadragEnd2"
                                :options="{
@@ -152,8 +167,11 @@
                         <li v-for="(item,index) in element.taskList"
                             v-if='item.taskId'
                             :key="item.taskId"
-                            :class="{'stageBox':!leftFixed,'stageBoxFixed':leftFixed,'dragging':item.taskId!==''}">
-                          <span class="stageLists cur">
+                            class="stageBox"
+                            @mouseenter="mouseEnter(element,index)"
+                            :class="{'stageBoxFixed':leftFixed,'dragging':item.taskId!==''}">
+                          <span class="stageLists cur"
+                                :class="{'leftTaskFixed':leftFixed,'hoverBg':mouseLeftIndex==index}">
                             <span class="iconBox_">
                               <span class="icon"
                                     @click="move">
@@ -175,17 +193,23 @@
                                       @blur="stageNameBlur(item.taskTitle,item,element,index)">
                             </textarea>
                           </span>
-                          <div class="stageListsBox">
-                            <span v-for="(lists,index) in startime"
-                                  :key="index">
-                              <!-- {{lists}} -->
-                            </span>
+                          <div class="stageListsBox"
+                               :class="{'stageListsBoxFixed':leftFixed}">
                             <div class="stage cur"
                                  v-for="(lists,index) in item.stageTaskList"
-                                 :key="lists.stageId">
-                              {{nowYear}} -{{endtime}}
-                              <div class="stageBg"></div>
-                              <div class="stageInfo cur">
+                                 :key="index"
+                                 @mouseenter='mouseTopEnter(item,index)'>
+                              <!-- 正常显示状态==================================================================== -->
+                              <!-- 1.我参与时 有背景 -->
+                              <div class="stageBg"
+                                   v-if="lists.isPartIn"></div>
+                              <!-- 2.完成时显示 -->
+                              <div class="finishPage"
+                                   v-if='lists.stageTaskState==true&&lists.enabled===true'>
+                                <i class="iconfont icon-wancheng"></i>完成</div>
+                              <!-- 3.开启状态 显示内容 -->
+                              <div class="stageInfo cur"
+                                   v-if="lists.enabled ==true&&lists.stageTaskState==false">
                                 <span class="participantImg">
                                   <span class="img"
                                         v-for="(i,index) in lists.userList"
@@ -195,18 +219,42 @@
                                   </span>
                                 </span>
                                 <div class="participantMain">
-                                  <span class="pieChart"></span>
-                                  <span class="">{{lists.startTime}}-{{lists.endTime}}</span>
-                                  <i class="iconfont icon-wenjian1">2</i>
-                                  <span></span>
+                                  <span class="pieChart">
+                                    <span class="pie1"></span>
+                                    <span class="pie2"></span>
+                                    <span class="pie3"></span>
+                                    <span class="pie4"></span>
+                                  </span>
+                                  <span v-for='(startime,index) of lists.startTimeArr'
+                                        :key="1+index">
+                                    <span v-if="!startime.year==nowYear">{{startime.year}}/</span>
+                                    <span> {{startime.month}}/{{startime.day}} {{startime.hour}}:{{startime.minute}} -</span>
+                                  </span>
+                                  <span v-for='(end,index) of lists.endTimeArr'
+                                        :key="2+index">
+                                    <span v-if="!end.year==nowYear">{{end.year}}/</span>
+                                    <span> {{end.month}}/ {{end.day}} {{end.hour}}:{{end.minute}}</span>
+                                  </span>
+                                  <i class="iconfont icon-wenjian1"
+                                     v-if="lists.fileCont!=0||lists.fileCont!=''">{{lists.fileCont}}</i>
                                 </div>
                               </div>
-                              <div class="stageHover">
+                              <!-- 4.关闭状态 不显示内容 -->
+                              <div v-if='lists.enabled===false'
+                                   class="closePage">
+                                <span class="closeLine"></span>
+                              </div>
+
+                              <!-- hover显示状态 =====================================================================-->
+                              <!--1. 参与与不参与 都显示详细内容  -->
+                              <div class="stageHover"
+                                   v-if="lists.stageTaskState===false&&lists.enabled===true||lists.enabled===''">
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="参与任务"
-                                            @click.native="enter()"
-                                            placement="top-start">
+                                            @click.native="partIn(item,lists)"
+                                            placement="top-start"
+                                            v-if="!lists.isPartIn">
                                   <el-button>
                                     <span class="iconBg">
                                       <i class="iconfont icon-jiaru-1"></i>
@@ -216,7 +264,9 @@
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="取消参与"
-                                            placement="top-start">
+                                            @click.native="cancelPartIn(item,lists)"
+                                            placement="top-start"
+                                            v-if="lists.isPartIn">
                                   <el-button>
                                     <span class="iconBg">
                                       <i class="iconfont icon-tuichu-"></i>
@@ -226,44 +276,132 @@
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="进入详情"
-                                            @click.native="enterDetail()"
+                                            @click.native="enterDetail(item,lists)"
                                             placement="top-start">
-                                  <el-button>
+                                  <el-button class="timeShow">
                                     <span class="iconBg">
                                       <i class="iconfont icon-xiangqing"></i>
                                     </span>
                                   </el-button>
                                 </el-tooltip>
+
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="添加时间"
                                             placement="top-start">
                                   <el-button>
-                                    <i class="iconfont icon-rili1 otherColor "></i>
+                                    <div class="calendar">
+                                      <el-date-picker v-model="value6"
+                                                      prefix-icon='iconfont icon-rili1'
+                                                      type="datetimerange"
+                                                      clearable
+                                                      @change="checkTime(item,lists,value6)"
+                                                      range-separator="至"
+                                                      start-placeholder="开始日期"
+                                                      end-placeholder="结束日期">
+                                      </el-date-picker>
+                                    </div>
                                   </el-button>
                                 </el-tooltip>
-                                <el-tooltip class="item"
-                                            effect="dark"
-                                            content="添加成员"
-                                            placement="top-start">
-                                  <el-button>
-                                    <i class="iconfont icon-tianjiarenyuan otherColor"></i>
-                                  </el-button>
-                                </el-tooltip>
+                                <div class="people">
+                                  <div class="add_people_box"
+                                       @click.stop="addPeople(item,lists)">
+                                    <el-tooltip class="item"
+                                                effect="dark"
+                                                content="添加成员"
+                                                placement="top-start">
+                                      <el-button>
+                                        <i class="iconfont icon-tianjiarenyuan otherColor"></i>
+                                      </el-button>
+                                    </el-tooltip>
+                                    <el-collapse-transition>
+                                      <Participant v-if="lists.addPopShow"
+                                                   ref="addPeople"
+                                                   id="addPeople"
+                                                   :creatorId="userPkid"
+                                                   :defaultKeys="defaultKeys"
+                                                   :userList="userList"
+                                                   @handleSure="addPeopleSure"
+                                                   @handleInvite="invitePeople" />
+
+                                    </el-collapse-transition>
+                                  </div>
+                                </div>
+                                <el-dropdown>
+                                  <span class="el-dropdown-link">
+                                    <el-tooltip class="item"
+                                                effect="dark"
+                                                content="上传文件"
+                                                placement="top-start">
+                                      <el-button>
+                                        <i class="iconfont icon-shangchuan otherColor"></i>
+                                      </el-button>
+                                    </el-tooltip>
+                                  </span>
+                                  <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item>
+                                      <el-upload ref="demandUpload"
+                                                 class="from_local dis-in-bl"
+                                                 :action="'/File_Upload.ashx?&projectId='+projectItem.projectid+'&taskId='+taskId+'&userId='+userPkid+'&replyId=-1'"
+                                                 :show-file-list="false"
+                                                 :multiple="true"
+                                                 :on-error="uploadError"
+                                                 :on-success="uploadSuccess"
+                                                 :on-progress="uploadProgress"
+                                                 :limit="9"
+                                                 :on-exceed="handleExceed"
+                                                 :before-upload="beforeUpload">
+                                        <span class="upload_name">本地上传</span>
+                                      </el-upload>
+
+                                    </el-dropdown-item>
+                                    <el-dropdown-item>从个人文档上传</el-dropdown-item>
+                                  </el-dropdown-menu>
+                                </el-dropdown>
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="上传文件"
                                             placement="top-start">
                                   <el-button>
-                                    <i class="iconfont icon-shangchuan otherColor"></i>
                                   </el-button>
                                 </el-tooltip>
                                 <el-tooltip class="item"
                                             effect="dark"
-                                            content="关闭阶段"
+                                            :content="lists.userList.length?'已有内容无法关闭':'关闭阶段'"
+                                            @click.native="closeStage(item, lists)"
                                             placement="top-start">
                                   <el-button>
-                                    <i class="iconfont icon-jinzhi otherColor"></i>
+                                    <i class="iconfont icon-jinzhi otherColor "
+                                       :class="{'cur_dis':lists.userList.length}"></i>
+                                  </el-button>
+                                </el-tooltip>
+
+                              </div>
+
+                              <div class="finishHover"
+                                   v-if="lists.stageTaskState===true&&lists.enabled===true">
+                                <el-tooltip class="item"
+                                            effect="dark"
+                                            content="进入详情"
+                                            @click.native="enterDetail(item,lists)"
+                                            placement="top-start">
+                                  <el-button class="timeShow">
+                                    <span class="iconBg">
+                                      <i class="iconfont icon-xiangqing"></i>
+                                    </span>
+                                  </el-button>
+                                </el-tooltip>
+                              </div>
+
+                              <div v-if="lists.enabled===false"
+                                   class="closeHover">
+                                <el-tooltip class="item"
+                                            effect="dark"
+                                            content="开启阶段"
+                                            @click.native="openStage(item, lists)"
+                                            placement="top-start">
+                                  <el-button>
+                                    <i class="iconfont icon-kaishi otherColor "></i>
                                   </el-button>
                                 </el-tooltip>
                               </div>
@@ -321,6 +459,7 @@
             :projectId='projectId'
             :classify='classify'></Info>
     </transition>
+
     <transition name="fade1">
       <Reminder2 v-if="reminder2Flag"
                  :type="1"
@@ -329,26 +468,59 @@
                  @handleCancle="reminderCancel"
                  @handleSure="reminderSure" />
     </transition>
+    <transition name="fade1">
+      <ShadePop v-if="popShow"
+                @closePop='closePop'
+                :projectId='projectId'
+                :userPkid='userPkid' />
+
+      <ToLead v-if="toLeadShow"
+              @closePop='closePop'></ToLead>
+    </transition>
+    <!-- 添加人员 -->
+    <transition name="fade1">
+      <add-people v-if="inviteShow"
+                  :defaultTreeKeys="inviteDefaultKeys"
+                  @handleCancel="cancelAddPeople" />
+    </transition>
   </div>
 </template>
 <script>
 import { mapMutations } from 'vuex';
 import Info from "../common/info";
-import Reminder2 from "../../common/reminder2";
+import ShadePop from "../common/shadePop";
+import ToLead from "./common/toLead";
+import Participant from "./common/participant";
+import UploadProgress from "../../common/uploadProgress";
+import AddPeople from "../../common/addPeople";
 
+import Reminder2 from "../../common/reminder2";
 // import { searchList } from './data.js';/ 
 import draggable from "vuedraggable";
+import { WSAESOCKTNOSUPPORT } from 'constants';
 
 export default {
   components: {
     draggable,
     Info,
-    Reminder2
+    Reminder2,
+    ShadePop,
+    ToLead,
+    Participant,
+    UploadProgress,
+    AddPeople
   },
   data() {
     return {
+      mouseLeftIndex: 0,
+      mouseTopIndex: 0,
+
+      taskPeopleList: [],
+      value6: '',
+      toLeadShow: false, //弹框 导入是否显示 
+      popShow: false,// 弹框 阶段排序是否显示
       reminder2Flag: false, //确认删除弹框
-      errMessage: 'hahh',
+      errMessage: '',
       newStageName: '',
       buttonMes: '确认',
       itemInformationShow: false, //INFO是否显示
@@ -369,6 +541,10 @@ export default {
       starFlag: true,
       detailsShow: false,
       taskId: '',
+
+      nowTaskId: '', //当前点击的 id
+      nowStageId: '', //当前点击的 id
+
       searchLists: [],
       searchValue: '',
       //  表格选项
@@ -385,104 +561,389 @@ export default {
       newTask: '',
       delPartitionLists: [], //当前删除的分区
       delIndex: '', //当前删除的分区的index
-      nowYear: (new Date()).getYear(), //当前年
+      nowYear: '', //当前年
+      userList: [], //项目参与人员列表
+      addPeopleShow: false, // 添加参与者是否显示
+      fileProgressList: '',
+      inviteShow: false, // 邀请添加人员
+
+      defaultKeys: [], //默认添加的人员
+
+
+      fileTypeImg: [
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/2.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/3.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/4.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/5.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/6.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/7.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/8.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/9.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/10.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/11.png")
+        }
+      ],
     };
   },
   watch: {
 
   },
   computed: {
-    stageTaskLists() {
-      let stageList = [];
-      for (let list of this.partitionsList) {
-        for (let task of list.taskList) {
-          stageList.push(task.stageTaskList)
-          for (let item of task.stageTaskList) {
-            console.log(item.startTime.split('/')[0])
-            // let startTime = item.startTime.split('/')[0].splice(2,2);
-            // console.log(startTime)
-            // item.startTime = item.startTime.split('/');
-          }
-        }
-      }
-      // return stageList
-    },
-    startime() {
-      let startime = [];
+    // defaultKeys() {
+    //   let arr = [];
+    //   console.log(this.taskPeopleList)
+    //   if (this.taskPeopleList) {
+    //     for (let x of this.taskPeopleList) {
+    //       arr.push(x.userpkid);
+    //     }
+    //   }
 
-      for (let list of this.partitionsList) {
-        for (let task of list.taskList) {
-          for (let item of task.stageTaskList) {
-            startime.push(item.startTime);
-          }
-        }
-      }
-      let time = []
-      for (let i of startime) {
-        // i = i.splice(1, 1);
-        // time = i.splice(1, 1)
-        console.log(i)
-        if (i) {
-          // i.splice(1,1)
-        }
-
-      }
-      console.log(startime)
-
-      return startime
-    },
-    endtime() {
-      return 1
-    },
-    startTimes() {
-      let stagelist = [];
-      for (let list of this.partitionsList) {
-        for (let task of list.taskList) {
-          stagelist = task.stageTaskList;
-        }
-      }
-      console.log(this.partitionsList, 'eddddddddddd')
-      let startime = [];
-      for (let item of stagelist) {
-
-        if (item.startTim || item.endTime) {
-          item.startTime = item.startTime.split(' ');
-          item.startTime[0] = item.startTime[0].split('/')[0].substring(2, 4) + '/' + item.startTime[0].split('/')[1] + '/' + item.startTime[0].split('/')[2];
-          item.startTime[1] = item.startTime[1].split(':')[0] + ':' + item.startTime[1].split(':')[1];
-          // if()
-          console.log(item.endTime, item.startTim)
-
-          item.endTime = item.endTime.split(' ');
-          item.endTime[0] = item.endTime[0].split('/')[0].substring(2, 4) + '/' + item.endTime[0].split('/')[1] + '/' + item.startTime[0].split('/')[2];
-          item.endTime[1] = item.endTime[1].split(':')[0] + ':' + item.endTime[1].split(':')[1];
-        }
-
-      }
-      console.log(stagelist)
-
-      return stagelist;
-
-    }
+    //   return arr;
+    // }
   }
-
   ,
   methods: {
     ...mapMutations(['DETAILS_CHANGE', 'TASKITEM_CHANGE', 'TASK_POSITION', 'PROJECT_CHANGE']),
     // 展开详情
-    enterDetail() {
+    // 取消
+    mouseEnter(el, index) {
+      this.mouseLeftIndex = index;
+    },
+    mouseTopEnter(el, index) {
+      this.mouseTopIndex = index;
+    },
+    // 点击邀请好友
+    invitePeople(ids) {
+      // this.addPeopleShow = false;
+      this.inviteShow = true;
+      this.inviteDefaultKeys = ids;
+    },
+
+    // 取消添加人员/邀请人员中发生变化事发送请求
+    cancelAddPeople(obj) {
+      if (obj) {
+        (obj.invite === false) && (this.inviteShow = false);
+        // 发送请求，taskPeopleList发生变化
+        console.log("add-people", obj);
+        this.addPeopleSure(Object.assign(obj, { add: obj.addIds, del: [] }));
+
+      } else {
+        this.inviteShow = false;
+      }
+    },
+    // 任务片段操作
+    // 1.1. 参与任务
+    partIn(item, list) {
+      console.log(item, list)
+
+      let obj = { 'addVale': this.userPkid, 'delVale': '', 'stageId': list.stageId, 'taskId': item.taskId, 'myUserId':  this.userPkid }
+
+      this.$HTTP('post', '/stageTask_user_update', obj).then(res => {
+        console.log(res)
+
+      })
+    },
+    // 1.2.取消参与
+    cancelPartIn(item, list) {
+      let obj = { 'addVale': '', 'delVale': this.userPkid, 'stageId': list.stageId, 'taskId': item.taskId, 'myUserId':  this.userPkid }
+      this.$HTTP('post', '/stageTask_user_update', obj).then(res => {
+        console.log(res)
+      })
+    },
+
+    // 3.修改任务时间
+    checkTime(item, list, val) {
+      console.log(item, list, val)
+
+
+      // if(val){}
+      let data = {
+        'stageId': list.stageId,
+        'taskId': item.taskId,
+        'startTime': this.format(val[0], "yyyy-MM-dd HH:mm:ss"),
+        'endTime': this.format(val[1], "yyyy-MM-dd HH:mm:ss"),
+      }
+        ;
+      this.$HTTP('post', '/stageTask_date_update', data).then(res => {
+        console.log(res)
+      })
+    },
+    // 关闭阶段
+    closeStage(item, list) {
+      list.enabled = false;
+      this.partitionsList = [...this.partitionsList];
+
+      let data = {
+        'stageId': list.stageId,
+        'taskId': item.taskId,
+        'enabled': 0,
+      }
+
+      this.$HTTP('post', '/stageTask_IsOpen', data).then(res => {
+        console.log(list)
+      })
+    },
+    // 开启阶段
+    openStage(item, list) {
+      list.enabled = true;
+      this.partitionsList = [...this.partitionsList];
+
+      let data = {
+        'stageId': list.stageId,
+        'taskId': item.taskId,
+        'enabled': 1,
+      }
+      this.$HTTP('post', '/stageTask_IsOpen', data).then(res => {
+      })
+    },
+    // 获取项目成员列表
+    getProjectUser(item) {
+      item.addPopShow = true;
+      this.partitionsList = [...this.partitionsList];
+      return new Promise((resolve, reject) => {
+        let obj = {
+          projectId: this.projectId,
+          myUserId: this.userPkid
+        }
+        this.$HTTP('post', '/project_usersList_get', obj).then(res => {
+          this.userList = res.result;
+          resolve(this.userList)
+        }).catch(err => {
+          reject(err);
+        });
+      });
+
+    },
+
+
+    async addPeople(list, item, ) {
+      this.nowTaskId = list.taskId;
+      this.nowStageId = item.stageId;
+      this.taskPeopleList = item.userList;
+
+      if (this.taskPeopleList) {
+        for (let x of this.taskPeopleList) {
+          this.defaultKeys.push(x.userpkid);
+        }
+      }
+
+
+
+
+      console.log(this.taskPeopleList)
+      try {
+        await this.getProjectUser(item);
+        // this.addPeopleShow = true;;
+      } catch (err) {
+        console.log(err);
+      }
+      let clickHide = e => {
+        item.addPopShow = false;
+        this.partitionsList = [...this.partitionsList];
+
+        // this.addPeopleShow = false; // 隐藏
+        $(document).unbind("click", clickHide)
+
+      };
+      $(document).bind("click", clickHide)
+    },
+
+    // 添加/删除人员成功
+    addPeopleSure(data) {
+
+      this.addPeopleShow = false; // 隐藏
+      console.log('participant', data);
+      // 发送请求
+      if (data && (data.add || data.del)) {
+        let add = [...data.add];
+        let del = [...data.del];
+        let obj = {
+          addVale: add.join(','),
+          delVale: del.join(','),
+          stageId: this.nowStageId,
+          taskId: this.nowTaskId,
+        }
+
+        this.$HTTP('post', '/stageTask_user_update', obj).then(res => {
+          // 发送请求，taskPeopleList发生变化
+          let arr = res.result;
+          if (del) {
+            for (let x = 0; x < del.length; x++) {
+              for (let y = 0; y < this.taskPeopleList.length; y++) {
+                if (del[x] == this.taskPeopleList[y].userId) {
+                  this.taskPeopleList.splice(y, 1);
+                  y--;
+                }
+              }
+            }
+          }
+          // this.taskPeopleList = this.taskPeopleList.concat(arr.taskUserList);
+          console.log('任务添加人员', res);
+        }).catch(err => {
+          console.log('任务添加人员失败', err);
+        });
+        // 发送请求
+      }
+    },
+
+    // ================================================================
+    // 文件上传
+
+
+    // 文件上传失败
+    uploadError(err, file) {
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+      if (ids !== -1) {
+        this.fileProgressList[ids].status = 3;
+      }
+    },
+    // 文件上传成功
+    uploadSuccess(res, _file) {
+      let file = Object.assign({}, _file.response.result);
+      // let type = file.name.split(".")[1];
+      // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
+      let file1 = Object.assign({}, file);
+      file1 = this.handleFile([file1]);
+      this.demandFile = this.demandFile.concat(file1);
+
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+      if (ids !== -1) {
+        this.fileProgressList[ids].status = 2;
+      }
+      let returns = this.popFileProgress(this.fileProgressList);
+      if (this.uploadProgressFlag && returns) {
+        setTimeout(() => {
+          this.closeProgress();
+        }, 2000);
+      }
+    },
+    // 文件上传超出提示
+    handleExceed(files, fileList) {
+      this.$message.warning("最多只能选择9个文件");
+    },
+    // 文件上传前
+    beforeUpload(file) {
+      // 先判断有没有重复
+      let index = this.demandFile.findIndex(ele => {
+        return ele.name == file.name;
+      });
+      if (index !== -1) {
+        this.$message("文件重复");
+        return false;
+      }
+
+      if (!this.uploadProgressFlag) {
+        this.uploadProgressFlag = true;
+      }
+      let sizes = this.conver(file.size);
+      let FileTypeNum = this.getSuffix(file.name);
+      FileTypeNum = this.getFlieTyle(FileTypeNum);
+      let obj = {
+        uid: file.uid,
+        size: file.size,
+        sizes: sizes,
+        nowSize: 0,
+        name: file.name,
+        type: 2,
+        progress: 0,
+        status: 1,
+        FileTypeNum: FileTypeNum,
+        imgUrl: "",
+        file: file
+      };
+      this.fileProgressList.unshift(obj);
+    },
+
+    // 文件上传中
+    uploadProgress(event, file, fileList) {
+      let percents = parseInt(event.percent);
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+
+      if (ids !== -1) {
+        this.fileProgressList[ids].progress = percents;
+        this.fileProgressList[ids].nowSize = this.conver(percents / 100 * this.fileProgressList[ids].size);
+
+        // 测试重新上传
+        if (percents > 30 && percents < 35) {
+          if (file.reUploadXhr) {
+            file.reUploadXhr.abort();
+            file.reUploadXhr = null;
+          } else {
+            this.$refs.demandUpload.abort(file);
+          }
+          this.uploadError('err', file);
+        }
+
+        if (
+          !this.fileProgressList[ids].imgUrl &&
+          this.fileProgressList[ids].FileTypeNum == 1
+        ) {
+          this.fileProgressList[ids].imgUrl = file.url;
+        }
+      }
+    },
+
+    // ======================================================
+
+    toLead() {
+      console.log('hah')
+      this.toLeadShow = true
+    },
+    // 关闭弹框
+    closePop() {
+      this.popShow = false;
+      this.toLeadShow = false;
+    },
+    parthCommand(command) {
+      if (command == 'editStage') {
+        console.log('chufa')
+        this.popShow = true;
+      }
+    },
+
+    // 展开详情
+    enterDetail(item, lists) {
       this.$router.push({
         name: 'TaskDetail',
         params: {
-          projectId: 1252,
-          stageId: 38,
-          taskId: 118,
+          projectId: this.projectId,
+          stageId: lists.stageId,
+          taskId: item.taskId,
         }
       });
     },
-    // 取消
-    enter() {
-      console.log(12)
-    },
+
     reminderCancel() {
       this.reminder2Flag = false;
     },
@@ -540,6 +1001,7 @@ export default {
     openDelPartition(element, index) {
       this.delPartitionLists = element;
       this.delIndex = index;
+      this.errMessage = '您确认删除该分区？删除后，分区内的任务将移入到未分区内';
       this.reminder2Flag = true;
     },
     // 删除分区 操作
@@ -675,7 +1137,7 @@ export default {
     goFlod(el) {
       el.autoExpand = !el.autoExpand;
 
-      let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, 'partitionId': el.partitionId, 'isState': !el.autoExpand }
+      let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, 'partitionId': el.partitionId, 'isState': el.autoExpand }
       this.$HTTP('post', '/partition_operation', obj).then(res => {
 
       })
@@ -729,7 +1191,6 @@ export default {
     getProjectAll() {
       let data = { project: this.projectId, 'myUserId': this.userPkid }
       this.$HTTP('post', '/project_get_info', data).then(res => {
-
         this.partitionsList = res.result;
         for (let list of this.partitionsList) {
           list.isnew = false;
@@ -741,17 +1202,72 @@ export default {
                 list.taskList.splice(i, 1)
               }
               this.stageTaskList = i.stageTaskList;
+              for (let item of i.stageTaskList) {
+
+                console.log(item, 'hahhha  ')
+                item.addPopShow = false;
+                if (item.userList.length) {
+                  let indexs = item.userList.findIndex(res => {
+                    return res.userpkid == this.userPkid;
+                  })
+                  if (indexs !== -1) {
+                    item.isPartIn = true;
+                  } else {
+                    item.isPartIn = false;
+                  }
+                } else {
+                  item.isPartIn = false;
+                }
+
+
+                if (item.startTime) {
+
+
+                  console.log(new Date(item.startTime) - new Date(), '时间差');
+
+                  console.log(new Date(item.endTime) - new Date(item.startTime), '时间差');
+
+                  let time = item.startTime.split(' ');
+                  time = time[0].split('/').concat(time[1].split(':'));
+                  item.startTimeArr = [
+                    {                      year: time[0].substring(2, 4),
+                      month: time[1],
+                      day: time[2],
+                      hour: time[3],
+                      minute: time[4]
+                    }
+                  ]
+                }
+                if (item.endTime) {
+                  let time = item.endTime.split(' ');
+                  time = time[0].split('/').concat(time[1].split(':'));
+                  item.endTimeArr = [
+                    {                      year: time[0].substring(2, 4),
+                      month: time[1],
+                      day: time[2],
+                      hour: time[3],
+                      minute: time[4]
+                    }
+                  ]
+                }
+
+                // console.log(item.endTime, '是瑟吉欧飞机了解到放了几fi')
+                // if()
+              }
             }
           }
         }
         console.log(this.partitionsList)
       })
     },
-
   },
   created() {
+    let nowTime = new Date();
+    this.nowYear = String(new Date().getFullYear()).slice(2, 4);
+
     this.getstageList(); //获取阶段列表 
     this.getProjectAll();
+
   },
   mounted() {
     let _ = this;
@@ -781,7 +1297,9 @@ export default {
 .fade-leave-active {
   transition: opacity 0.1s;
 }
-
+.iconfontH:hover {
+  color: @mainColor !important;
+}
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
 }
@@ -802,12 +1320,22 @@ export default {
     transform: rotate(180deg);
   }
 }
-
+.hoverBg {
+  background: #f2f2f2 !important;
+}
+.shade {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: red;
+  z-index: 10000;
+}
 .project_task {
   width: 100%;
   height: 100%;
   // height: calc(~ '100% - 50px');
   overflow: hidden;
+
   .project_task_top {
     width: 100%;
     height: 50px;
@@ -915,6 +1443,19 @@ export default {
         }
       }
     }
+    .otherButton {
+      height: 50px;
+      line-height: 50px;
+      vertical-align: middle;
+      margin-left: 10px;
+      .el-row {
+        height: 30px;
+        display: inline-block;
+      }
+      .el-dropdown {
+        height: 30px;
+      }
+    }
 
     .icon-rili {
       padding: 0 5px;
@@ -939,93 +1480,56 @@ export default {
         .topBar {
           display: flex;
           flex-direction: row;
+          // 左右移动 左侧 两个title 定位
           .stageHeader {
             display: flex;
             flex-direction: row;
             position: fixed;
+            z-index: 999;
           }
-          .stageRight {
-            padding-left: 224px;
+
+          .label {
+            width: 112px;
+            height: 40px;
+            border-right: 1px solid #eeeeee;
+            border-bottom: 1px solid #eeeeee;
+            .box_sizing;
+            background: #fff;
+            text-align: center;
+            line-height: 40px;
+          }
+          .taskTitle {
+            width: 140px;
+          }
+          .stageListBox {
             display: flex;
             flex-direction: row;
           }
-        }
-        .label {
-          width: 112px;
-          height: 40px;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          .box_sizing;
-          background: #fff;
-          text-align: center;
-          line-height: 40px;
-        }
-        .stageListBox {
-          display: flex;
-          flex-direction: row;
-        }
-        // 阶段标题内容
-        .stageLists {
-          z-index: 99;
-          width: 252px;
-          height: 40px;
-          line-height: 40px;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          background: #fff;
-          text-align: center;
-          line-height: 40px;
-          .box_sizing;
+          .stageRight {
+            padding-left: 253px;
+            display: flex;
+            flex-direction: row;
+          }
+          //4个阶段 标题 内容
+          .stageTitleLists {
+            z-index: 99;
+            width: 252px;
+            height: 40px;
+            line-height: 40px;
+            border-right: 1px solid #eeeeee;
+            border-bottom: 1px solid #eeeeee;
+            background: #fff;
+            text-align: center;
+            line-height: 40px;
+            .box_sizing;
+          }
         }
       }
+      // 上下滚动 定位样式
       .topTableFixed {
-        height: 40px;
-        background: #fff;
         position: fixed;
-        // box-shadow:
         z-index: 99;
         box-shadow: 0px 2px 4px 0px rgba(153, 153, 153, 0.4);
-        .topBar {
-          display: flex;
-          flex-direction: row;
-          .stageHeader {
-            display: flex;
-            flex-direction: row;
-            position: fixed;
-          }
-          .stageRight {
-            padding-left: 224px;
-            display: flex;
-            flex-direction: row;
-          }
-        }
-        .label {
-          width: 112px;
-          height: 40px;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          .box_sizing;
-          background: #fff;
-          text-align: center;
-          line-height: 40px;
-        }
-        .stageListBox {
-          display: flex;
-          flex-direction: row;
-        }
-        // 阶段（标题）内容
-        .stageLists {
-          z-index: 99;
-          width: 252px;
-          height: 40px;
-          line-height: 40px;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          background: #fff;
-          text-align: center;
-          line-height: 40px;
-          .box_sizing;
-        }
       }
 
       .mainContentFixed {
@@ -1035,36 +1539,435 @@ export default {
         display: flex;
         flex-direction: column;
         z-index: 1;
+        //1. 每行内容 包含分区（任务 阶段）
         .partitionsMain {
           display: flex;
           flex-direction: row;
           min-height: 72px;
-          background: #fff;
           .partitionsAndStages {
             display: flex;
             flex-direction: row;
-            // height: 72px;
-            // 阶段标题内容
+            // 2. 每条任务阶段 及任务片段内容（不含分区）
             .stageBox {
               display: flex;
               flex-direction: row;
               .stageLists {
                 height: 72px;
-                width: 112px;
-                line-height: 72px;
+                width: 140px;
                 background: #fff;
+                line-height: 72px;
                 border-left: 1px solid rgba(153, 153, 153, 0);
                 border-top: 1px solid rgba(153, 153, 153, 0);
                 border-right: 1px solid #eeeeee;
                 border-bottom: 1px solid #eeeeee;
+                .box_sizing;
                 text-align: center;
+                position: relative;
+                .stageName {
+                  padding: 20px 0;
+                  width: 100px;
+                  border: none;
+                  .box_sizing;
+                }
+                .iconBox_ {
+                  position: absolute;
+                  height: 30px;
+                  line-height: 30px;
+                  left: 0px;
+                  .icon {
+                    display: inline-block;
+                    width: 14px;
+                    height: 14px;
+                    line-height: 14px;
+                    background: rgba(246, 250, 255, 1);
+                    border-radius: 4px;
+                    margin: 2px;
+                    display: none;
+                    i {
+                      font-size: 12px;
+                    }
+                  }
+                }
+              }
+              .stageLists:hover {
+                border: 1px solid#C4C4C4;
+                .icon {
+                  display: inline-block;
+                }
+              }
+
+              .leftTaskFixed {
+                z-index: 99;
+                position: fixed;
               }
               .stage {
                 width: 252px;
                 height: 72px;
                 border-right: 1px solid #eeeeee;
                 border-bottom: 1px solid #eeeeee;
+                .box_sizing;
+                background: #fff;
               }
+              // 阶段（内容）样式
+              .stageListsBox {
+                display: flex;
+                flex-direction: row;
+                // z-index: 1;
+                // 关闭状态样式
+                .closePage {
+                  height: 72px;
+                  text-align: center;
+                  .closeLine {
+                    margin-top: 36px;
+                    display: inline-block;
+                    width: 40px;
+                    height: 1px;
+                    background: #f2f2f2;
+                  }
+                }
+                // 完成状态
+                .finishPage {
+                  height: 72px;
+                  text-align: center;
+                  line-height: 72px;
+                  color: #3684ff;
+                }
+                .stage {
+                  position: relative;
+                  .stageBg {
+                    position: absolute;
+                    display: inline-block;
+                    height: 52px;
+                    width: 100%;
+                    background: rgba(171, 204, 255, 0.1);
+                    top: 10px;
+                    border-left: 2px solid #3684ff;
+                    z-index: 1;
+                  }
+                  .stageHover {
+                    position: absolute;
+                    display: inline-block;
+                    height: 100%;
+                    width: 100%;
+                    z-index: 100;
+                    padding: 25px 35px;
+                    display: none;
+                    .box_sizing;
+                    .el-button {
+                      background: none;
+                      border: none;
+                      padding: 0;
+                      i {
+                        color: #fff;
+                        font-size: 14px;
+                      }
+                      .otherColor {
+                        color: #666666;
+                      }
+                    }
+                    .iconBg {
+                      display: inline-block;
+                      width: 24px;
+                      height: 24px;
+                      text-align: center;
+                      line-height: 24px;
+                      background: rgba(54, 132, 255, 1);
+                      border-radius: 4px;
+                    }
+
+                    .people {
+                      display: inline-block;
+                      // padding-left: 30px;
+                      // margin-top: 10px;
+                      .people_header {
+                        position: relative;
+                        .dis-in-bl;
+                        .cur;
+                        padding: 0 5px;
+                        position: relative;
+                        .del_peop {
+                          position: absolute;
+                          top: 1px;
+                          left: 5px;
+                          width: 20px;
+                          height: 20px;
+                          color: #fff;
+                          text-align: center;
+                          vertical-align: middle;
+                          line-height: 20px;
+                          background: #5f5f5f;
+                          opacity: 0.8;
+                          .border_radius(@br: 4px;);
+                          .dis-in-bl;
+                          z-index: 3;
+                        }
+                        .icon_finish {
+                          bottom: 1px;
+                          right: 6px;
+                          z-index: 2;
+                        }
+                      }
+
+                      .add_people_box {
+                        .dis-in-bl;
+                        position: relative;
+                        margin: 0 5px;
+                        .add_people {
+                          .dis-in-bl;
+                          width: 20px;
+                          height: 20px;
+                          text-align: center;
+                          line-height: 20px;
+                          .border_radius(@br: 2px;);
+                          background: @bg-f2f2f2;
+                          font-size: 12px;
+                          color: #cdcdcd;
+                          font-weight: bold;
+                          &:hover {
+                            color: @mainColor;
+                          }
+                        }
+                        .add_people_show {
+                          color: @mainColor;
+                        }
+                      }
+                    }
+                    // 日历
+                    .calendar {
+                      .el-date-editor {
+                        width: 20px;
+                        border: none;
+                        input,
+                        span {
+                          display: none;
+                        }
+                      }
+                      i {
+                        color: #666666;
+                      }
+                    }
+                  }
+                  .finishHover {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    display: inline-block;
+                    height: 100%;
+                    width: 100%;
+                    z-index: 100;
+                    background: #ffffff;
+                    text-align: center;
+                    display: none;
+                    .el-button {
+                      background: none;
+                      border: none;
+                      padding: 0;
+                      line-height: 72px;
+                      i {
+                        color: #fff;
+                        font-size: 14px;
+                      }
+                      .otherColor {
+                        color: #666666;
+                      }
+                    }
+                    .iconBg {
+                      display: inline-block;
+                      width: 24px;
+                      height: 24px;
+                      text-align: center;
+                      line-height: 24px;
+                      background: rgba(54, 132, 255, 1);
+                      border-radius: 4px;
+                    }
+                  }
+                  .closeHover {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    display: inline-block;
+                    height: 100%;
+                    width: 100%;
+                    z-index: 3;
+                    background: #ffffff;
+                    text-align: center;
+                    display: none;
+                    .el-button {
+                      background: none;
+                      border: none;
+                      padding: 0;
+                      line-height: 72px;
+                      i {
+                        color: #fff;
+                        font-size: 14px;
+                      }
+                      .otherColor {
+                        color: #666666;
+                      }
+                    }
+                  }
+                  .stageInfo {
+                    position: absolute;
+                    padding: 7px 0;
+                    .box_sizing;
+                    top: 10px;
+                    display: inline-block;
+                    height: 52px;
+                    z-index: 2;
+                    width: 100%;
+                    text-align: center;
+
+                    .participantImg {
+                      height: 20px;
+                      .img {
+                        display: inline-block;
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 3px;
+                        overflow: hidden;
+                        margin: 0 4px;
+                        img {
+                          width: 20px;
+                          height: 20px;
+                        }
+                      }
+                    }
+                    .participantMain {
+                      color: #666666;
+                      .pieChart {
+                        display: block;
+                        width: 100px;
+                        height: 100px;
+                        background: skyblue;
+                        position: relative;
+                        border-radius: 50%;
+                        overflow: hidden;
+                        .pie1 {
+                          position: absolute;
+                          left: 0px;
+                          top: 0px;
+                          display: block;
+                          width: 200px;
+                          height: 200px;
+                          background: yellow;
+                          transform: skewX(0deg);
+                          // transform:rotate(deg);
+                          transform-origin: 100% 100%; /*定义动画的旋转中心点*/
+                        }
+                        .pie2 {
+                          position: absolute;
+                          left: 50px;
+                          top: 0px;
+                          display: block;
+                          width: 50px;
+                          height: 50px;
+                          background: pink;
+                          transform: rotate(0deg);
+                          transform-origin: 0 100%; /*定义动画的旋转中心点*/
+                        }
+                        .pie3 {
+                          position: absolute;
+                          left: 0px;
+                          top: 50px;
+                          display: block;
+                          width: 50px;
+                          height: 50px;
+                          background: black;
+                          transform: rotate(0deg);
+                          transform-origin: 100% 100%; /*定义动画的旋转中心点*/
+                        }
+                        .pie4 {
+                          position: absolute;
+                          left: 0px;
+                          top: 50px;
+                          display: block;
+                          width: 50px;
+                          height: 50px;
+                          background: slateblue;
+                          transform: rotate(0deg);
+                          transform-origin: 100% 100%; /*定义动画的旋转中心点*/
+                        }
+
+                        // #3684FF
+                      }
+                      .wrapper {
+                        width: 300px;
+                        height: 100px;
+                        border: 2px dotted red;
+                        margin: 30px auto;
+                      }
+                      .wrapper div {
+                        width: 300px;
+                        height: 100px;
+                        line-height: 100px;
+                        text-align: center;
+                        color: #fff;
+                        background: orange;
+                        // -webkit-transform: skew(45deg);
+                        // -moz-transform: skew(45deg)  ;
+                        // transform: skew(45deg);
+                      }
+
+                      // .pieChart::before {
+                      //   content: "";
+                      //   display: block;
+                      //   margin-left: 50%;
+                      //   height: 100%;
+                      //   background: yellowgreen;
+                      //   border-radius: 0 100% 100% 0/50%;
+                      //   transform-origin: left;
+                      //   transform: rotate(108deg);
+                      // }
+                      @keyframes spin {
+                        to {
+                          transform: rotate(0.5turn);
+                        }
+                      }
+                      @keyframes bg {
+                        50% {
+                          background: #655;
+                        }
+                      }
+                      span {
+                        font-size: 12px;
+                      }
+                      i {
+                        font-size: 12px;
+                      }
+                    }
+                  }
+                }
+                .stage:hover {
+                  .stageHover {
+                    position: absolute;
+                    display: inline-block;
+                    height: 100%;
+                    width: 100%;
+                    background: #ffffff;
+                    border: 1px solid #c4c4c4;
+                    z-index: 3;
+                    display: block;
+                    padding: 25px 35px;
+                    .box_sizing;
+                  }
+                  .closeHover {
+                    display: block;
+                  }
+                  .finishHover {
+                    display: block;
+                  }
+                }
+              }
+              // 阶段定位后左侧padding
+              .stageListsBoxFixed {
+                padding-left: 253px;
+              }
+            }
+            .stageBoxFixed {
+              // 阶段（内容）样式
+              // background: yellow;
+              // position: fixed;
+              padding-left: 112px;
             }
           }
           .defaultMainBox {
@@ -1116,358 +2019,8 @@ export default {
             }
           }
         }
-
         // .
-        // 阶段 定位样式
-        .stageBoxFixed {
-          padding-left: 112px;
-          display: flex;
-          flex-direction: row;
-          .iconBox_ {
-            position: absolute;
-            height: 30px;
-            line-height: 30px;
-            left: 14px;
-            opacity: 0;
-            // top: 10px;
-            .icon {
-              display: inline-block;
-              width: 14px;
-              height: 14px;
-              line-height: 14px;
-              background: rgba(246, 250, 255, 1);
-              border-radius: 4px;
-              margin: 2px;
-              i {
-                font-size: 12px;
-              }
-            }
-          }
-          .iconBox_:hover {
-            opacity: 1;
-          }
-          .stageListsBox {
-            display: flex;
-            flex-direction: row;
-            padding-left: 112px;
-            z-index: 1;
-            .stage {
-              position: relative;
-              .stageBg {
-                position: absolute;
-                display: inline-block;
-                height: 52px;
-                width: 100%;
-                background: rgba(171, 204, 255, 0.1);
-                top: 10px;
-                border-left: 2px solid #3684ff;
-                z-index: 1;
-              }
-              .stageHover {
-                position: absolute;
-                display: inline-block;
-                height: 100%;
-                width: 100%;
-                z-index: 3;
-                padding: 25px 35px;
-                .box_sizing;
-                opacity: 0;
-                .el-button {
-                  background: none;
-                  border: none;
-                  padding: 0;
-                  i {
-                    color: #fff;
-                    font-size: 14px;
-                  }
-                  .otherColor {
-                    color: #666666;
-                  }
-                }
-                .iconBg {
-                  display: inline-block;
-                  width: 24px;
-                  height: 24px;
-                  text-align: center;
-                  line-height: 24px;
-                  background: rgba(54, 132, 255, 1);
-                  border-radius: 4px;
-                }
-              }
-
-              .stageInfo {
-                position: absolute;
-                padding: 7px 0;
-                .box_sizing;
-                top: 10px;
-                display: inline-block;
-                height: 52px;
-                z-index: 2;
-                width: 100%;
-                text-align: center;
-                // margin: 0 auto;
-
-                .participantImg {
-                  height: 20px;
-                  .img {
-                    display: inline-block;
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 3px;
-                    overflow: hidden;
-                    img {
-                      width: 20px;
-                      height: 20px;
-                    }
-                  }
-                }
-                .participantMain {
-                  color: #666666;
-                  .pieChart {
-                    display: inline-block;
-                    width: 10px;
-                    height: 10px;
-                    border-radius: 50%;
-                    background: yellow;
-                  }
-                  span {
-                    font-size: 12px;
-                  }
-                  i {
-                    font-size: 12px;
-                  }
-                }
-              }
-            }
-            .stage:hover {
-              .stageHover {
-                position: absolute;
-                display: inline-block;
-                height: 100%;
-                width: 100%;
-                background: #ffffff;
-                z-index: 3;
-                opacity: 1;
-                padding: 25px 35px;
-                .box_sizing;
-              }
-            }
-          }
-          // 阶段（内容）样式
-          .stageLists {
-            z-index: 99;
-            height: 72px;
-            width: 112px;
-            line-height: 72px;
-            position: fixed;
-            background: #fff;
-            border-left: 1px solid rgba(153, 153, 153, 0);
-            border-top: 1px solid rgba(153, 153, 153, 0);
-            border-right: 1px solid #eeeeee;
-            border-bottom: 1px solid #eeeeee;
-            text-align: center;
-            box-shadow: 1px 2px 4px 0px rgba(153, 153, 153, 0.4);
-            .stageName {
-              padding: 20px 0;
-              width: 100px;
-              border: none;
-              .box_sizing;
-            }
-          }
-          .stageMain {
-            padding-left: 112px;
-          }
-          .stage {
-            width: 252px;
-            height: 72px;
-            border-right: 1px solid #eeeeee;
-            border-bottom: 1px solid #eeeeee;
-          }
-        }
-        // 正常样式
-        .stageBox {
-          display: flex;
-          flex-direction: row;
-          .stageListsBox {
-            display: flex;
-            flex-direction: row;
-            z-index: 1;
-            .stage {
-              position: relative;
-              .stageBg {
-                position: absolute;
-                display: inline-block;
-                height: 52px;
-                width: 100%;
-                background: rgba(171, 204, 255, 0.1);
-                top: 10px;
-                border-left: 2px solid #3684ff;
-                z-index: 1;
-              }
-              .stageHover {
-                position: absolute;
-                display: inline-block;
-                height: 100%;
-                width: 100%;
-                z-index: 3;
-                padding: 25px 35px;
-                .box_sizing;
-                opacity: 0;
-                .el-button {
-                  background: none;
-                  border: none;
-                  padding: 0;
-                  i {
-                    color: #fff;
-                    font-size: 14px;
-                  }
-                  .otherColor {
-                    color: #666666;
-                  }
-                }
-                .iconBg {
-                  display: inline-block;
-                  width: 24px;
-                  height: 24px;
-                  text-align: center;
-                  line-height: 24px;
-                  background: rgba(54, 132, 255, 1);
-                  border-radius: 4px;
-                }
-              }
-
-              .stageInfo {
-                position: absolute;
-                padding: 7px 0;
-                .box_sizing;
-                top: 10px;
-                display: inline-block;
-                height: 52px;
-                z-index: 2;
-                width: 100%;
-                text-align: center;
-
-                .participantImg {
-                  height: 20px;
-                  .img {
-                    display: inline-block;
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 3px;
-                    overflow: hidden;
-                    margin: 0 4px;
-                    // background: red;
-                    img {
-                      width: 20px;
-                      height: 20px;
-                    }
-                  }
-                }
-                .participantMain {
-                  color: #666666;
-                  .pieChart {
-                    display: inline-block;
-                    width: 10px;
-                    height: 10px;
-                    border-radius: 50%;
-                    background: yellow;
-                  }
-                  span {
-                    font-size: 12px;
-                  }
-                  i {
-                    font-size: 12px;
-                  }
-                }
-              }
-            }
-            .stage:hover {
-              .stageHover {
-                position: absolute;
-                display: inline-block;
-                height: 100%;
-                width: 100%;
-                background: #ffffff;
-                z-index: 3;
-                opacity: 1;
-                padding: 25px 35px;
-                .box_sizing;
-              }
-            }
-          }
-          // 阶段（内容）样式
-          .stageLists {
-            height: 72px;
-            width: 112px;
-            line-height: 72px;
-            background: #fff;
-            border-left: 1px solid rgba(153, 153, 153, 0);
-            border-top: 1px solid rgba(153, 153, 153, 0);
-            border-right: 1px solid #eeeeee;
-            border-bottom: 1px solid #eeeeee;
-            .box_sizing;
-
-            text-align: center;
-            position: relative;
-            .stageName {
-              padding: 20px 0;
-              width: 100px;
-              border: none;
-            }
-            .iconBox_ {
-              position: absolute;
-              height: 30px;
-              line-height: 30px;
-              left: 0px;
-              .icon {
-                display: inline-block;
-                width: 14px;
-                height: 14px;
-                line-height: 14px;
-                background: rgba(246, 250, 255, 1);
-                border-radius: 4px;
-                margin: 2px;
-                opacity: 0;
-                i {
-                  font-size: 12px;
-                }
-              }
-            }
-          }
-          .stageLists:hover {
-            height: 72px;
-            width: 112px;
-            line-height: 72px;
-            background: #fff;
-            border: 1px solid #c4c4c4;
-            .box_sizing;
-            text-align: center;
-            position: relative;
-            .icon {
-              display: inline-block;
-              width: 14px;
-              height: 14px;
-              line-height: 14px;
-              background: rgba(246, 250, 255, 1);
-              border-radius: 4px;
-              margin: 2px;
-              opacity: 1;
-              i {
-                font-size: 12px;
-              }
-            }
-          }
-          .stageMain {
-            padding-left: 112px;
-          }
-          .stage {
-            width: 252px;
-            height: 72px;
-            border-right: 1px solid #eeeeee;
-            border-bottom: 1px solid #eeeeee;
-            .box_sizing;
-          }
-        }
+        // 任务阶段 左侧2 列表样式
         .partitionsLabel {
           display: block;
           width: 112px;
@@ -1478,7 +2031,6 @@ export default {
           border-top: 1px solid rgba(153, 153, 153, 0);
           border-bottom: 1px solid #eeeeee;
           .box_sizing;
-
           text-align: center;
           position: relative;
           .unfold {
@@ -1490,7 +2042,7 @@ export default {
           .box_sizing;
           .iconBox {
             position: absolute;
-            opacity: 0;
+            display: none;
             top: 7px;
             left: 14px;
             .icon {
@@ -1506,21 +2058,17 @@ export default {
             }
           }
         }
-
         .partitionsLabel:hover {
-          display: block;
-          width: 112px;
-          min-height: 72px;
-          background: #fff;
           border: 1px solid #c4c4c4;
-          .box_sizing;
-          text-align: center;
-          position: relative;
           .iconBox {
-            opacity: 1;
+            display: block;
           }
         }
-
+        // 任务阶段 定位样式
+        .partitionsLabelFixed {
+          z-index: 99;
+          position: fixed;
+        }
         .stageTittle {
           width: 55px;
           max-height: 57px;
@@ -1535,57 +2083,6 @@ export default {
           border: none;
           i {
             position: absolute;
-          }
-        }
-
-        .partitionsLabelFixed {
-          z-index: 99;
-          position: fixed;
-          display: block;
-          width: 112px;
-          min-height: 72px;
-          background: #fff;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          .box_sizing;
-          text-align: center;
-          .unfold {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            margin-top: -10px;
-          }
-          .iconBox {
-            position: absolute;
-            opacity: 0;
-            top: 7px;
-            left: 14px;
-            .icon {
-              display: inline-block;
-              width: 14px;
-              height: 14px;
-              line-height: 14px;
-              background: rgba(246, 250, 255, 1);
-              border-radius: 4px;
-              i {
-                font-size: 12px;
-              }
-            }
-          }
-        }
-        .partitionsLabelFixed:hover {
-          position: fixed;
-          display: block;
-          width: 112px;
-          min-height: 72px;
-          background: #fff;
-          border-right: 1px solid #eeeeee;
-          border-bottom: 1px solid #eeeeee;
-          .box_sizing;
-
-          text-align: center;
-          .iconBox {
-            opacity: 1;
           }
         }
       }

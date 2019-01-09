@@ -70,7 +70,8 @@ export default {
       }
       // 没有链接地址 没有自动登录
     } else {
-      // this.$router.push("/login");
+      return;
+      this.$router.push("/login");
     }
 
   },

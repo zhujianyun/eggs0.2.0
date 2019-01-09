@@ -1,13 +1,12 @@
 @font-face {
   font-family: 'iconfont';  /* project id 964637 */
-  src: url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.eot');
-  src: url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.eot?#iefix') format('embedded-opentype'),
-  url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.woff2') format('woff2'),
-  url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.woff') format('woff'),
-  url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.ttf') format('truetype'),
-  url('//at.alicdn.com/t/font_964637_2m4nh6uu8rr.svg#iconfont') format('svg');
+  src: url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.eot');
+  src: url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.woff2') format('woff2'),
+  url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.woff') format('woff'),
+  url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_964637_9hiy2z7kk6v.svg#iconfont') format('svg');
 }
-
 .iconfont {
   font-family:"iconfont" !important;
   font-size:16px;
@@ -16,12 +15,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-biaoqing:before {
+  content: "\e61c";
+}
+
 .icon-delete:before {
   content: "\e69d";
 }
 
 .icon-filter:before {
   content: "\e6f1";
+}
+
+.icon-fanhuidingbu:before {
+  content: "\e61e";
 }
 
 .icon-shuxingliebiaoxiangqing:before {
@@ -38,6 +45,10 @@
 
 .icon-tianjiawenzi:before {
   content: "\e67a";
+}
+
+.icon-iconfontchakanyuantu:before {
+  content: "\e64a";
 }
 
 .icon-19daoru:before {
@@ -172,6 +183,10 @@
   content: "\e603";
 }
 
+.icon-aite:before {
+  content: "\e6f0";
+}
+
 .icon-xuanze:before {
   content: "\e621";
 }
@@ -202,6 +217,10 @@
 
 .icon-gerenwenjianjia:before {
   content: "\e615";
+}
+
+.icon-xuanze2:before {
+  content: "\e6cc";
 }
 
 .icon-pinglun:before {
@@ -316,6 +335,10 @@
   content: "\e70b";
 }
 
+.icon-xuanze-danxuan:before {
+  content: "\e659";
+}
+
 .icon-jiaru-:before {
   content: "\e601";
 }
@@ -326,10 +349,6 @@
 
 .icon-qiehuan-:before {
   content: "\e608";
-}
-
-.icon-wancheng_huaban:before {
-  content: "\e60b";
 }
 
 .icon-jiaru-1:before {
@@ -346,5 +365,13 @@
 
 .icon-zhuangtaiguanli-1:before {
   content: "\e613";
+}
+
+.icon-close-:before {
+  content: "\e61d";
+}
+
+.icon-zhuangtaiguanliwancheng_huaban:before {
+  content: "\e620";
 }
 
