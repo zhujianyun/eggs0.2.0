@@ -963,7 +963,9 @@ not supported by any browser */
   color: #9c9c9c;
  
 }
-
+.el-popper[x-placement^=bottom] {
+  margin-top: 0 !important;
+}
 .el-dropdown-menu__item {
   line-height: 32px !important;
   &:hover {
@@ -1048,5 +1050,10 @@ not supported by any browser */
   }
 
 }
+
+// 任务详情中修改任务阶段的时间的时候，去掉“清空”按钮
+.stage_time .el-picker-panel__footer .el-button--text {
+  display: none !important;
+} 
 
 

@@ -75,23 +75,26 @@
               <span :class="demandOrGain ? 'demand_gain' : ''" @click="demandOrGainChange(true)">成果文件</span>
             </div>
             <div class="t_o_right fr">
-              <span class="market_state">
-                <i class='iconfont icon-wancheng'></i>
-                状态标记
-              </span>
+              <!-- 状态管理 -->
+              <!-- 1.任务成员（是创建者） -->
+              <state-manage 
+                v-if='stageInfo'
+                :info='stageInfo'
+                :ids='idList'
+              />
               <span class="line"></span>
+              <!-- 加人 -->
               <span class="add_human" @click.stop='addHumanHandle'>
                 <i class='iconfont icon-haoyou1'></i>
-                <!-- 加人 -->
                 <add-human
                   v-if='addHumanShow'
                   :defaultList='stageList'
                   :ids='idList'
                 />
               </span>
+              <!-- 加时间 -->
               <span class="add_time" @click.stop='addTimeHandle'>
                 <i class='iconfont icon-rili1'></i>
-                <!-- 加时间 -->
                 <add-time
                   v-if='addTimeShow'
                    :defaultList='stageList'
@@ -315,7 +318,7 @@
                                   <div class="group_operate">
                                     <span 
                                       v-if='group.packUp' 
-                                      @click='groupExtendToggle(index)'
+                                      @click='groupExtendToggle(index, true)'
                                       class='mainColor_underline_text'
                                       >收起</span>{{group.packUp}}
                                       <el-dropdown class="fixed file_more">
@@ -378,7 +381,7 @@
                                     :groupid='group.pkid'
                                     :id='item.FilePkid'
                                     :filename='item.FileName'
-                                    @click='groupExtendToggle(index)'
+                                    @click='groupExtendToggle(index, item)'
                                     >
                                       <span class="file_pic">
                                         <span
@@ -432,7 +435,7 @@
                                       :groupid='group.pkid'
                                       :id='item.FilePkid'
                                       :filename='item.FileName'
-                                      @click='groupExtendToggle(index)'
+                                      @click='groupExtendToggle(index, item)'
                                       @mouseenter="enterFile(item)"
                                       @mouseleave="leaveFile(item)"
                                       >
@@ -601,7 +604,9 @@
                 </div>
                 <!-- 相关需求 -->
                 <div v-else id="operateFile" class="operate_file">
-                  <demand-view/>
+                  <demand-view
+                  :list='demandList'
+                  />
                 </div>
                 <!-- 个人文档 -->
                 <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
@@ -773,6 +778,7 @@
             />
           </template>
       </div>
+
       <!-- 温馨提示2_删除分组的提示 -->
       <transition name="fade1">
         <Reminder2 v-if="delGroupFlag"
@@ -806,6 +812,7 @@ import draggable from "vuedraggable";
 import FullPreview from './page/fullPreview';
 import OtherView from './page/otherView';
 import DemandView from './page/demandView';
+import StateManage from './page/stateManage';
 import AddHuman from './page/addHuman';
 import AddTime from './page/addTime';
 import { mapState, mapMutations } from 'vuex';
@@ -817,12 +824,14 @@ export default {
     FullPreview,
     OtherView,
     DemandView,
+    StateManage,
     AddHuman,
     AddTime
   },
   data() {
     return {
-      userId: 1184, // 登录这ID 1189
+      loginUser: JSON.parse(localStorage.getItem("staffInfo")), // 当前登录者的信息
+      userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
       projectId: 0, // 项目ID
       stageId: '0', // 阶段ID
       taskId: 0, // 任务ID
@@ -837,7 +846,9 @@ export default {
       stageList: [], // 阶段列表
       tasksList: [], // 左侧分组任务列表
       allFileList: [],  // 分组+未分组列表
+      demandList: [], // 相关需求的列表
       stageState: 0, // 当前阶段的状态
+      stageInfo: null, // 当前阶段的所有信息
       demandOrGain: true, // false--相关需求 true--成果文件
       viewToggle: true, // true--视图1  false--视图2
       fileCheckboxSelf: false, // 个人文档
@@ -1274,7 +1285,8 @@ export default {
   methods: {
     ...mapMutations([
       'CHECKEDLIST_CHANGE',
-      'FILELENGTH_CHANGE'
+      'FILELENGTH_CHANGE',
+      'TASKIDS_CHANGE'
     ]),
     // 返回格子任务列表
     returnProject() {
@@ -1285,14 +1297,6 @@ export default {
     addHumanHandle() {
       this.addHumanShow = true;
       this.addTimeShow = false;
-      this.idList = {
-        userId: this.userId,
-        projectId: this.projectId,
-        stageId: this.stageId,
-        taskId: this.taskId,
-        stageTaskId: this.stageTaskId,
-        filePartitionId: this.filePartitionId
-      }
       let clickHide = e => {
         this.addHumanShow = false;
         $(document).unbind("click", clickHide)
@@ -1304,15 +1308,6 @@ export default {
     addTimeHandle() {
       this.addTimeShow = true;
       this.addHumanShow = false;
-      this.idList = {
-        userId: this.userId,
-        projectId: this.projectId,
-        stageId: this.stageId,
-        taskId: this.taskId,
-        stageTaskId: this.stageTaskId,
-        filePartitionId: this.filePartitionId
-      }
-
       let clickHide = e => {
         this.addTimeShow = false;
         $(document).unbind("click", clickHide)
@@ -1321,14 +1316,6 @@ export default {
     },
     // 文件视图切换
     viewToggles() {
-      this.idList = {
-        userId: this.userId,
-        projectId: this.projectId,
-        stageId: this.stageId,
-        taskId: this.taskId,
-        stageTaskId: this.stageTaskId,
-        filePartitionId: this.filePartitionId
-      }
       this.viewToggle = !this.viewToggle;
       if(this.viewToggle) {
         const list = this.$refs.otherView.close();
@@ -1472,6 +1459,21 @@ export default {
 
     // 切换相关需求/成果文件
     demandOrGainChange(flag) {
+      if(!flag) {
+        let obj = {
+          stageId: this.idList.stageId,
+          taskId: this.idList.taskId,
+          myUserId: this.idList.userId,
+        }
+        this.$HTTP('post', '/demand_list', obj).then(res => {
+          console.log(res.result);
+          this.demandList = [...res.result];
+          this.demandOrGain = flag;
+        }).catch(err => {
+          console.log(err);
+        });
+        return;
+      }
       this.demandOrGain = flag;
     },
 
@@ -1481,7 +1483,8 @@ export default {
     },
 
     // 文件组折叠/展开
-    groupExtendToggle(index) {
+    groupExtendToggle(index, item) {
+      if(item !== true && !item.overLength) {return}
       if (this.leftCenterFlag) {
         this.leftRightToggle();
         this.parthsGroup[index].packUp = null;
@@ -2883,6 +2886,7 @@ export default {
     },
     // 对获取的数据进行处理
     dataProcessing(res) {
+      this.stageInfo = Object.assign({}, res, {stageId: this.stageId});
       this.parthsGroup = [];
       this.stageTaskId = res.stageTaskId;
       this.stageList = [...res.stageList];
@@ -2904,7 +2908,18 @@ export default {
           this.parthsGroup.push(ele);
         }
       }
+      this.stageInfo.fileList = returnList;
       this.countFileOne();
+      
+      this.idList = {
+        userId: this.userId,
+        projectId: this.projectId,
+        stageId: this.stageId,
+        taskId: this.taskId,
+        stageTaskId: this.stageTaskId,
+        filePartitionId: this.filePartitionId
+      }
+      this.TASKIDS_CHANGE(this.idList);
       // console.log("获取任务详情");
 
     },

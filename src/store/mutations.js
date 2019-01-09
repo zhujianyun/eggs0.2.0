@@ -20,6 +20,7 @@ import {
     // new_yun
     CHECKEDLIST_CHANGE,
     FILELENGTH_CHANGE,
+    TASKIDS_CHANGE,
 
 } from './mutation-types';
 import Vue from '../../node_modules/vue';
@@ -138,6 +139,9 @@ export default {
     },
     [FILELENGTH_CHANGE](state, length) {
         state.fileLength = length;
+    },
+    [TASKIDS_CHANGE](state, idas) {
+        state.taskIds = idas;
     },
 
 

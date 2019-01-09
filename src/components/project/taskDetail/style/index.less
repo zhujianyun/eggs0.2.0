@@ -200,18 +200,49 @@
       .t_o_right {
           padding-right: 24px;
           color: @graySix;
+          .state_manage_yun {
+            display: inline-block;
+          }
           .market_state {
             font-size: 12px;
             .cur;
             .iconfont {
                 margin-right: 10px;
             }
+            .span_text {
+              color: @graySix;
+              font-size: 12px !important;
+            }
+            
             &:hover {
                 color: @mainColor;
-                .iconfont {
+                .iconfont, .span_text {
                     color: @mainColor;
                 }
             }
+          }
+          .case2 {
+            .icon-zhuangtaiguanli-1 {
+              color: #169A19;
+            }
+            .finish_text {
+              color: #169A19;
+              &:before {
+                content: "已完成";
+              }
+            }
+            &:hover {
+              color: @mainColor;
+              .iconfont {
+                  color: @mainColor;
+              }
+              .finish_text {
+                color: @mainColor;
+                &:before {
+                  content: "取消标记";
+                }
+            }
+          }
           }
           .iconfont {
             font-size: 16px;

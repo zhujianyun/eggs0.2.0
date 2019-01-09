@@ -9,6 +9,7 @@
                 <span class="names">{{stage.stageTitle}}</span>
                 <el-date-picker
                     class="el_time"
+                    popper-class="stage_time"
                     v-model="stage.timeRange"
                     type="datetimerange"
                     align="right"
@@ -16,7 +17,7 @@
                     :range-separator="stage.rangeSeparator"
                     :default-time="['08:00:00', '18:00:00']"
                     format="MM/dd HH:mm"
-                    clear-icon='el-icon-circle-close'
+                    :clearable="false"
                     prefix-icon='el-icon-date'
                     @change="timeChange($event, stage)"
                     >
@@ -102,16 +103,17 @@ export default {
     left: -206px;
     width: 380px;
     max-height: 290px;
-    padding: 10px 0 10px 24px;
-    overflow-y: auto;
-    .box_sizing;
     background: rgba(255, 255, 255, 1);
     box-shadow: 0px 1px 15px 0px rgba(59, 81, 133, 0.3);
     border-radius: 4px;
     z-index: 1;
     .stage_time_box {
         width: 100%;
-        height: 100%;
+        max-height: 290px;
+        padding: 10px 0 10px 24px;
+        overflow-y: auto;
+        .box_sizing;
+
         .stage_time_list {
             width: 100%;
             height: 30px;
@@ -198,6 +200,7 @@ export default {
         margin-top: 7px;
         }
     }
+  
 
 }
 </style>

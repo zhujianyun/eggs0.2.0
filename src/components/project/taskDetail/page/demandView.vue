@@ -29,26 +29,26 @@
 </template>
 <script>
 export default {
+    props: ['list'],
     data() {
         return {
             checkedList: [],
             fileCheckbox: false,
-            demandList: [
-                {
-                    UserPkid: 1184,
-                    UserName: '祝建云',
-                    UserPic: '',
-                    Count: 0,
-                    Desc: "",
-                }
-            ]
+            demandList: []
 
         }
     },
     methods: {
         fileCheckboxAll() {
 
-        }
+        },
+        setData() {
+            this.checkedList = [...this.list];
+            console.log('相关需求~~~~', this.checkedList);
+        },
+    },
+    created() {
+        this.setData();
     }
 }
 </script>
