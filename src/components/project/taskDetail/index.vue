@@ -70,7 +70,8 @@
           <!-- 头部操作按钮 -->
           <div class="top_operate">
             <div class="t_o_left fl">
-              <span :class="demandOrGain ? '' : 'demand_gain'" @click="demandOrGainChange(false)">相关需求</span>
+              <span v-if='!demandCount' class="cur_dis">相关需求</span>
+              <span v-else :class="demandOrGain ? '' : 'demand_gain'" @click="demandOrGainChange(false)">相关需求</span>
               <span class="line"></span>
               <span :class="demandOrGain ? 'demand_gain' : ''" @click="demandOrGainChange(true)">成果文件</span>
             </div>
@@ -85,7 +86,9 @@
               <span class="line"></span>
               <!-- 加人 -->
               <span class="add_human" @click.stop='addHumanHandle'>
-                <i class='iconfont icon-haoyou1'></i>
+                <el-tooltip class="item" effect="dark" content="添加成员" placement="top" :open-delay="300">
+                  <i class='iconfont icon-haoyou1'></i>
+                </el-tooltip>
                 <add-human
                   v-if='addHumanShow'
                   :defaultList='stageList'
@@ -94,7 +97,9 @@
               </span>
               <!-- 加时间 -->
               <span class="add_time" @click.stop='addTimeHandle'>
-                <i class='iconfont icon-rili1'></i>
+                 <el-tooltip class="item" effect="dark" content="添加时间" placement="top" :open-delay="300">
+                  <i class='iconfont icon-rili1'></i>
+                </el-tooltip>
                 <add-time
                   v-if='addTimeShow'
                    :defaultList='stageList'
@@ -126,26 +131,39 @@
                 <div v-if='demandOrGain' id="operateFile" class="operate_file">
                   <div class="top_box">
                     <div class="left fl">
-                      <el-upload 
-                        :ref="filePartitionId === 0 ? 'fileUpload' : ''"
-                        class="upload_file"
-                        :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
-                        :show-file-list="false"
-                        :multiple="true"
-                        :on-error="uploadError"
-                        :on-success="uploadSuccess"
-                        :on-progress="uploadProgress"
-                        :limit="9"
-                        :on-exceed="handleExceed"
-                        :before-upload="beforeUpload"
-                        >
-                      <i class='iconfont icon-shangchuan' @click="handleClickUpload(0)"></i>
-                      </el-upload>
-                    
-                      <i 
-                        class='iconfont icon-tianjiawenzi'
-                        @click.stop="inputTextShowToggle('left')"
-                        ></i>
+                      <el-dropdown placement="bottom">
+                        <span class="el-dropdown-link">
+                          <i class='iconfont icon-shangchuan'></i>
+                        </span>
+                        <el-dropdown-menu slot="dropdown">
+                          <el-dropdown-item
+                            @click.native="handleClickUpload(0)"
+                          >
+                            <el-upload 
+                              :ref="filePartitionId === 0 ? 'fileUpload' : ''"
+                              class="upload_file"
+                              :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                              :show-file-list="false"
+                              :multiple="true"
+                              :on-error="uploadError"
+                              :on-success="uploadSuccess"
+                              :on-progress="uploadProgress"
+                              :limit="9"
+                              :on-exceed="handleExceed"
+                              :before-upload="beforeUpload"
+                              >本地上传
+                              <!-- <span>本地上传</span> -->
+                            </el-upload>
+                          </el-dropdown-item>
+                          <el-dropdown-item>从个人文档上传</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </el-dropdown>
+                      <el-tooltip class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
+                        <i 
+                          class='iconfont icon-tianjiawenzi'
+                          @click.stop="inputTextShowToggle('left')"
+                          ></i>
+                      </el-tooltip>
                       <span class="line"></span>
                       <el-checkbox 
                         v-if='checkedFileList && checkedFileList.length' 
@@ -161,9 +179,15 @@
                         v-model="fileCheckbox" 
                         @click.native='fileCheckboxAll'>全选</el-checkbox>
                         <template v-if='checkedFileList && checkedFileList.length'>
-                          <i class="iconfont icon-xiazai"></i>
-                          <i class="iconfont icon-shoucang1"></i>
-                          <i class="iconfont icon-jihuayijiao"></i>
+                          <el-tooltip class="item" effect="dark" content="下载" placement="top" :open-delay="300">
+                            <i class="iconfont icon-xiazai"></i>
+                          </el-tooltip>
+                          <el-tooltip class="item" effect="dark" content="收藏" placement="top" :open-delay="300">
+                            <i class="iconfont icon-shoucang1"></i>
+                          </el-tooltip>
+                          <el-tooltip class="item" effect="dark" content="移交" placement="top" :open-delay="300">
+                            <i class="iconfont icon-jihuayijiao"></i>
+                          </el-tooltip>
                         </template>
                     </div>
                     <div class="right fr">
@@ -249,7 +273,9 @@
                                       />
                                     <img :src="ele.UserPic" alt="" class="from_header">
                                     <span class="file_message fr">
-                                      <i class='iconfont icon-pinglun'></i>
+                                      <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                        <i class='iconfont icon-pinglun'></i>
+                                      </el-tooltip>
                                         {{ele.Count}}
                                     </span>
                                     <span class="fixed file_checkbox" v-if='oneChecked || ele.hover'>
@@ -276,6 +302,21 @@
                         </div>
                         <p class="title">文件拖到此区域即可上传，支持批量上传</p>
                       </div>
+                      <el-upload
+                         v-if='!(notGroupedList && notGroupedList.length) && !dragItem.fromGroup'
+                          class="file_empty_upload"
+                          drag
+                          :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                          :show-file-list="false"
+                          :multiple="true"
+                          :on-error="uploadError"
+                          :on-success="uploadSuccess"
+                          :on-progress="uploadProgress"
+                          :limit="9"
+                          :on-exceed="handleExceed"
+                          :before-upload="beforeUpload"
+                          >
+                        </el-upload>
                     </div>
                     <!-- 右侧分组 -->
                     <div id="rightBox" class="right_box">
@@ -479,7 +520,9 @@
                                             />
                                           <img :src="item.UserPic" alt="" class="from_header">
                                           <span class="file_message fr">
-                                            <i class='iconfont icon-pinglun'></i>
+                                            <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                              <i class='iconfont icon-pinglun'></i>
+                                            </el-tooltip>
                                             {{item.Count}}
                                           </span>
                                           <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
@@ -553,7 +596,9 @@
                                         />
                                       <img :src="item.UserPic" alt="" class="from_header">
                                       <span class="file_message fr">
-                                        <i class='iconfont icon-pinglun'></i>
+                                        <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                          <i class='iconfont icon-pinglun'></i>
+                                        </el-tooltip>
                                         {{item.Count}}
                                       </span>
                                       <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
@@ -606,21 +651,29 @@
                 <div v-else id="operateFile" class="operate_file">
                   <demand-view
                   :list='demandList'
+                  ref="demandView"
                   />
                 </div>
                 <!-- 个人文档 -->
                 <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
                   <div class="top_box">
                     <div class="left fl">
-                      <i class='iconfont icon-shangchuan'></i>
-                      <i 
-                        class='iconfont icon-tianjiawenzi'
-                        @click.stop="inputTextShowToggle()"
-                        ></i>
-                      <i 
-                        class='iconfont icon-xinjianfenzu'
-                        @click='newFolder'
-                        ></i>
+                      <el-tooltip class="item" effect="dark" content="上传" placement="top" :open-delay="300">
+                        <i class='iconfont icon-shangchuan'></i>
+                      </el-tooltip>
+                      <el-tooltip class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
+                        <i 
+                          class='iconfont icon-tianjiawenzi'
+                          @click.stop="inputTextShowToggle()"
+                          ></i>
+                      </el-tooltip>
+                      <el-tooltip class="item" effect="dark" content="新建文件夹" placement="top" :open-delay="300">
+                        <i 
+                          class='iconfont icon-xinjianfenzu'
+                          @click='newFolder'
+                          ></i>
+                      </el-tooltip>
+                      
                       <span class="line"></span>
                       <el-checkbox 
                         v-if='checkedListSelf.length' 
@@ -638,7 +691,7 @@
                           <i class="iconfont icon-delete"></i>
                         </template>
                     </div>
-                    <div class="right fr">
+                    <div class="right fr" v-if='false'>
                       <i class='iconfont icon-sousuo'></i>
                       <i class='iconfont icon-filter'></i>
                     </div>
@@ -795,7 +848,7 @@
             @handleCancle="delFileCancel"
             @handleSure="delFileSure" />
       </transition>
-          <!-- 文件上传进度条 -->
+      <!-- 文件上传进度条 -->
       <upload-progress v-if="uploadProgressFlag"
         :fileProgressList="fileProgressList"
         @closeProgress="closeProgress"
@@ -847,6 +900,7 @@ export default {
       tasksList: [], // 左侧分组任务列表
       allFileList: [],  // 分组+未分组列表
       demandList: [], // 相关需求的列表
+      demandCount: 0, // 是否有相关需求
       stageState: 0, // 当前阶段的状态
       stageInfo: null, // 当前阶段的所有信息
       demandOrGain: true, // false--相关需求 true--成果文件
@@ -1540,9 +1594,8 @@ export default {
         let others = [...list].splice(x - 1);
         let urls = [];
         others.map(ele => urls.push(ele.UrlMin));
-
         if (urls.length > 3) {
-          urls.splice(0, 3);
+          urls = urls.splice(0, 3);
         }
         overList.push({
           FilePkid: `group${i}`,
@@ -2306,6 +2359,7 @@ export default {
         
       }
 
+
       // 当个人文档从不显示-->显示的时候，
         // 如果flag === true 继续为true
         // 如果flag === false （半折叠状态）重新计算要折叠剩余的个数
@@ -2336,6 +2390,12 @@ export default {
         }
       }
       this.sizeChange('personalFilesPull');
+      if(!this.demandOrGain) {
+        this.$nextTick(() => {
+          this.$refs.demandView.sizeChange();
+        }); 
+        
+      }
       
     },
 
@@ -2864,6 +2924,12 @@ export default {
       if(this.fullPreviewShow) {
         this.fullPreviewShow = false;
       }
+      if(!this.demandOrGain) {
+        this.demandOrGain = true;
+      }
+      if(!this.leftCenterFlag) {
+        this.leftRightToggle();
+      }
       this.taskId = taskId;
       this.stageId = stageId;
       let obj = {
@@ -2888,6 +2954,7 @@ export default {
     dataProcessing(res) {
       this.stageInfo = Object.assign({}, res, {stageId: this.stageId});
       this.parthsGroup = [];
+      this.demandCount = res.demandCount;
       this.stageTaskId = res.stageTaskId;
       this.stageList = [...res.stageList];
       this.stageList.map(ele => ele.stageId = ele.stageId.toString());

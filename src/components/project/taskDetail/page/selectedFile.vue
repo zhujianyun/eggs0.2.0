@@ -17,7 +17,7 @@
                             <el-checkbox 
                                 class="all_checked" 
                                 v-model="group.checked" 
-                                @change='fileCheckboxAGroup($event, group)'>{{group.groupName}}</el-checkbox>
+                                @change='fileCheckboxGroup($event, group)'>{{group.groupName}}</el-checkbox>
                             <div class="group_operate fr">
                                 <span 
                                 v-if='group.packUp' 
@@ -235,7 +235,7 @@ export default {
             this.fileLists = this.fileLists.concat();
         },
         // 文件组的选中状态发生改变
-        fileCheckboxAGroup(val, item) {
+        fileCheckboxGroup(val, item) {
             item.checked = val;
             for(let y of item.fileList) {
                 y.checked = val;

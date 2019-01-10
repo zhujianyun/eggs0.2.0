@@ -19,7 +19,9 @@
                                 class="item"
                                 effect="dark"
                                 :content="(item.nickname ? item.nickname : item.realName) + (item.IsState ? '：已完成' : '')"
-                                placement="top">
+                                placement="top"
+                                :open-delay="300"
+                                >
                         <span class="del_peop iconfont icon-guanbijiantou"
                             @click="delPeople(item, index, index1)"></span>
                     </el-tooltip>

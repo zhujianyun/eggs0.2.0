@@ -135,6 +135,12 @@ MyApi.install = function (Vue, options) {
         if(type == 'yyyy/MM/dd HH:mm') {
             return str = year + "/" + month + "/" + day + " " + hour + ":" + min;
         }
+        if(type == 'MM-dd HH:mm') {
+            return str = month + "-" + day + " " + hour + ":" + min;
+        }
+        if(type == 'MM/dd HH:mm') {
+            return str = month + "/" + day + " " + hour + ":" + min;
+        }
         if(type == 'yyyy-MM-dd') {
             return str = year + "-" + month + "-" + day;
         }
