@@ -77,6 +77,7 @@
                 :selectList="selectList"
                 :multiple="true"
                 sureText="选择文件"
+                selectPlaceholder="请选择阶段"
                 @handleCancle="remarkStateCancel"
                 @handleSure="remarkStateSure" />
         </transition>

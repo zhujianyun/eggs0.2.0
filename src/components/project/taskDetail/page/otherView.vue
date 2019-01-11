@@ -72,7 +72,7 @@
 							<span class="file_title">{{file.FileName}}</span>
 						</div>
 						<div class="file_from every_common">
-							<span>{{file.UserName}}</span>
+							<span>{{file.nickName ? file.nickName : file.userName}}</span>
 						</div>
 						<div class="file_time every_common">
 							<span>{{file.formatTime}}</span>
@@ -103,7 +103,7 @@
               <span class="file_title">{{file.FileName}}</span>
             </div>
             <div class="file_from every_common">
-              <span>{{file.UserName}}</span>
+              <span>{{file.nickName ? file.nickName : file.userName}}</span>
             </div>
             <div class="file_time every_common">
               <span>{{file.formatTime}}</span>

@@ -39,7 +39,7 @@
                                       v-model="list.checked" 
                                       @change="usedCheckChange(list)"></el-checkbox>
                                     <img class="el_tree_img" :src="list.Images" />
-                                    <span class="el_tree_name">{{ list.realname }}</span>
+                                    <span class="el_tree_name">{{ list.userName }}</span>
                                 </li>
                             </ul>
                             <p class="no_body" v-else>暂无，可在好友管理中添加，系统也会自动生成</p>
@@ -49,7 +49,7 @@
                             <ul class="parths_list">
                                 <li v-for="(list, index) in selectedList" :key="list.userid" v-if="list.checked && !list.disabled">
                                     <img class="el_tree_img" :src="list.Images" />
-                                    <span class="el_tree_name">{{ list.realname }}</span>
+                                    <span class="el_tree_name">{{ list.userName }}</span>
                                     <i class="iconfont icon-delete" @click="delCheckChange(list, index)"></i>
                                 </li>
                             </ul>
@@ -122,7 +122,7 @@ export default {
       userName: JSON.parse(localStorage.getItem('staffInfo')).realName, // 当前登录者的名字
       defaultProps: {
         children: "friendsList",
-        label: "realname"
+        label: "userName"
       },
       treeList: [], // 好友树状图列表
       usedList: [], // 常用联系人列表
@@ -432,7 +432,7 @@ export default {
         this.$HTTP('post', '/user_friends_getlist', obj).then( res => {
             this.treeList = [...res.result];
             for(let x of this.treeList) {
-                x.realname = x.groupName;
+                x.userName = x.groupName;
                 x.friendsList.map(ele => {
                     return (ele.checked = false) && (ele.disabled = true);
                 });

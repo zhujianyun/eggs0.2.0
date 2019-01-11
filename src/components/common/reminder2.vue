@@ -11,7 +11,7 @@
                            :multiple="multiples"
                            collapse-tags
                            @change="selectChange"
-                           placeholder="请选择分组">
+                           :placeholder="selectPlaceholders">
                     <el-option v-for="item in selectLists"
                                :key="item.value"
                                :label="item.label == null ? '未分组' : item.label"
@@ -69,7 +69,7 @@
 </template>
 <script>
 export default {
-    props: ["type", "text", "inputValue", "selectList", "sureText", "multiple"],
+    props: ["type", "text", "inputValue", "selectList", "sureText", "multiple", "selectPlaceholder"],
     data() {
         return {
             types: this.type ? this.type : '1',
@@ -78,6 +78,7 @@ export default {
             selectLists: this.selectList ? this.selectList : [],
             sureTexts: this.sureText ? this.sureText : '',
             multiples: this.multiple ? this.multiple : false,
+            selectPlaceholders: this.selectPlaceholder ? this.selectPlaceholder : '请选择分组',
         }
     },
     methods: {

@@ -2,38 +2,40 @@
     <div class="add_human_yun">
         <div class="stage_people">
             <div 
-                class="people"
+                class="people clearfix"
                 v-for='(stage, index) in stagePeopleList'
                 :key='stage.stageId'
                 >
                 <span class="people_title">{{stage.stageTitle}}</span>
-                <div class="people_header"
-                    v-for="(item, index1) in stage.userList"
-                    :key="item.userpkid"
-                    @mouseenter="peopleEnter(item)"
-                    @mouseleave="peopleLeave(item)">
-                    <img class="header"
-                        :src="item.userPic"
-                        alt="">
-                    <el-tooltip v-show="item.hovers"
-                                class="item"
-                                effect="dark"
-                                :content="(item.nickname ? item.nickname : item.realName) + (item.IsState ? '：已完成' : '')"
-                                placement="top"
-                                :open-delay="300"
-                                >
-                        <span class="del_peop iconfont icon-guanbijiantou"
-                            @click="delPeople(item, index, index1)"></span>
-                    </el-tooltip>
-                    <span v-if="item.IsState"
-                        class="icon_finish iconfont icon-xuanzhong"></span>
+                <div class="header_box fr">
+                  <div class="people_header"
+                      v-for="(item, index1) in stage.userList"
+                      :key="item.userpkid"
+                      @mouseenter="peopleEnter(item)"
+                      @mouseleave="peopleLeave(item)">
+                      <img class="header"
+                          :src="item.userPic"
+                          alt="">
+                      <el-tooltip v-show="item.hovers"
+                                  class="item"
+                                  effect="dark"
+                                  :content="(item.nickName ? item.nickName : item.userName) + (item.IsState ? '：已完成' : '')"
+                                  placement="top"
+                                  :open-delay="300"
+                                  >
+                          <span class="del_peop iconfont icon-guanbijiantou"
+                              @click="delPeople(item, index, index1)"></span>
+                      </el-tooltip>
+                      <span v-if="item.IsState"
+                          class="icon_finish iconfont icon-xuanzhong"></span>
 
-                </div>
-                <div class="add_people_box">
-                    <i class="iconfont icon-jia1 add_people"
-                    :class="addPeopleShow !== false && addPeopleShow === index ? 'add_people_show' : ''"
-                    @click.stop="addPeople(index, stage)"></i>
-                    
+                  </div>
+                  <div class="add_people_box">
+                      <i class="iconfont icon-jia1 add_people"
+                      :class="addPeopleShow !== false && addPeopleShow === index ? 'add_people_show' : ''"
+                      @click.stop="addPeople(index, stage)"></i>
+                      
+                  </div>
                 </div>
                 <div v-if='!index' class="selected_stage"></div>
             </div>
@@ -113,7 +115,7 @@ export default {
       this.delPeopleFlag = true;
       this.reminderText =
         "是否确认从任务中删除参与人：" +
-        (item.nickname ? item.nickname : item.realName);
+        (item.nickName ? item.nickName : item.userName);
       this.selectedIndex = [index, index1];
     },
     // 取消删除人员
@@ -195,13 +197,16 @@ export default {
 
     // 添加/删除人员成功
     addPeopleSure(data) {
+        console.log("add-people", data);
+
       let index = this.selectedIndex[0];
       let index1 = this.selectedIndex[1];
       let nowList = this.stagePeopleList[index].userList;
       this.addPeopleShow = false; // 隐藏
+      
       // console.log("participant", data);
       // 发送请求
-      if (data && (data.add || data.del)) {
+      if (data && (data.add.length || data.del.length)) {
         let add = [...data.add];
         let del = [...data.del];
         let obj = {
@@ -312,80 +317,82 @@ export default {
     overflow-y: auto;
     .people {
       width: 100%;
-      height: 40px;
       line-height: 40px;
       position: relative;
       .people_title {
         color: @graySix;
         margin-right: 6px;
       }
-
-      .people_header {
-        position: relative;
+      .header_box {
         .dis-in-bl;
-        .cur;
-        padding: 0 5px;
-        position: relative;
-        height: 40px;
-        .del_peop {
-          position: absolute;
-          top: 11px;
-          left: 5px;
-          width: 20px;
-          height: 20px;
-          color: #fff;
-          text-align: center;
-          vertical-align: middle;
-          line-height: 20px;
-          background: #5f5f5f;
-          opacity: 0.8;
-          .border_radius(@br: 4px;);
+        width: 160px;
+        .people_header {
+          position: relative;
           .dis-in-bl;
-          z-index: 3;
-          &:hover {
-              color: #ffffff !important;
+          .cur;
+          padding: 0 5px;
+          position: relative;
+          height: 40px;
+          .del_peop {
+            position: absolute;
+            top: 11px;
+            left: 5px;
+            width: 20px;
+            height: 20px;
+            color: #fff;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 20px;
+            background: #5f5f5f;
+            opacity: 0.8;
+            .border_radius(@br: 4px;);
+            .dis-in-bl;
+            z-index: 3;
+            &:hover {
+                color: #ffffff !important;
+            }
+          }
+          .icon_finish {
+              position: absolute;
+              .dis-in-bl;
+              width: 10px;
+              height: 10px;
+              text-align: center;
+              line-height: 10px;
+              font-size: 12px;
+              background: #fff;
+              .border_radius(@br: 50%);
+              color: #32a635;
+              bottom: 9px;
+              right: 6px;
+              z-index: 2;
           }
         }
-        .icon_finish {
-            position: absolute;
-            .dis-in-bl;
-            width: 10px;
-            height: 10px;
-            text-align: center;
-            line-height: 10px;
-            font-size: 12px;
-            background: #fff;
-            .border_radius(@br: 50%);
-            color: #32a635;
-            bottom: 9px;
-            right: 6px;
-            z-index: 2;
-        }
-      }
 
-      .add_people_box {
-        height: 40px;
+        .add_people_box {
+          height: 40px;
 
-        .dis-in-bl;
-        position: relative;
-        margin: 0 5px;
-        .add_people {
           .dis-in-bl;
-          width: 20px;
-          height: 20px;
-          text-align: center;
-          line-height: 20px;
-          .border_radius(@br: 2px;);
-          background: @bg-f2f2f2;
-          font-size: 12px;
-          color: #cdcdcd;
-          font-weight: bold;
-          &:hover {
+          position: relative;
+          margin: 0 5px;
+          .add_people {
+            .dis-in-bl;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            .border_radius(@br: 2px;);
+            background: @bg-f2f2f2;
+            font-size: 12px;
+            color: #cdcdcd;
+            font-weight: bold;
+            &:hover {
+              color: @mainColor;
+            }
+          }
+          .add_people_show {
             color: @mainColor;
           }
-        }
-        .add_people_show {
-          color: @mainColor;
         }
       }
 

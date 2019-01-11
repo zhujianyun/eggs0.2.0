@@ -70,7 +70,9 @@
           <!-- 头部操作按钮 -->
           <div class="top_operate">
             <div class="t_o_left fl">
-              <span v-if='!demandCount' class="cur_dis">相关需求</span>
+              <el-tooltip v-if='power && !demandCount' class="item" effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
+                <span class="cur_dis">相关需求</span>
+              </el-tooltip>
               <span v-else :class="demandOrGain ? '' : 'demand_gain'" @click="demandOrGainChange(false)">相关需求</span>
               <span class="line"></span>
               <span :class="demandOrGain ? 'demand_gain' : ''" @click="demandOrGainChange(true)">成果文件</span>
@@ -131,7 +133,8 @@
                 <div v-if='demandOrGain' id="operateFile" class="operate_file">
                   <div class="top_box">
                     <div class="left fl">
-                      <el-dropdown placement="bottom">
+                      <!-- 文件上传 -->
+                      <el-dropdown v-if='power' placement="bottom">
                         <span class="el-dropdown-link">
                           <i class='iconfont icon-shangchuan'></i>
                         </span>
@@ -158,13 +161,15 @@
                           <el-dropdown-item>从个人文档上传</el-dropdown-item>
                         </el-dropdown-menu>
                       </el-dropdown>
-                      <el-tooltip class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
+                      <!-- 添加文字 -->
+                      <el-tooltip v-if='power' class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
                         <i 
                           class='iconfont icon-tianjiawenzi'
                           @click.stop="inputTextShowToggle('left')"
                           ></i>
                       </el-tooltip>
-                      <span class="line"></span>
+                      <span v-if='power' class="line"></span>
+                      <!-- 文件选择 -->
                       <el-checkbox 
                         v-if='checkedFileList && checkedFileList.length' 
                         class="all_checked" 
@@ -185,14 +190,31 @@
                           <el-tooltip class="item" effect="dark" content="收藏" placement="top" :open-delay="300">
                             <i class="iconfont icon-shoucang1"></i>
                           </el-tooltip>
-                          <el-tooltip class="item" effect="dark" content="移交" placement="top" :open-delay="300">
-                            <i class="iconfont icon-jihuayijiao"></i>
-                          </el-tooltip>
+                          <!-- 只有一个阶段的时候 -->
+                          <template v-if='power && stageList.length === 1'>
+                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                              <i class="iconfont icon-jihuayijiao cur_dis"></i>
+                            </el-tooltip>
+                          </template>
+                          <!-- 多个阶段 且选中的文件包含他人的文件的时候 -->
+                          <template v-if='false && power && stageList.length > 1'>
+                            <el-tooltip class="item" effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
+                              <i class="iconfont icon-jihuayijiao"></i>
+                            </el-tooltip>
+                          </template>
+                           <!-- 多个阶段 且选中的文件不包含他人的文件的时候 -->
+                          <template v-if='power && stageList.length > 1'>
+                            <el-tooltip class="item" effect="dark" content="移交" placement="top" :open-delay="300">
+                              <i class="iconfont icon-jihuayijiao"></i>
+                            </el-tooltip>
+                          </template>
                         </template>
                     </div>
+                    {{power}}
                     <div class="right fr">
+                      <!-- 分组管理 -->
                       <span class="">
-                        <el-dropdown class="fixed file_more">
+                        <el-dropdown v-if='power' class="fixed file_more">
                           <span class="el-dropdown-link"><i class='iconfont icon-fenzu1'></i>分组管理</span>
                           <el-dropdown-menu slot="dropdown">
                             <el-dropdown-item @click.native="groupCommand('create')">新建分组</el-dropdown-item>
@@ -200,12 +222,12 @@
                           </el-dropdown-menu>
                         </el-dropdown>
                       </span>
-                        <span class="toggle" @click='viewToggles'>
+                      <!-- 视图切换 -->
+                      <span class="toggle" @click='viewToggles'>
                         <i :class="viewToggle ? 'iconfont icon-liebiao' : 'iconfont icon-fenzu'"></i>
                         视图切换
                       </span>
                     </div>
-
                     <!-- 输入文字 -->
                     <div 
                       v-if='inputTextShow1'
@@ -271,7 +293,9 @@
                                       id="fileNameEdit"
                                       @blur="fileNameEditBlur($event, ele)"
                                       />
-                                    <img :src="ele.UserPic" alt="" class="from_header">
+                                      <el-tooltip class="item" effect="dark" :content="ele.nickName ? ele.nickName : ele.userName" placement="top" :open-delay="300">
+                                        <img :src="ele.UserPic" alt="" class="from_header">
+                                      </el-tooltip>
                                     <span class="file_message fr">
                                       <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
                                         <i class='iconfont icon-pinglun'></i>
@@ -286,9 +310,14 @@
                                       <el-dropdown-menu slot="dropdown">
                                         <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
                                         <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('rename', index, ele, 0)">重命名</el-dropdown-item>
-                                        <el-dropdown-item @click.native="fileCommand('delete', index, ele, 0)">删除</el-dropdown-item>
+                                        <el-dropdown-item v-if='ele.isOwn && stageList.length === 1'>
+                                          <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                            <span>移交</span>
+                                          </el-tooltip>
+                                        </el-dropdown-item>
+                                        <el-dropdown-item v-if='ele.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
+                                        <el-dropdown-item v-if='ele.isOwn' @click.native="fileCommand('rename', index, ele, 0)">重命名</el-dropdown-item>
+                                        <el-dropdown-item v-if='ele.isOwn' @click.native="fileCommand('delete', index, ele, 0)">删除</el-dropdown-item>
                                       </el-dropdown-menu>
                                     </el-dropdown>
                                   </div>
@@ -296,14 +325,9 @@
                               <div class="null"></div>
                           </draggable>
                       </div>
-                      <div v-else class="file_empty">
-                        <div class="empty_img">
-                          <img src="./style/file_empty.png" alt="">
-                        </div>
-                        <p class="title">文件拖到此区域即可上传，支持批量上传</p>
-                      </div>
-                      <el-upload
-                         v-if='!(notGroupedList && notGroupedList.length) && !dragItem.fromGroup'
+                      <template v-else>
+                        <el-upload
+                          v-if='power'
                           class="file_empty_upload"
                           drag
                           :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
@@ -316,7 +340,20 @@
                           :on-exceed="handleExceed"
                           :before-upload="beforeUpload"
                           >
+                          <div class="file_empty">
+                            <div class="empty_img">
+                              <img src="./style/file_empty.png" alt="">
+                            </div>
+                            <p class="title">文件拖到此区域即可上传，支持批量上传</p>
+                          </div>
                         </el-upload>
+                        <div class="file_empty" v-else>
+                            <div class="empty_img">
+                              <img src="./style/file_empty.png" alt="">
+                            </div>
+                            <p class="title">暂无文件</p>
+                          </div>
+                      </template>
                     </div>
                     <!-- 右侧分组 -->
                     <div id="rightBox" class="right_box">
@@ -362,10 +399,17 @@
                                       @click='groupExtendToggle(index, true)'
                                       class='mainColor_underline_text'
                                       >收起</span>{{group.packUp}}
-                                      <el-dropdown class="fixed file_more">
+                                      <el-dropdown 
+                                        v-if='power || group.fileList.length'
+                                        class="fixed file_more"
+                                        @visible-change="visibleChangeGroup($event, group)"
+                                        >
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
                                         <el-dropdown-menu slot="dropdown">
-                                          <el-dropdown-item @click.native="fileGroupCommand('upload', index, group)">
+                                          <el-dropdown-item 
+                                             v-if='power'
+                                            @click.native="fileGroupCommand('upload', index, group)"
+                                            >
                                             <el-upload 
                                               :ref="filePartitionId === group.pkid ? 'fileUpload' : ''"
                                               class="upload_file"
@@ -382,11 +426,46 @@
                                               <span class="slot_title" @click="handleClickUpload(group.pkid)">上传</span>
                                             </el-upload>
                                           </el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('download', index, group)">下载</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('collect', index, group)">收藏</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('transfer', index, group)">整组移交</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('rename', index, group)">重命名</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('delete', index, group)">删除</el-dropdown-item>
+                                          <el-dropdown-item 
+                                            v-if='group.fileList.length' 
+                                            @click.native="fileGroupCommand('download', index, group)"
+                                            >下载</el-dropdown-item>
+                                          <el-dropdown-item 
+                                            v-if='group.fileList.length' 
+                                            @click.native="fileGroupCommand('collect', index, group)"
+                                            >收藏</el-dropdown-item>
+                                          <!-- 整组移交 只有一个阶段的时候 -->
+                                          <el-dropdown-item 
+                                            v-if='power && stageList.length === 1' 
+                                            @click.native="fileGroupCommand('transfer', index, group)"
+                                            >
+                                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                              <span class='cur_dis'>整组移交</span>
+                                            </el-tooltip>
+                                          </el-dropdown-item>
+                                          <!-- 整组移交 只有自己的文件的时候 -->
+                                          <el-dropdown-item 
+                                            v-else-if='power && group.fileList.length && group.onlySelf' 
+                                            @click.native="fileGroupCommand('transfer', index, group)"
+                                            >
+                                            整组移交
+                                          </el-dropdown-item>
+                                          <!-- 整组移交 包含他人文件的时候 -->
+                                          <el-dropdown-item 
+                                            v-else-if='power && group.fileList.length && !group.onlySelf' 
+                                            >
+                                            <el-tooltip class="item" effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
+                                              <span class='cur_dis'>整组移交</span>
+                                            </el-tooltip>
+                                          </el-dropdown-item>
+                                          <el-dropdown-item 
+                                            v-if='power' 
+                                            @click.native="fileGroupCommand('rename', index, group)"
+                                            >重命名</el-dropdown-item>
+                                          <el-dropdown-item 
+                                            v-if='power' 
+                                            @click.native="fileGroupCommand('delete', index, group)"
+                                            >删除</el-dropdown-item>
                                         </el-dropdown-menu>
                                       </el-dropdown>
                                   </div>
@@ -414,34 +493,51 @@
                                   @start='dragStart($event, group.pkid)'
                                   @end='dragEnd'
                                   >
-                                  <div 
-                                    class="every_file fold_up"
-                                      v-if='item.overLength'
-                                    v-for="item in group.allList"
-                                    :key="item.FilePkid"
-                                    :groupid='group.pkid'
-                                    :id='item.FilePkid'
-                                    :filename='item.FileName'
-                                    @click='groupExtendToggle(index, item)'
-                                    >
-                                      <span class="file_pic">
-                                        <span
-                                          class="more" 
-                                          v-for='(pic, index) in item.UrlMin'
-                                          :key='index'
-                                          >
-                                            <img :src="pic" alt="
-                                          ">
+                                  <template v-if='group.fileList.length'>
+                                    <div 
+                                      class="every_file fold_up"
+                                      v-for="item in group.allList"
+                                      :key="item.FilePkid"
+                                      :groupid='group.pkid'
+                                      :id='item.FilePkid'
+                                      :filename='item.FileName'
+                                      @click='groupExtendToggle(index, item)'
+                                      >
+                                        <span class="file_pic">
+                                          <span
+                                            class="more" 
+                                            v-for='(pic, index) in item.UrlMin'
+                                            :key='index'
+                                            >
+                                              <img :src="pic" alt="
+                                            ">
+                                            <span class="none"></span>
+                                          </span>
+                                          <span class="more"><img class="more" src="./style/more.png" alt=""></span>
                                           <span class="none"></span>
                                         </span>
-                                        <span class="more"><img class="more" src="./style/more.png" alt=""></span>
-                                        <span class="none"></span>
-                                      </span>
-                                      <div class="file_info">
-                                        <p class="file_length"><span class="mainColor">{{group.fileList.length}}</span>个文件</p>
-                                      </div>
+                                        <div class="file_info">
+                                          <p class="file_length"><span class="mainColor">{{group.fileList.length}}</span>个文件</p>
+                                        </div>
 
-                                  </div>
+                                    </div>
+                                  </template>
+                                  <template v-else>
+                                    <div 
+                                      class="every_file fold_up"
+                                      :groupid='group.pkid'
+                                      @click='groupExtendToggle(index, true)'
+                                      >
+                                        <span class="file_pic">
+                                          <img src="./style/group_empty2.png" alt="">
+                                          <span class="none"></span>
+                                        </span>
+                                        <div class="file_info">
+                                          <p class="file_length">暂无文件</p>
+                                        </div>
+
+                                    </div>
+                                  </template>
                                   <div class="null"></div>
                                 </draggable>
                               </div>
@@ -518,7 +614,9 @@
                                             id="fileNameEdit"
                                             @blur="fileNameEditBlur($event, item)"
                                             />
-                                          <img :src="item.UserPic" alt="" class="from_header">
+                                          <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                            <img :src="item.UserPic" alt="" class="from_header">
+                                          </el-tooltip>
                                           <span class="file_message fr">
                                             <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
                                               <i class='iconfont icon-pinglun'></i>
@@ -532,8 +630,15 @@
                                             <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                             <el-dropdown-menu slot="dropdown">
                                               <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
-                                              <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
-                                              <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
+                                              <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
+                                              <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
+                                                <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                                  <span>移交</span>
+                                                </el-tooltip>
+                                              </el-dropdown-item>
+                                              <el-dropdown-item v-if='item.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index1, item, group.pkid, index)">移交</el-dropdown-item>
+                                              <el-dropdown-item v-if='item.isOwn' @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                              <el-dropdown-item v-if='item.isOwn' @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
                                             </el-dropdown-menu>
                                           </el-dropdown>
                                         </div>
@@ -549,7 +654,7 @@
                                 v-else-if='group.fileList'
                                 :key="group.pkid"
                                 class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : 'drag_in') : 'drag_dis') : ''"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : 'drag_in') : 'drag_dis') : (group.fileList.length ? '' : 'parths_empty')"
                                 >
                                 <draggable
                                   class="draggable"
@@ -594,7 +699,9 @@
                                         id="fileNameEdit"
                                         @blur="fileNameEditBlur($event, item)"
                                         />
-                                      <img :src="item.UserPic" alt="" class="from_header">
+                                      <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                        <img :src="item.UserPic" alt="" class="from_header">
+                                      </el-tooltip>
                                       <span class="file_message fr">
                                         <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
                                           <i class='iconfont icon-pinglun'></i>
@@ -608,8 +715,15 @@
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                         <el-dropdown-menu slot="dropdown">
                                           <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
+                                          <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
+                                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                              <span>移交</span>
+                                            </el-tooltip>
+                                          </el-dropdown-item>
+                                          <el-dropdown-item v-if='item.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index1, item, group.pkid, index)">移交</el-dropdown-item>
+                                          <el-dropdown-item v-if='item.isOwn' @click.native="fileCommand('rename', index1, item, group.pkid, index)">重命名</el-dropdown-item>
+                                          <el-dropdown-item v-if='item.isOwn' @click.native="fileCommand('delete', index1, item, group.pkid, index)">删除</el-dropdown-item>
                                         </el-dropdown-menu>
                                       </el-dropdown>
                                     </div>
@@ -623,14 +737,20 @@
                             </div>
                           </template>
                         </div>
-                        
-                        <div v-else class="file_empty">
-                          <div class="empty_img">
-                            <img src="./style/group_empty.png" alt="">
+                        <template v-else>
+                          <div v-if='power' class="file_empty">
+                            <div class="empty_img">
+                              <img src="./style/group_empty.png" alt="">
+                            </div>
+                            <p class="title">文件拖到此区域设置分组</p>
                           </div>
-                          <p class="title">文件拖到此区域设置分组</p>
-                        </div>
-
+                          <div v-else class="file_empty">
+                            <div class="empty_img">
+                              <img src="./style/group_empty.png" alt="">
+                            </div>
+                            <p class="title">暂无分组</p>
+                          </div>
+                        </template>
                         <div v-if='notGroupedList.length || parthsGroup.length' class="left_right_toggle" @click='leftRightToggle'>
                           <i 
                             class="iconfont icon-tubiaozhizuomoban"
@@ -884,6 +1004,7 @@ export default {
   data() {
     return {
       loginUser: JSON.parse(localStorage.getItem("staffInfo")), // 当前登录者的信息
+      // userId: 1204, // 当前登录者的ID
       userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
       projectId: 0, // 项目ID
       stageId: '0', // 阶段ID
@@ -908,196 +1029,6 @@ export default {
       fileCheckboxSelf: false, // 个人文档
       notGroupedList: [], // 未分组文件列表 
       parthsGroup: [], // 分组文件列表
-      notGroupedList_1: [
-        {
-          FilePkid: "4085",
-          FileName: "egLogo1.png",
-          UrlMin:
-            "/upload/file/20181227065330/63f7b3f6-f448-448f-b26a-6d6a12741f03/7f31dfb2-196a-48b6-89bc-aa2652013506.png",
-          FileType: "png",
-          userName: "祝建云",
-        },
-        {
-          FilePkid: "6575",
-          FileName: "详情页面1",
-          UrlMin:
-            "/upload/file/20180524103014/41735179-c2d4-45b8-85ca-da4681d5b3af/01.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6573",
-          FileName: "详情页面-2",
-          UrlMin:
-            "/upload/file/20181226081958/5e77da48-39a0-491f-a5db-c23cd5a4023d/b4f00229-8439-4f78-b0a1-957644a58492_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6574",
-          FileName: "详情页面-3",
-          UrlMin:
-            "/upload/file/20180524103014/489053b4-6574-47b0-ace3-22101721e612/2.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6572",
-          FileName: "详情页面-4",
-          UrlMin:
-            "/upload/file/20181226081939/d8e7a662-6f0a-4b41-ba0d-f359aaa3fb5b/2113c63f-2b0b-487a-a3cc-d78b301001b8_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6570",
-          FileName: "详情页面-5",
-          UrlMin:
-            "/upload/file/20181226081938/90571b62-18cb-45aa-a8f0-1f3e30178176/ae3a890a-f693-4023-8b14-f4d960ca0c73_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6571",
-          FileName: "详情页面-6",
-          UrlMin:
-            "/upload/file/20181226081938/ea47a6ae-e9f8-43d6-a63f-08d3c2bb3373/bdca1df3-3343-4381-bed0-8eecf050cd98_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6569",
-          FileName: "详情页面-无分组",
-          UrlMin:
-            "/upload/file/20181226081938/e29e3cec-30ce-4670-8d12-acd4c6a372c3/0d4dfecd-439b-418d-b368-0e2ec3d6206d_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6568",
-          FileName: "详情页面-文件分组最小化",
-          UrlMin:
-            "/upload/file/20181226081938/95216f40-6b6f-43e7-b8ab-a62c285f8b00/a1ec02b1-a3bd-4cb1-afc2-8bd9787c4d03_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6567",
-          FileName: "详情页面-文件移动n",
-          UrlMin:
-            "/upload/file/20181226081938/8f8daa93-ffb1-4445-b4cb-7f79ed5fd2ce/5bc9a050-5e1a-44df-8ac2-0f52d5030175_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6566",
-          FileName: "详情页面-输入文字",
-          UrlMin:
-            "/upload/file/20181226081938/3afc6cd3-72ce-45c0-b4a2-e9e47b73a6d2/82dfd666-49a2-4c15-928c-6dc9b5dfeea3_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6565",
-          FileName: "详情页面-上传文件to成果文件",
-          UrlMin:
-            "/upload/file/20181226081931/55e92e54-1075-43ab-a8ba-74ced18d6121/9a56d16e-6246-4b48-9ea4-3276bc2cdce9_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6564",
-          FileName: "详情页面-上传文件to个人文档",
-          UrlMin:
-            "/upload/file/20181226081931/5ff72ed8-1c2d-4323-bfe4-7e3d45ee83dc/7fd6baae-cb04-4207-9cbf-fa53d399a978_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6563",
-          FileName: "详情页面-删除文件夹与删除文件提示",
-          UrlMin:
-            "/upload/file/20181226081931/819c9db1-70a8-453d-b739-a978be80585f/ce970ac7-d760-4be3-8969-316e22cf6efd_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-          Edition: "1",
-        },
-        {
-          FilePkid: "6562",
-          FileName: "详情页面-空页面",
-          UrlMin:
-            "/upload/file/20181226081930/14707eb6-6f74-4819-844c-76afc08de9b9/8f37b596-48ae-4262-b241-beee53d646a3_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6561",
-          FileName: "详情页面-进入文件夹--文件夹为空",
-          UrlMin:
-            "/upload/file/20181226081930/83ecf1e5-5f21-44c6-bcf7-48e391b99e19/fe95c51a-3ab0-4ab2-8826-c5e925447b4a_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6560",
-          FileName: "详情页面-进入文件夹--出现面包屑---文件hover的操作",
-          UrlMin:
-            "/upload/file/20181226081930/5db23181-724c-42c0-b036-7d4471ec6247/f391c292-ac6b-4ab2-b787-94ea6cd07e26_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6559",
-          FileName: "详情页面-分组文件的展开与收起样式",
-          UrlMin:
-            "/upload/file/20181226081929/4cf89dc7-18e1-456b-ad93-8b687cbf48e4/9713e604-fec5-4298-a28b-9e2eb11fe414_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6558",
-          FileName: "详情页面-成果文件分组更多操作",
-          UrlMin:
-            "/upload/file/20181226081929/82b8f088-2c08-4728-a739-97760c0c3d61/dd3b3458-ddf1-415e-9b75-af241125224e_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        },
-        {
-          FilePkid: "6557",
-          FileName: "详情页面-多选文件样式",
-          UrlMin:
-            "/upload/file/20181226081929/729c03fc-fd7c-41c1-99e8-2fcd1e63dd3a/c96654d0-0582-4809-8359-ecea14d26148_s1.png",
-          FileType: "png",
-          userName: "卢洪臣",
-        }
-      ], // 未分组文件列表
-      parthsGroup_1: [
-        {
-          pkid: 0,
-          groupName: "分组1",
-          border: false,
-          dragDisabled: false,
-          packUp: null,
-          fileList: [
-            {
-              FilePkid: "404",
-              FileName: "附件1",
-              UrlMin:
-                "/upload/file/20181227072023/3c36843c-24be-4d34-9f88-38aadcd9e617/ced7bc91-99d6-4345-ba44-292e4a206593.png",
-              FileType: "png",
-              userName: "祝建云"
-            },
-            {
-              FilePkid: "403",
-              FileName: "赫本",
-              UrlMin:
-                "/upload/file/20181227072001/e9e95bcc-11f0-4470-914e-87cb65be398b/4e822aa0-2b99-4bc0-b58d-48725929ef4b.png",
-              FileType: "png",
-              userName: "祝建云"
-            }
-          ]
-        }
-      ], // 分组文件列表
       personalFilesShow: false, // 个人文档是否显示
       personalFiles: [
         {
@@ -1312,7 +1243,8 @@ export default {
   computed: {
     ...mapState([
       'checkedFileList',
-      'fileLength'
+      'fileLength',
+      'power' // 权限管理 0--未参加阶段任务 1--参加了阶段任务
     ]),
     fileCheckbox: {
       get() {
@@ -1340,7 +1272,8 @@ export default {
     ...mapMutations([
       'CHECKEDLIST_CHANGE',
       'FILELENGTH_CHANGE',
-      'TASKIDS_CHANGE'
+      'TASKIDS_CHANGE',
+      'POWER_CHANGE'
     ]),
     // 返回格子任务列表
     returnProject() {
@@ -1555,6 +1488,7 @@ export default {
       this.parthsGroup = this.parthsGroup.concat();
     },
 
+
     // 计算需要折叠的文件个数--分组折叠成一行
     countFileMore(i, flag) {
       // console.log(this.parthsGroup[i].fileList);
@@ -1719,7 +1653,15 @@ export default {
       }
       this.parthsGroup = this.parthsGroup.concat();
     },
+    // 分组管理的下拉列表的显示/隐藏时触发
+    visibleChangeGroup(val, group) {
+      if(val) {
+        let x = group.fileList.findIndex(ele => !ele.isOwn);
+        this.$set(group, 'onlySelf', x === -1 ? true : false);
+        this.parthsGroup = this.parthsGroup.concat();
 
+      }
+    },
     // 整体的分组管理
     groupCommand(type) {
       let title = '新建分组';
@@ -2725,7 +2667,7 @@ export default {
     },
     // 文件上传超出提示
     handleExceed(files, fileList) {
-      this.$message.warning("最多只能选择9个文件");
+        this.$message.warning("最多只能选择9个文件");
     },
     // 文件上传前
     beforeUpload(file) {
@@ -2836,14 +2778,20 @@ export default {
       if (ids !== -1) {
         this.fileProgressList[ids].status = 2;
       }
+      
       let returns = this.popFileProgress(this.fileProgressList);
       if (this.uploadProgressFlag && returns) {
         setTimeout(() => {
           this.closeProgress();
+          // 暂时解决两次上传时文件个数大于9个的bug
+          if(Array.isArray(this.$refs.fileUpload)) {
+            this.$refs.fileUpload[0].clearFiles();
+          }else {
+            this.$refs.fileUpload.clearFiles();
+          }
         }, 2000);
       }
     },
-
 
     // 文件上传失败
     uploadError(err, file) {
@@ -2904,7 +2852,7 @@ export default {
       let obj = {
         project: params
       };
-      this.$HTTP("post", "/project_get_Catalog", obj)
+      this.$HTTP("post", "/project_get_Catalog", obj, $('#app')[0])
         .then(res => {
           this.tasksList = res.result;
           for (let y of this.tasksList) {
@@ -2921,15 +2869,7 @@ export default {
 
     // 任务/阶段--详情
     taskStageDetail(taskId, stageId) {
-      if(this.fullPreviewShow) {
-        this.fullPreviewShow = false;
-      }
-      if(!this.demandOrGain) {
-        this.demandOrGain = true;
-      }
-      if(!this.leftCenterFlag) {
-        this.leftRightToggle();
-      }
+      this.initData(); // 初始化数据
       this.taskId = taskId;
       this.stageId = stageId;
       let obj = {
@@ -2938,7 +2878,7 @@ export default {
         stageId: this.stageId,
         taskId: this.taskId,
       }
-      this.$HTTP("post", "/stagetask_get", obj)
+      this.$HTTP("post", "/stagetask_get", obj, $('#app')[0])
       .then(res => {
         this.dataProcessing(res.result);
         // console.log("获取任务详情", res.result);
@@ -2949,6 +2889,23 @@ export default {
         this.$message.error("获取任务详情失败，请检查网络");
       });
 
+    },
+    // 详情切换时初始化数据
+    initData() {
+      if(this.fullPreviewShow) {
+        this.fullPreviewShow = false;
+      }
+      if(!this.demandOrGain) {
+        this.demandOrGain = true;
+      }
+      if(!this.leftCenterFlag) {
+        this.leftRightToggle();
+      }
+      if(!this.viewToggle) {
+        this.viewToggle = true;
+      }
+      this.checkedList = [];
+      this.FILELENGTH_CHANGE(0);
     },
     // 对获取的数据进行处理
     dataProcessing(res) {
@@ -2986,7 +2943,16 @@ export default {
         stageTaskId: this.stageTaskId,
         filePartitionId: this.filePartitionId
       }
-      this.TASKIDS_CHANGE(this.idList);
+      this.TASKIDS_CHANGE(this.idList); // ids集合改变
+
+      let statePower = 0;
+      if(res.isMyParticipate) {
+        statePower = 1;
+      }else {
+        statePower = 0;
+      }
+      this.POWER_CHANGE(statePower); // 设置权限
+
       // console.log("获取任务详情");
 
     },
@@ -2999,7 +2965,8 @@ export default {
         hover: false,
         edit: false,
         FileTitle: title,
-        FileType: this.getFlieTyle(obj.Type)
+        FileType: this.getFlieTyle(obj.Type),
+        isOwn: obj.UserPkid.toString() === this.userId.toString() ? true : false
       }
       if (data.FileType !== 1) {
         data.UrlMin = this.fileTypeImg[data.FileType].src;
@@ -3031,7 +2998,7 @@ export default {
   async created() {
     let params = this.$route.params;
      params = {
-          projectId: 1252,
+          projectId: 1252, // 1267
           stageId: '38',
           taskId: 118,
         }

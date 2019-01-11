@@ -9,7 +9,7 @@
                 <img class="header"
                      :src="item.userPic"
                      alt="">
-                <span class="names">{{item.nickname ? item.nickname : item.realName}}</span>
+                <span class="names">{{item.nickName ? item.nickName : item.userName}}</span>
                 <el-checkbox v-model="item.IsState"></el-checkbox>
             </li>
         </ul>

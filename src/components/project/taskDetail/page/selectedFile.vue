@@ -72,8 +72,9 @@
                                     </span>
                                     <div class="file_info">
                                         <p class="title">{{item.FileName}}</p>
-                                        
-                                        <img :src="item.UserPic" alt="" class="from_header">
+                                        <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                            <img :src="item.UserPic" alt="" class="from_header">
+                                        </el-tooltip>
                                         <span class="file_message fr">
                                         <i class='iconfont icon-pinglun'></i>
                                         {{item.Count}}
@@ -111,7 +112,9 @@
                                 </span>
                                 <div class="file_info">
                                     <p class="title">{{item.FileName}}</p>
-                                    <img :src="item.UserPic" alt="" class="from_header">
+                                    <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                        <img :src="item.UserPic" alt="" class="from_header">
+                                    </el-tooltip>
                                     <span class="file_message fr">
                                     <i class='iconfont icon-pinglun'></i>
                                     {{item.Count}}

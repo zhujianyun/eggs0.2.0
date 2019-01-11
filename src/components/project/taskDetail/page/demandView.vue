@@ -29,7 +29,11 @@
                 >
                 <div class="demand_desc">
                     <div class="desc_top">
-                        <span class="header_img"><img :src="demand.userPic" alt="" class="header"></span>
+                        <span class="header_img">
+                            <el-tooltip class="item" effect="dark" :content="demand.nickName ? demand.nickName : demand.userName" placement="top" :open-delay="300">
+                                <img :src="demand.UserPic" alt="" class="header">
+                            </el-tooltip>
+                        </span>
                         <div class="right_info fr">
                             <span class="stage_name">{{demand.oldstageTitle}}</span>
                             <span class="line"></span>
@@ -111,8 +115,9 @@
                                     </span>
                                     <div class="file_info">
                                         <p class="title">{{item.FileName}}</p>
-                                        
-                                        <img :src="item.UserPic" alt="" class="from_header">
+                                        <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                            <img :src="item.UserPic" alt="" class="from_header">
+                                        </el-tooltip>
                                         <span class="file_message fr">
                                         <i class='iconfont icon-pinglun'></i>
                                         {{item.Count}}
@@ -156,7 +161,9 @@
                                 </span>
                                 <div class="file_info">
                                     <p class="title">{{item.FileName}}</p>
-                                    <img :src="item.UserPic" alt="" class="from_header">
+                                    <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                        <img :src="item.UserPic" alt="" class="from_header">
+                                    </el-tooltip>
                                     <span class="file_message fr">
                                     <i class='iconfont icon-pinglun'></i>
                                     {{item.Count}}
