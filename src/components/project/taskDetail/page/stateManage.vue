@@ -112,28 +112,47 @@ export default {
             stageInfo: {}, // 阶段的所有信息
             remarkStateFlag: false, // 标记完成时温馨提示
             reminderText: '',
-            selectList: [],
+            selectList: [], // 交接时选择的阶段列表
             selectedIds: [], // 选择的ID组
             selectedFileShow: false, // 阶段交接的文件选择和需求描述显示/隐藏
             stateManageFlag: false, // 状态管理列表
             stateManageList: [], // 当前阶段的列表
         }
     },
+
     methods: {
         
 
         // 1.任务成员（是创建者）: 标记完成 / 取消完成 整体的状态管理
-        handleState1(flag) {
+        handleState1(flag, selfId, state, who) {
             let ids = [this.stageInfo.stageTaskUserId];
-            if(flag !== 'finish' && flag !== null) { // 标记完成 // state状态管理
+            if(flag !== 'finish') { // 标记完成 // state状态管理
                 ids = flag;
             }
             this.sendHttp(ids).then(res => {
                 // console.log("1--修改完成状态", res);
                 if(flag === 'finish') { // 标记完成
                     this.stageInfo.stageTaskUserIsState = !this.stageInfo.stageTaskUserIsState;
+                    this.$message.success(`您已经将此阶段的工作标记为${this.stageInfo.stageTaskUserIsState ? '' : '未'}完成状态！`);
+                    
+                    this.stateChange(this.stageInfo.stageTaskUserIsState, ids);
+                    this.idSelectedFileShow();
+                    
                 }else { // state状态管理
                     this.stateManageFlag = false;
+                    
+                    let has = selfId.findIndex(ele => ele == selfId);
+                    if(has !== -1) {
+                        this.stageInfo.stageTaskUserIsState = state;
+                        this.idSelectedFileShow();
+                    }   
+                    if(who === 'all') {
+                        this.stateChange(state, ids, 'all');
+                        this.$message.success(`您已经将此阶段全员的工作标记为${state ? '' : '未'}完成状态！`);
+                    }else {
+                        this.stateChange(state, ids);
+                        this.$message.success(`您已经将${who}的工作标记为${state ? '' : '未'}完成状态！`);
+                    }
                 }
             }).catch(err => {
                 console.log("1--修改完成状态失败", err);
@@ -152,11 +171,8 @@ export default {
             this.sendHttp(ids).then(res => {
                 // console.log("2--修改完成状态", res);
                 this.stageInfo.stageTaskUserIsState = !this.stageInfo.stageTaskUserIsState;
-                if(this.stageInfo.stageTaskUserIsState) {
-                    this.reminderText = '您已将这部分工作标记为完成，请确认是否将工作成果移交给下一阶段使用';
-                    this.remarkStateFlag = true;
-                }
-                
+                this.$message.success(`您已经将此阶段的工作标记为${this.stageInfo.stageTaskUserIsState ? '' : '未'}完成状态！`);
+                this.idSelectedFileShow();
             }).catch(err => {
                 console.log("2--修改完成状态失败", err);
             });
@@ -171,17 +187,22 @@ export default {
             this.stateManageFlag = false;
         },
         // 3.不是任务成员（但是创建者）: 整体的状态管理
-        handleState3(ids) {
+        handleState3(ids, selfId, state, who) {
             // console.log('return--', ids);
-            if(ids !== null) { // 数据有变化，发送请求
-                this.sendHttp(ids).then(res => {
-                    // console.log("3--修改完成状态", res);
-                }).catch(err => {
-                    console.log("3--修改完成状态失败", err);
-                });
-            }
-            this.stateManageFlag = false;
-
+            this.sendHttp(ids).then(res => {
+                // console.log("3--修改完成状态", res);
+                 
+                if(who === 'all') {
+                    this.stateChange(state, ids, 'all');
+                    this.$message.success(`您已经将此阶段全员的工作标记为${state ? '' : '未'}完成状态！`);
+                }else {
+                    this.stateChange(state, ids);
+                    this.$message.success(`您已经将${who}的工作标记为${state ? '' : '未'}完成状态！`);
+                }
+                this.stateManageFlag = false;
+            }).catch(err => {
+                console.log("3--修改完成状态失败", err);
+            });
         },
         
         // 状态改变发送请求
@@ -192,6 +213,7 @@ export default {
                 }
                 this.$HTTP("post", "/stageTaskUser_update", obj)
                 .then(res => {
+                    
                     resolve(true);
                 })
                 .catch(err => {
@@ -199,7 +221,33 @@ export default {
                 });
             });
         },
-
+        // 是否要显示交接提示
+        idSelectedFileShow() {
+            if(!this.stageInfo.stageTaskUserIsState || this.stageInfo.stageList.length <= 1) { return; }
+            let fileLength = 0;
+            for(let x of this.stageInfo.fileList) {
+                for(let y of x.fileList) {
+                    fileLength++;
+                }
+            }
+            if(fileLength) {
+                this.reminderText = '您已将这部分工作标记为完成，请确认是否将工作成果移交给下一阶段使用';
+                this.remarkStateFlag = true;
+            }
+        },  
+        // info发生改变对stageList的影响
+        stateChange(state, ids, all) {
+            let id = ids[0];
+            if(all) {
+                this.stateManageList.map(ele => ele.IsState = true);
+            }
+            for(let x of this.stateManageList) {
+                if(x.stageTaskUserId == id) {
+                    x.IsState = state;
+                }
+            }
+            this.stateManageList = this.stateManageList.concat();
+        },
         // 标记状态完成的提示--取消
         remarkStateCancel() {
             this.remarkStateFlag = false;
@@ -219,10 +267,10 @@ export default {
             this.selectedFileShow = false;
             this.remarkStateFlag = false;
         },
-
+        
         // 数据获取/设置
-        setData() {
-            this.stageInfo = Object.assign({}, this.info);
+        setData(info) {
+            this.stageInfo = Object.assign({}, info ? info : this.info);
             this.selectList = [];
             for (let x of this.stageInfo.stageList) {
                 if(x.stageId != this.stageInfo.stageId) {

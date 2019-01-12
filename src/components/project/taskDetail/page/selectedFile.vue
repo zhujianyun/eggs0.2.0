@@ -34,7 +34,7 @@
                             >
                             <div 
                                 class="every_file"
-                                v-for="(item, index1) in group.overList"
+                                v-for="(item) in group.overList"
                                 :key="item.FilePkid"
                                 :groupid='group.pkid'
                                 :id='item.FilePkid'
@@ -95,7 +95,7 @@
                             >
                             <div 
                                 class="every_file"
-                                v-for="(item, index1) in group.fileList"
+                                v-for="(item) in group.fileList"
                                 :key="item.FilePkid"
                                 :groupid='group.pkid'
                                 :id='item.FilePkid'
@@ -135,10 +135,13 @@
                     <span>需求描述</span>
                     <i class="iconfont icon-guanbijiantou fr" @click="cancelDesc"></i>
                     <textarea 
-                        class="textarea_desc" 
+                        ref='descRef'
+                        :class="descTextFocus ? 'textarea_desc_focus' : 'textarea_desc'" 
                         rows="2"
                         placeholder="添加文字说明"
                         v-model='descText'
+                        @focus="descFocus"
+                        @blur="descBlur"
                         ></textarea>
                 </div>
             </div>
@@ -171,11 +174,13 @@ export default {
     props: ['list', 'ids'],
     data() {
         return {
+            userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
             fileCheckbox: false,
             fileLists: [],
             checkedFileList: [],
             descShow: false, // 是否显示描述
             descText: '', // 需求描述的内容
+            descTextFocus: false, // 需求描述获取焦点
         }
     },
     computed: {
@@ -331,10 +336,19 @@ export default {
 
         addDesc() {
             this.descShow = true;
+            this.$nextTick(() => {
+                this.$refs.descRef.focus();
+            });
         },
         cancelDesc() {
             this.descShow = false;
             this.descText = '';
+        },
+        descFocus() {
+            this.descTextFocus = true;
+        },
+        descBlur() {
+            this.descTextFocus = false;
         },
         cancel() {
             this.$emit('handleCancle');
@@ -345,20 +359,32 @@ export default {
         },
         // 数据的获取/设置
         setData() {
-            this.fileLists = [...this.list];
+            this.fileLists = JSON.parse(JSON.stringify(this.list));
+            let id = this.userId;
             for(var i = 0; i < this.fileLists.length; i++) {
                 let x = this.fileLists[i];
                 if(x.fileList.length) {
                     this.$set(this.fileLists[i], 'packUp', null);
                     this.$set(this.fileLists[i], 'checked', false);
                     x.fileList.map(ele => ele.checked = false);
-                    this.countFileMore(i);
+                    for(let y = 0; y < x.fileList.length; y++) {
+                        if(x.fileList[y].UserPkid != id) {
+                            x.fileList.splice(y, 1);
+                            y--;
+                        }
+                    }
+                    if(x.fileList.length) {
+                        this.countFileMore(i);
+                    }else {
+                        this.fileLists.splice(i, 1);
+                    }
+
                 }else {
                     this.fileLists.splice(i, 1);
                 }
                 
             }
-            // console.log('选择交接文件---', this.fileLists);
+            console.log('选择交接文件---', this.fileLists);
         },
     },
     created() {
@@ -430,6 +456,19 @@ export default {
                         outline:none;
                         resize: none;
                         border: 1px solid @line;
+                        background: #FFFFFF;
+                        .border_radius(@br: 4px;);
+                        padding: 0 4px;
+                        .box_sizing;
+                    }
+                    .textarea_desc_focus {
+                        width: 100%;
+                        height: 50px;
+                        margin-top: 10px;
+                        line-height: 24px;
+                        outline:none;
+                        resize: none;
+                        border: 1px solid @mainColor;
                         background: #FFFFFF;
                         .border_radius(@br: 4px;);
                         padding: 0 4px;

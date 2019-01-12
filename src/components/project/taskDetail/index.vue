@@ -2,7 +2,7 @@
     <div class='task_detail_yun'>
       <!-- 头部阶段 -->
       <div class="detail_top">
-          <div class="project_name">EGGS产品开发</div>
+          <div class="project_name">{{projectItem.title}}</div>
           <!-- state=1(一开始) state=2(一完成) state=3(一未开始) state=4(一进行中) state=5(一已超时) state=6(一已关闭)  -->
           <div class="stage_list">
             <el-tabs v-model="stageId" @tab-click="taskStageDetail(taskId, stageId)">
@@ -70,7 +70,7 @@
           <!-- 头部操作按钮 -->
           <div class="top_operate">
             <div class="t_o_left fl">
-              <el-tooltip v-if='power && !demandCount' class="item" effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
+              <el-tooltip v-if='!demandCount' class="item" effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
                 <span class="cur_dis">相关需求</span>
               </el-tooltip>
               <span v-else :class="demandOrGain ? '' : 'demand_gain'" @click="demandOrGainChange(false)">相关需求</span>
@@ -79,8 +79,8 @@
             </div>
             <div class="t_o_right fr">
               <!-- 状态管理 -->
-              <!-- 1.任务成员（是创建者） -->
               <state-manage 
+                ref='stageManage'
                 v-if='stageInfo'
                 :info='stageInfo'
                 :ids='idList'
@@ -185,7 +185,7 @@
                         @click.native='fileCheckboxAll'>全选</el-checkbox>
                         <template v-if='checkedFileList && checkedFileList.length'>
                           <el-tooltip class="item" effect="dark" content="下载" placement="top" :open-delay="300">
-                            <i class="iconfont icon-xiazai"></i>
+                            <i class="iconfont icon-xiazai" @click='multipleDownload'></i>
                           </el-tooltip>
                           <el-tooltip class="item" effect="dark" content="收藏" placement="top" :open-delay="300">
                             <i class="iconfont icon-shoucang1"></i>
@@ -197,15 +197,15 @@
                             </el-tooltip>
                           </template>
                           <!-- 多个阶段 且选中的文件包含他人的文件的时候 -->
-                          <template v-if='false && power && stageList.length > 1'>
+                          <template v-else-if='power && stageList.length > 1 && !isOwnChecked'>
                             <el-tooltip class="item" effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
-                              <i class="iconfont icon-jihuayijiao"></i>
+                              <i class="iconfont icon-jihuayijiao cur_dis"></i>
                             </el-tooltip>
                           </template>
                            <!-- 多个阶段 且选中的文件不包含他人的文件的时候 -->
-                          <template v-if='power && stageList.length > 1'>
+                          <template v-else-if='power && stageList.length > 1'>
                             <el-tooltip class="item" effect="dark" content="移交" placement="top" :open-delay="300">
-                              <i class="iconfont icon-jihuayijiao"></i>
+                              <i class="iconfont icon-jihuayijiao" @click='multipleTransfer'></i>
                             </el-tooltip>
                           </template>
                         </template>
@@ -312,7 +312,7 @@
                                         <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
                                         <el-dropdown-item v-if='ele.isOwn && stageList.length === 1'>
                                           <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
-                                            <span>移交</span>
+                                            <span class="cur_dis">移交</span>
                                           </el-tooltip>
                                         </el-dropdown-item>
                                         <el-dropdown-item v-if='ele.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index, ele, 0)">移交</el-dropdown-item>
@@ -436,7 +436,7 @@
                                             >收藏</el-dropdown-item>
                                           <!-- 整组移交 只有一个阶段的时候 -->
                                           <el-dropdown-item 
-                                            v-if='power && stageList.length === 1' 
+                                            v-if='power && group.fileList.length && stageList.length === 1' 
                                             @click.native="fileGroupCommand('transfer', index, group)"
                                             >
                                             <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
@@ -445,7 +445,7 @@
                                           </el-dropdown-item>
                                           <!-- 整组移交 只有自己的文件的时候 -->
                                           <el-dropdown-item 
-                                            v-else-if='power && group.fileList.length && group.onlySelf' 
+                                            v-else-if='power && group.fileList.length && group.fileList.length && group.onlySelf' 
                                             @click.native="fileGroupCommand('transfer', index, group)"
                                             >
                                             整组移交
@@ -633,7 +633,7 @@
                                               <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
                                               <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
                                                 <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
-                                                  <span>移交</span>
+                                                  <span class="cur_dis">移交</span>
                                                 </el-tooltip>
                                               </el-dropdown-item>
                                               <el-dropdown-item v-if='item.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index1, item, group.pkid, index)">移交</el-dropdown-item>
@@ -718,7 +718,7 @@
                                           <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
                                           <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
                                             <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
-                                              <span>移交</span>
+                                              <span class="cur_dis">移交</span>
                                             </el-tooltip>
                                           </el-dropdown-item>
                                           <el-dropdown-item v-if='item.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index1, item, group.pkid, index)">移交</el-dropdown-item>
@@ -951,7 +951,16 @@
             />
           </template>
       </div>
+      <!-- 温馨提示2_删除分组的提示 -->
+      <transition name="fade1">
+        <transfer-view
+          v-if='transferShow'
+          :selectList="transferStageList"
+          @handleCancle="transferCancel"
+          @handleSure="transferSure" 
+        />
 
+      </transition>
       <!-- 温馨提示2_删除分组的提示 -->
       <transition name="fade1">
         <Reminder2 v-if="delGroupFlag"
@@ -988,6 +997,7 @@ import DemandView from './page/demandView';
 import StateManage from './page/stateManage';
 import AddHuman from './page/addHuman';
 import AddTime from './page/addTime';
+import TransferView from './page/transferView';
 import { mapState, mapMutations } from 'vuex';
 export default {
   components: {
@@ -999,11 +1009,13 @@ export default {
     DemandView,
     StateManage,
     AddHuman,
-    AddTime
+    AddTime,
+    TransferView
   },
   data() {
     return {
       loginUser: JSON.parse(localStorage.getItem("staffInfo")), // 当前登录者的信息
+      projectItem: JSON.parse(localStorage.getItem("projectItem")), // 当前项目
       // userId: 1204, // 当前登录者的ID
       userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
       projectId: 0, // 项目ID
@@ -1178,6 +1190,9 @@ export default {
       groupSortFlag: false, // 分组排序展示
       addHumanShow: false, // 加人显示/隐藏
       addTimeShow: false, // 加时间显示/隐藏
+      transferShow: false, // 文件移交的弹窗
+      transferStageList: [], // 移交选择的阶段列表
+      transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交
     };
   },
   watch: {
@@ -1226,6 +1241,7 @@ export default {
         }
       }
       this.FILELENGTH_CHANGE(val.length + length);
+      this.stageInfo.fileList[0].fileList = val;
     },
     parthsGroup: {
       deep: true,
@@ -1237,8 +1253,11 @@ export default {
           }
         }
         this.FILELENGTH_CHANGE(length + this.notGroupedList.length);
+        this.stageInfo.fileList = [].concat(this.stageInfo.fileList[0], list);
+
       }
-    }
+    },
+
   },
   computed: {
     ...mapState([
@@ -1246,6 +1265,14 @@ export default {
       'fileLength',
       'power' // 权限管理 0--未参加阶段任务 1--参加了阶段任务
     ]),
+    isOwnChecked() {
+        let indexs = this.checkedFileList.findIndex(ele => ele.UserPkid != this.userId);
+        if(indexs === -1) {
+          return true;
+        }else {
+          return false;
+        }
+    },
     fileCheckbox: {
       get() {
         if(this.fileLength && this.checkedFileList && (this.checkedFileList.length === this.fileLength)) {
@@ -1821,14 +1848,17 @@ export default {
     // 文件的更多操作
     fileCommand(type, index1, item, groupId, index) {
       this.operateFile = Object.assign({}, item, {index: index1, groupId: groupId, groupIndex: index});
+      this.transferType = 1; // 单个文件移交
       if(type === 'download') { // 下载
+        this.fileDownlod(item);
         return;
       }
       if(type === 'collect') { // 收藏
         return;
       }
       if(type === 'transfer') { // 移交
-
+        this.getTransferStageList();
+        this.transferShow = true;
         return;
       }
       if(type === 'rename') { // 重命名
@@ -1924,17 +1954,21 @@ export default {
     fileGroupCommand(type, index, group) {
       this.filePartitionId = group.pkid;
       this.operateParth = Object.assign({}, group, {index: index});
+      this.transferType = 3; // 整组移交
 
       if(type === 'upload') { // 上传文件
         return;
       }
       if(type === 'download') { // 下载
+        this.fileDownlod(group);
         return;
       }
       if(type === 'collect') { // 收藏
         return;
       }
       if(type === 'transfer') { // 整组移交
+        this.getTransferStageList();
+        this.transferShow = true;
 
         return;
       }
@@ -1989,6 +2023,7 @@ export default {
       item.hover = true;
       this.notGroupedList = this.notGroupedList.concat();
       this.parthsGroup = this.parthsGroup.concat();
+      
 
     },
     // 鼠标移出文件
@@ -2072,6 +2107,157 @@ export default {
       this.parthsGroup = this.parthsGroup.concat();
     },
 
+    //  多选移交
+    multipleTransfer() {
+      this.getTransferStageList();
+      this.transferShow = true;
+      this.transferType = 2; // 多个文件移交
+
+    },
+
+    // 取消文件移交
+    transferCancel() {
+      this.transferShow = false;
+    },
+    // 确认文件移交
+    transferSure(val, descText) {
+      this.transferShow = false;
+      let arr = [[], []];
+      if(this.transferType === 1) { // 单个文件
+        arr[0] = [this.operateFile.FilePkid];
+      }else if(this.transferType === 2) { // 多个文件
+        for(let x of this.notGroupedList) {
+          if(x.checked) {
+            arr[0].push(x.FilePkid);
+          }
+        }
+        for(let x of this.parthsGroup) {
+          let haves = x.fileList.findIndex(ele => !ele.checked);
+          if(haves === -1) {
+            arr[1].push(x.pkid);
+          }else {
+            for(let y of x.fileList) {
+              if(y.checked) {
+                arr[0].push(y.FilePkid);
+              }
+            }
+          }
+        }
+
+      }else { // 组文件
+        arr[1] = [this.filePartitionId];
+      }
+      this.tranferSendHttp(val, arr, descText);
+    },
+
+    // 移交时选择的阶段列表
+    getTransferStageList() {
+      this.transferStageList = [];
+      for (let x of this.stageList) {
+          if(x.stageId != this.stageId) {
+              this.transferStageList.push({
+                  value: x.stageId,
+                  label: x.stageTitle,
+                  disabled: false
+              });
+          }
+      }
+    },
+    // 移交时发送的请求
+    /**
+     * val 移交选择的分组
+     * arr 要移交的文件ID arr[0]里是未分组的ID集合 arr[1]是分组的ID集合
+     * descText 移交时的需求描述
+     * **/
+    tranferSendHttp(val, arr, descText) {
+      console.log('transfer---',  val, arr, descText);
+      return new Promise((resolve) => {
+          if(!arr[0].length && !arr[1].length && !descText) {
+              this.$message.warning('请选择交接文件或添加需求描述');
+              return;
+          }
+
+
+          let obj = {
+              projectId: this.projectId,
+              oldstageId: this.stageId,
+              stageId: val.join(','),
+              taskId: this.taskId,
+              descn: descText,
+              groupIdVals: arr[1].join(','),
+              fileIdVals: arr[0].join(','),
+              myUserId: this.userId,
+          }
+          this.$HTTP('post', '/demand_add', obj).then(res => {
+              this.$emit('handleSure');
+
+          }).catch(err => {
+              console.log(err);
+          });
+      });
+    },
+
+    // 多选下载
+    multipleDownload() {
+      this.transferType = 2; // 多个文件移交
+      this.fileDownlod();
+    },
+
+    // 文件下载
+    fileDownlod(item) {
+      let link = "";
+      if(this.transferType === 1) {
+        link = $(
+          '<a href="' +
+            item.Url +
+            '" download="' +
+            item.FileName +
+            '" target="_blank"></a>'
+        );
+        link.get(0).click();
+      }else if (this.transferType === 2 && this.checkedFileList.length === 1) {
+        link = $(
+          '<a href="' +
+            this.checkedFileList[0].Url +
+            '" download="' +
+            this.checkedFileList[0].FileName +
+            '" target="_blank"></a>'
+        );
+        link.get(0).click();
+      } else {
+        let ids = [];
+        if(this.transferType === 2) {
+          for(let x of this.checkedFileList) {
+            ids.push(x.FilePkid);
+          }
+        }else if(this.transferType === 3) {
+          for(let x of item.fileList) {
+            ids.push(x.FilePkid);
+          }
+        }
+        
+        const str = `/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}`
+        
+        console.log('---ids', str);
+        link = $(
+          `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}" download="....zip" target="_blank"></a>`
+        );
+         link.get(0).click();
+        return;
+        let obj = {
+          stageId: this.stageId,
+          taskId: this.taskId,
+          demandId: '',
+          vals: ids,
+          type: this.transferType - 1,
+        };
+        this.$HTTP('post', '/zipFileDown', obj).then(res => {
+          console.log('----', res);
+        }).catch(err => {
+
+        });
+      }
+    },
 
     // 文件拖拽---------------------------------start
     // 文件移动时的回调函数
@@ -2909,6 +3095,7 @@ export default {
     },
     // 对获取的数据进行处理
     dataProcessing(res) {
+      this.stageInfo = null;
       this.stageInfo = Object.assign({}, res, {stageId: this.stageId});
       this.parthsGroup = [];
       this.demandCount = res.demandCount;
@@ -2932,9 +3119,12 @@ export default {
           this.parthsGroup.push(ele);
         }
       }
-      this.stageInfo.fileList = returnList;
+      this.stageInfo.fileList = returnList.concat();
+      this.$nextTick(() => {
+        this.$refs.stageManage.setData(this.stageInfo);
+      });
       this.countFileOne();
-      
+      this.idList = null;
       this.idList = {
         userId: this.userId,
         projectId: this.projectId,
@@ -2995,13 +3185,18 @@ export default {
 
     
   },
-  async created() {
+  created() {
     let params = this.$route.params;
-     params = {
-          projectId: 1252, // 1267
-          stageId: '38',
-          taskId: 118,
-        }
+    if(params.projectId) {
+      localStorage.setItem('getTaskIds', JSON.stringify(params));
+    }else {
+      params = JSON.parse(localStorage.getItem('getTaskIds'));
+    }
+    //  params = {
+    //       projectId: 1252, // 1267
+    //       stageId: '38',
+    //       taskId: 118,
+    //     }
     this.projectId = params.projectId;
     this.stageId = params.stageId;
     this.taskId = params.taskId;

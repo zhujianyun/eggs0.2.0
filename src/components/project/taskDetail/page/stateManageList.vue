@@ -2,7 +2,7 @@
     <div class="state_manage_y"
         @mouseleave='mouseLeave'
         >
-        <ul class="list_ul">
+        <ul v-if='list && list.length' class="list_ul">
             <li v-for="(item, index) in list"
                 :key="index"
                 @click.stop="change(index)">
@@ -13,6 +13,9 @@
                 <el-checkbox v-model="item.IsState"></el-checkbox>
             </li>
         </ul>
+        <div v-else class="list_ul">
+            <p>该阶段暂无人员参与</p>
+        </div>
         <div class="state_manage_bottom">
             <button v-if='!allChecked' class="main_button_color" @click.stop="allChange">标记全部完成</button>
             <button v-else class="main_button_disabled">标记全部完成</button>
@@ -45,7 +48,8 @@ export default {
     },
 
     methods: {
-        async mouseLeave() {
+        mouseLeave() {
+            return;
             this.computedNum().then(res => {
                 this.$emit('handleSure', res);
             });
@@ -54,13 +58,21 @@ export default {
             // this.$emit('handleManageChange', {});
         },
         allChange() {
+            let id = [];
+            let selfId = [];
             this.list.map(ele => {
+                id.push(ele.stageTaskUserId);
+                selfId.push(ele.userpkid);
                 return ele.IsState = true;
             });
+            this.$emit('handleSure', id, selfId, true, 'all');
         },
 
         change(index) {
             this.list[index].IsState = !this.list[index].IsState;
+            let id = [this.list[index].stageTaskUserId];
+            let selfId = [this.list[index].userpkid];
+            this.$emit('handleSure', id, selfId, this.list[index].IsState, this.list[index].nickName ? this.list[index].nickName : this.list[index].userName);
         },
         checkedList() {
             let ids = [];
@@ -98,7 +110,7 @@ export default {
         this.$nextTick(ele => {
             this.list = [...this.data];
             this.checkedList();
-            console.log('状态管理列表～～～', this.list);
+            // console.log('状态管理列表～～～', this.list);
         });
     }
 }
@@ -160,6 +172,11 @@ export default {
         }
       }
     }
+    p {
+        color: @grayNight;
+        text-align: center;
+        margin-top: 70px;
+    }
   }
 
   .state_manage_bottom {
@@ -167,6 +184,9 @@ export default {
     border-top: 1px solid @bg-f2f2f2;
     .box_sizing;
     text-align: center;
+    button {
+        margin-top: 10px;
+    }
   }
 }
 </style>

@@ -210,6 +210,7 @@ export default {
         let add = [...data.add];
         let del = [...data.del];
         let obj = {
+          projectId: this.ids.projectId,
           addVale: add.join(","),
           delVale: del.join(","),
           stageId: this.stagePeopleList[index].stageId,
