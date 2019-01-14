@@ -185,6 +185,7 @@
             v-if="inviteFlag"
             :invite="true"
             :defaultTreeKeys="[]"
+            :fromInfo="{fromType: 0, id: ''}"
             @handleCancel="inviteCancel"
             @handleInvite="emailInvite"
         />

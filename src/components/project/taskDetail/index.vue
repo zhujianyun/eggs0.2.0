@@ -95,6 +95,7 @@
                   v-if='addHumanShow'
                   :defaultList='stageList'
                   :ids='idList'
+                  @stageInfoChange="stageInfoChange"
                 />
               </span>
               <!-- 加时间 -->
@@ -104,8 +105,10 @@
                 </el-tooltip>
                 <add-time
                   v-if='addTimeShow'
-                   :defaultList='stageList'
+                  :defaultList='stageList'
                   :ids='idList'
+                  @stageInfoChange="stageInfoChange"
+
                 />
               </span>
               
@@ -342,17 +345,17 @@
                           >
                           <div class="file_empty">
                             <div class="empty_img">
-                              <img src="./style/file_empty.png" alt="">
+                              <img src="../../../assets/img/file_empty.png" alt="">
                             </div>
                             <p class="title">文件拖到此区域即可上传，支持批量上传</p>
                           </div>
                         </el-upload>
                         <div class="file_empty" v-else>
-                            <div class="empty_img">
-                              <img src="./style/file_empty.png" alt="">
-                            </div>
-                            <p class="title">暂无文件</p>
+                          <div class="empty_img">
+                            <img src="../../../assets/img/file_empty.png" alt="">
                           </div>
+                          <p class="title">暂无文件</p>
+                        </div>
                       </template>
                     </div>
                     <!-- 右侧分组 -->
@@ -740,13 +743,13 @@
                         <template v-else>
                           <div v-if='power' class="file_empty">
                             <div class="empty_img">
-                              <img src="./style/group_empty.png" alt="">
+                              <img src="../../../assets/img/group_empty.png" alt="">
                             </div>
                             <p class="title">文件拖到此区域设置分组</p>
                           </div>
                           <div v-else class="file_empty">
                             <div class="empty_img">
-                              <img src="./style/group_empty.png" alt="">
+                              <img src="../../../assets/img/group_empty.png" alt="">
                             </div>
                             <p class="title">暂无分组</p>
                           </div>
@@ -765,6 +768,11 @@
                     v-if='!viewToggle'
                     :ids='idList'
                     ref="otherView"
+                    @uploadError="uploadError"
+                    @uploadSuccess="uploadSuccess"
+                    @uploadProgress="uploadProgress"
+                    @handleExceed="handleExceed"
+                    @beforeUpload="beforeUpload"
                   />
                 </div>
                 <!-- 相关需求 -->
@@ -1254,8 +1262,17 @@ export default {
         }
         this.FILELENGTH_CHANGE(length + this.notGroupedList.length);
         this.stageInfo.fileList = [].concat(this.stageInfo.fileList[0], list);
-
       }
+    },
+    stageList: {
+      deep: true,
+      handler(val) {
+        this.stageInfo.stageList = [...this.stageList];
+      }
+    },
+    filePartitionId(val) {
+      this.idList.filePartitionId = val;
+      this.TASKIDS_CHANGE(this.idList);
     },
 
   },
@@ -1375,6 +1392,9 @@ export default {
           this.inputText = '';
         }
       }
+      this.$nextTick(() => {
+        $('#inputText').focus();
+      });
       let clickHide = e => {
         if(flag === 'left') { // 任务文件
           this.inputTextShow1 = false;
@@ -1396,6 +1416,7 @@ export default {
     inputTextBlur() {
       $('#inputText').removeClass('textarea_border');
     },
+
     // 添加文字--确定
     inputTextSure(flag) {
       if(this.inputText == '') {
@@ -3044,6 +3065,38 @@ export default {
       console.log(this.personalFiles);
     },
 
+    // 修改状态/人员/时间 更新stageinfo
+    stageInfoChange(type, info) {
+      let indexs = this.stageList.findIndex(ele => ele.stageId.toString() === info.item.stageId.toString());
+      let self = -1;
+      if(indexs !== -1) {
+        this.stageList.splice(indexs, 1, info.item);
+        this.stageList = this.stageList.concat();
+
+      }
+      console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
+      if(type === 1) { // 人员改变
+        if(info.add.length) {
+          self = info.add.findIndex(ele => ele.toString() === this.userId.toString());
+          if(self !== -1) {
+            this.stageInfo.isMyParticipate = true;
+            this.POWER_CHANGE(1); // 设置权限
+
+          }
+        }
+        if(info.del.length) {
+          self = info.del.findIndex(ele => ele.toString() === this.userId.toString());
+          if(self !== -1) {
+            this.stageInfo.isMyParticipate = false;
+            this.POWER_CHANGE(0); // 设置权限
+
+          }
+        }
+      }else { // 时间改变
+
+      }
+    },
+
     // 获取任务列表
     getTaskList(params) {
       let obj = {
@@ -3070,7 +3123,7 @@ export default {
       this.taskId = taskId;
       this.stageId = stageId;
       let obj = {
-        myUserId: '1184',
+        myUserId: this.userId,
         projectId: this.projectId,
         stageId: this.stageId,
         taskId: this.taskId,

@@ -1,11 +1,11 @@
 <template>
 	<div class="other_view" @click.stop='() => {}'>
 		<div class="top_header">
-			<div class="file_name header_item" @click='sortHandle(0)'>
-				<span>文件</span>
+			<div class="file_name header_item">
+				<span @click='sortHandle(0)'>文件</span>
 			</div>
-			<div class="file_from header_item" @click='sortHandle(1)'>
-				<span>上传者</span>
+			<div class="file_from header_item">
+				<span @click='sortHandle(1)'>上传者</span>
 				<i 
 					v-if='sortType === 1' 
 					class="iconfont icon-jiantou_xiangxia"
@@ -13,8 +13,8 @@
 					></i>
 
 			</div>
-			<div class="file_time header_item" @click='sortHandle(2)'>
-				<span>上传日期</span>
+			<div class="file_time header_item">
+				<span @click='sortHandle(2)'>上传日期</span>
 				<i 
 					v-if='sortType === 2' 
 					class="iconfont icon-jiantou_xiangxia"
@@ -28,8 +28,38 @@
 				<i class="iconfont icon-gengduo"></i>
 			</div>
 		</div>
+    <!-- 文件为空的时候 -->
+    <div v-if='fileEmpty' class="group_box">
+       <el-upload
+          v-if='power'
+          class="file_empty_upload"
+          drag
+          :action="'/ProjectFile.ashx?&myUserId='+ids.userId+'&projectId='+ids.projectId+'&stageTaskId='+ids.stageTaskId+'&filePartitionId='+ids.filePartitionId"
+          :show-file-list="false"
+          :multiple="true"
+          :on-error="uploadError"
+          :on-success="uploadSuccess"
+          :on-progress="uploadProgress"
+          :limit="9"
+          :on-exceed="handleExceed"
+          :before-upload="beforeUpload"
+          >
+          <div class="file_empty">
+            <div class="empty_img">
+              <img src="../../../../assets/img/file_empty.png" alt="">
+            </div>
+            <p class="title">文件拖到此区域即可上传，支持批量上传</p>
+          </div>
+        </el-upload>
+        <div class="file_empty" v-else>
+          <div class="empty_img">
+            <img src="../../../../assets/img/file_empty.png" alt="">
+          </div>
+          <p class="title">暂无文件</p>
+        </div>
+    </div>
     <!-- 有分组 -->
-		<div v-if='sortType === 0' class="group_box">
+		<div v-else-if='sortType === 0' class="group_box">
 			<div 
 				class="parths_group"
 				v-for="group in fileGroup"
@@ -202,8 +232,33 @@ export default {
   },
   computed: {
     ...mapState([
-      'checkedFileList'
+      'checkedFileList',
+      'power' // 权限管理 0--未参加阶段任务 1--参加了阶段任务
+
     ]),
+     // 文件是否为空 
+     /**
+      * 文件是否为空
+      * true--空
+      * false--不为空
+      * **/
+    fileEmpty() {
+      let length = [];
+      if(!this.sortType) {
+        let arr = [...this.fileGroup].filter(ele => ele.fileList.length);
+        if(arr.length) {
+          return false;
+        }else {
+          return true;
+        }
+      }else {
+        if(this.fileList.length) {
+          return false;
+        }else {
+          return true;
+        }
+      }
+    }
   },
   methods: {
     ...mapMutations([
@@ -486,7 +541,24 @@ export default {
         }
         this.fileGroup = this.fileGroup.concat();
       }
-    }
+    },
+
+    // 文件上传
+    uploadError() {
+      this.$emit('uploadError');
+    },
+    uploadSuccess() {
+      this.$emit('uploadSuccess');
+    },
+    uploadProgress() {
+      this.$emit('uploadProgress');
+    },
+    handleExceed() {
+      this.$emit('handleExceed');
+    },
+    beforeUpload() {
+      this.$emit('beforeUpload');
+    },
   },
   async created() {
     this.selectedList = [...this.checkedFileList];
@@ -590,6 +662,7 @@ export default {
 		width: 100%;
     height: calc(100% - 40px);
     overflow-y: auto;
+    position: relative;
     .parths_group {
     	width: 100%;
       .group_top {
@@ -643,6 +716,9 @@ export default {
           }
         }
       }
+    }
+    .file_empty_upload {
+      overflow: hidden;
     }
   }
 }

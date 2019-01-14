@@ -56,9 +56,12 @@
         </el-collapse-transition>
         <!-- 邀请/添加人员 -->
         <transition name="fade1">
-            <add-people v-if="inviteShow"
+            <add-people 
+                v-if="inviteShow"
                 :defaultTreeKeys="inviteDefaultKeys"
-                @handleCancel="cancelAddPeople" />
+                :fromInfo="fromInfo"
+                @handleCancel="cancelAddPeople" 
+                />
         </transition>
         
         <!-- 温馨提示2_删除协作人员 -->
@@ -94,7 +97,11 @@ export default {
       selectedIndex: [], // [阶段index， 人员index]
       delPeopleFlag: false, 
       inviteShow: false, // 邀请加入的
-      inviteDefaultKeys: []
+      inviteDefaultKeys: [],
+      fromInfo: {
+        type: 2,
+        id: this.ids.taskId
+      }
     };
   },
   methods: {
@@ -126,10 +133,11 @@ export default {
     delPeopleSure() {
       this.delPeopleFlag = false;
       const index = this.selectedIndex[0];
-        const index1 = this.selectedIndex[1];
+      const index1 = this.selectedIndex[1];
        console.log( this.stagePeopleList[index]);
       // 发送请求
       let obj = {
+        projectId: this.ids.projectId,
         addVale: "",
         delVale: this.stagePeopleList[index].userList[index1].userpkid,
         stageId: this.stagePeopleList[index].stageId,
@@ -138,8 +146,14 @@ export default {
       };
       this.$HTTP("post", "/stageTask_user_update", obj)
         .then(res => {
+          let data = {
+            item: this.stagePeopleList[index],
+            del: [this.stagePeopleList[index].userList[index1].userpkid],
+            add: []
+          }
+          this.$emit('stageInfoChange', 1, data);
           this.stagePeopleList[index].userList.splice(index1, 1);
-          console.log("任务删除人员", res, this.stagePeopleList);
+          // console.log("任务删除人员", res, this.stagePeopleList);
         })
         .catch(err => {
           console.log("任务删除人员失败", err);
@@ -237,7 +251,12 @@ export default {
             }
             this.stagePeopleList[index].userList = [...arr];
             this.stagePeopleList = this.stagePeopleList.concat();
-
+            let data = {
+              item: this.stagePeopleList[index],
+              del: del,
+              add: add
+            }
+            this.$emit('stageInfoChange', 1,data);
             // console.log("任务添加人员", res, nowList);
           })
           .catch(err => {

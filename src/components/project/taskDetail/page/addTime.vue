@@ -62,11 +62,17 @@ export default {
                 taskId: this.ids.taskId,
                 startTime: val ? this.format(val[0]) : '',
                 endTime: val ? this.format(val[1]) : '',
+                myUserId: this.ids.userId,
             };
             this.$HTTP("post", "/stageTask_date_update", obj)
             .then(res => {
-                console.log("任务修改时间成功", res.result);
-                
+                // console.log("任务修改时间成功", res.result);
+                let data = {
+                    item: res.result,
+                    del: [],
+                    add: []
+                }
+                this.$emit('stageInfoChange', 2, data);
             })
             .catch(err => {
                 console.log("任务修改时间失败", err);

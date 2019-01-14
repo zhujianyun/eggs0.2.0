@@ -146,6 +146,7 @@ export default {
     },
     [POWER_CHANGE](state, power) {
         state.power = power;
+        // state.power = 1;
     },
     
 
