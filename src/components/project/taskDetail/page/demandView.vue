@@ -16,8 +16,12 @@
                 v-model="fileCheckbox" 
                 @change='fileCheckboxAll'>全选</el-checkbox>
                 <template v-if='checkedList.length'>
-                    <i class="iconfont icon-xiazai"></i>
-                    <i class="iconfont icon-shoucang1"></i>
+                     <el-tooltip effect="dark" content="下载" placement="top" :open-delay="300">
+                        <i class="iconfont icon-xiazai" @click='multipleDownload'></i>
+                    </el-tooltip>
+                    <el-tooltip effect="dark" content="收藏" placement="top" :open-delay="300">
+                        <i class="iconfont icon-shoucang1"></i>
+                    </el-tooltip>
                 </template>
             </div>
         </div>
@@ -30,7 +34,7 @@
                 <div class="demand_desc">
                     <div class="desc_top">
                         <span class="header_img">
-                            <el-tooltip class="item" effect="dark" :content="demand.nickName ? demand.nickName : demand.userName" placement="top" :open-delay="300">
+                            <el-tooltip effect="dark" :content="demand.nickName ? demand.nickName : demand.userName" placement="top" :open-delay="300">
                                 <img :src="demand.UserPic" alt="" class="header">
                             </el-tooltip>
                         </span>
@@ -61,8 +65,8 @@
                                  <el-dropdown class="fixed file_more">
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo1'></i></span>
                                         <el-dropdown-menu slot="dropdown">
-                                          <el-dropdown-item @click.native="fileGroupCommand('download', index1, group)">下载</el-dropdown-item>
-                                          <el-dropdown-item @click.native="fileGroupCommand('collect', index1, group)">收藏</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('download', index1, group, index)">下载</el-dropdown-item>
+                                          <el-dropdown-item @click.native="fileGroupCommand('collect', index1, group, index)">收藏</el-dropdown-item>
                                         </el-dropdown-menu>
                                       </el-dropdown>
                             </div>
@@ -115,11 +119,13 @@
                                     </span>
                                     <div class="file_info">
                                         <p class="title">{{item.FileName}}</p>
-                                        <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                        <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                             <img :src="item.UserPic" alt="" class="from_header">
                                         </el-tooltip>
                                         <span class="file_message fr">
-                                        <i class='iconfont icon-pinglun'></i>
+                                        <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
+                                            <i class='iconfont icon-pinglun'></i>
+                                        </el-tooltip>
                                         {{item.Count}}
                                         </span>
                                         <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
@@ -161,11 +167,13 @@
                                 </span>
                                 <div class="file_info">
                                     <p class="title">{{item.FileName}}</p>
-                                    <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                    <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                         <img :src="item.UserPic" alt="" class="from_header">
                                     </el-tooltip>
                                     <span class="file_message fr">
-                                    <i class='iconfont icon-pinglun'></i>
+                                    <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
+                                        <i class='iconfont icon-pinglun'></i>
+                                    </el-tooltip>
                                     {{item.Count}}
                                     </span>
                                    
@@ -176,7 +184,7 @@
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                         <el-dropdown-menu slot="dropdown">
                                             <el-dropdown-item @click.native="fileCommand('download', index2, item, group.pkid, index1)">下载</el-dropdown-item>
-                                            <el-dropdown-item @click.native="fileCommand('rename', index2, item, group.pkid, index1)">重命名</el-dropdown-item>
+                                            <el-dropdown-item @click.native="fileCommand('collect', index2, item, group.pkid, index1)">收藏</el-dropdown-item>
                                         </el-dropdown-menu>
                                     </el-dropdown>
                                 </div>
@@ -191,6 +199,8 @@
     </div>
 </template>
 <script>
+import { mapState } from 'vuex';
+
 export default {
     props: ['list'],
     data() {
@@ -238,11 +248,19 @@ export default {
             demandList: [],
             fileLists: [],
             fileBoxW: 182, // 188 // 文件元素盒子的宽度
+            fromType: 3, // 3--多选 4--分组 5 单个文件
+            filePartitionId: 0,
+            operateParth: {},
+            operateFile: {},
+            demandId: '',
 
 
         }
     },  
     computed: {
+        ...mapState([
+            'taskIds'
+        ]),
         // 是否有一个文件被选中
         oneChecked() {
             if(this.checkedList && this.checkedList.length) {
@@ -262,11 +280,18 @@ export default {
         },
 
         // 组的更多操作
-        fileGroupCommand(type, index, group) {
-            // this.filePartitionId = group.pkid;
-            // this.operateParth = Object.assign({}, group, {index: index});
+        fileGroupCommand(type, index1, group, index) {
+            this.fromType = 4;
+            this.filePartitionId = group.pkid;
+            this.operateParth = Object.assign({}, group, {index: index1});
+            if(group.Pkid === 0) {
+                this.demandId = this.demandList[index].demandId;
+            }else {
+                this.demandId = '';
+            }
 
             if(type === 'download') { // 下载
+                this.fileDownlod(group);
                 return;
             }
             if(type === 'collect') { // 收藏
@@ -277,8 +302,10 @@ export default {
 
         // 文件的更多操作
         fileCommand(type, index2, item, groupId, index1) {
-            // this.operateFile = Object.assign({}, item, {index: index2, groupId: groupId, groupIndex: index1});
+            this.fromType = 5;
+            this.operateFile = Object.assign({}, item, {index: index2, groupId: groupId, groupIndex: index1});
             if(type === 'download') { // 下载
+                this.fileDownlod(item);
                 return;
             }
             if(type === 'collect') { // 收藏
@@ -342,6 +369,58 @@ export default {
                 this.fileCheckbox && (this.fileCheckbox = false);
             }
             this.demandList = this.demandList.concat();
+        },
+
+
+        // 多选下载
+        multipleDownload() {
+            this.fromType = 3;
+            this.fileDownlod();
+            console.log('demandView--download');
+        },
+
+
+        // 文件下载
+        fileDownlod(item) {
+            // fromType: 3, // 3--多选 4--分组 5 单个文件
+            let link = "";
+            if(this.fromType === 5) {
+                link = $(
+                '<a href="' +
+                    item.Url +
+                    '" download="' +
+                    item.FileName +
+                    '" target="_blank"></a>'
+                );
+                link.get(0).click();
+            }else if (this.fromType === 3 && this.checkedList.length === 1) {
+                link = $(
+                '<a href="' +
+                    this.checkedList[0].Url +
+                    '" download="' +
+                    this.checkedList[0].FileName +
+                    '" target="_blank"></a>'
+                );
+                link.get(0).click();
+                this.fileCheckboxAll(false); // 多选操作完成后把选中状态还原
+            } else {
+                let ids = [];
+                if(this.fromType === 3) {
+                    for(let x of this.checkedList) {
+                        ids.push(x.FilePkid);
+                    }
+                }else if(this.fromType === 4) {
+                    ids.push(item.Pkid);
+                }
+                // console.log(`/EggsWebService.asmx/zipFileDown?stageId=${this.taskIds.stageId}&taskId=${this.taskIds.taskId}&demandId=${this.demandId}&vals=${ids.join(',')}&type=${this.fromType}`);
+                link = $(
+                `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.taskIds.stageId}&taskId=${this.taskIds.taskId}&demandId=${this.demandId}&vals=${ids.join(',')}&type=${this.fromType}" download="....zip" target="_blank"></a>`
+                );
+                link.get(0).click();
+                if(this.fromType === 3) {
+                    this.fileCheckboxAll(false); // 多选操作完成后把选中状态还原
+                } 
+            }
         },
            // 窗口/元素大小变化对文件分组收起时的影响
         sizeChange() {

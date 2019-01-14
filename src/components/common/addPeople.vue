@@ -361,7 +361,7 @@ export default {
       // 验证此邮箱是否已经是好友
       let obj = {
         userId: JSON.parse(localStorage.getItem('staffInfo')).userPkid,
-        email: email
+        email: email.email
       }
       this.$HTTP('post', '/user_friends_exists_email', obj).then(res => {
         console.log('邮箱是否存在验证', res);

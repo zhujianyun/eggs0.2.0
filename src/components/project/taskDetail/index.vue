@@ -70,7 +70,7 @@
           <!-- 头部操作按钮 -->
           <div class="top_operate">
             <div class="t_o_left fl">
-              <el-tooltip v-if='!demandCount' class="item" effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
+              <el-tooltip v-if='!demandCount' effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
                 <span class="cur_dis">相关需求</span>
               </el-tooltip>
               <span v-else :class="demandOrGain ? '' : 'demand_gain'" @click="demandOrGainChange(false)">相关需求</span>
@@ -88,7 +88,7 @@
               <span class="line"></span>
               <!-- 加人 -->
               <span class="add_human" @click.stop='addHumanHandle'>
-                <el-tooltip class="item" effect="dark" content="添加成员" placement="top" :open-delay="300">
+                <el-tooltip effect="dark" content="添加成员" placement="top" :open-delay="300">
                   <i class='iconfont icon-haoyou1'></i>
                 </el-tooltip>
                 <add-human
@@ -99,7 +99,7 @@
               </span>
               <!-- 加时间 -->
               <span class="add_time" @click.stop='addTimeHandle'>
-                 <el-tooltip class="item" effect="dark" content="添加时间" placement="top" :open-delay="300">
+                 <el-tooltip effect="dark" content="添加时间" placement="top" :open-delay="300">
                   <i class='iconfont icon-rili1'></i>
                 </el-tooltip>
                 <add-time
@@ -162,7 +162,7 @@
                         </el-dropdown-menu>
                       </el-dropdown>
                       <!-- 添加文字 -->
-                      <el-tooltip v-if='power' class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
+                      <el-tooltip v-if='power' effect="dark" content="添加文字" placement="top" :open-delay="300">
                         <i 
                           class='iconfont icon-tianjiawenzi'
                           @click.stop="inputTextShowToggle('left')"
@@ -184,27 +184,27 @@
                         v-model="fileCheckbox" 
                         @click.native='fileCheckboxAll'>全选</el-checkbox>
                         <template v-if='checkedFileList && checkedFileList.length'>
-                          <el-tooltip class="item" effect="dark" content="下载" placement="top" :open-delay="300">
+                          <el-tooltip effect="dark" content="下载" placement="top" :open-delay="300">
                             <i class="iconfont icon-xiazai" @click='multipleDownload'></i>
                           </el-tooltip>
-                          <el-tooltip class="item" effect="dark" content="收藏" placement="top" :open-delay="300">
+                          <el-tooltip effect="dark" content="收藏" placement="top" :open-delay="300">
                             <i class="iconfont icon-shoucang1"></i>
                           </el-tooltip>
                           <!-- 只有一个阶段的时候 -->
                           <template v-if='power && stageList.length === 1'>
-                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                            <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                               <i class="iconfont icon-jihuayijiao cur_dis"></i>
                             </el-tooltip>
                           </template>
                           <!-- 多个阶段 且选中的文件包含他人的文件的时候 -->
                           <template v-else-if='power && stageList.length > 1 && !isOwnChecked'>
-                            <el-tooltip class="item" effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
+                            <el-tooltip effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
                               <i class="iconfont icon-jihuayijiao cur_dis"></i>
                             </el-tooltip>
                           </template>
                            <!-- 多个阶段 且选中的文件不包含他人的文件的时候 -->
                           <template v-else-if='power && stageList.length > 1'>
-                            <el-tooltip class="item" effect="dark" content="移交" placement="top" :open-delay="300">
+                            <el-tooltip effect="dark" content="移交" placement="top" :open-delay="300">
                               <i class="iconfont icon-jihuayijiao" @click='multipleTransfer'></i>
                             </el-tooltip>
                           </template>
@@ -293,11 +293,11 @@
                                       id="fileNameEdit"
                                       @blur="fileNameEditBlur($event, ele)"
                                       />
-                                      <el-tooltip class="item" effect="dark" :content="ele.nickName ? ele.nickName : ele.userName" placement="top" :open-delay="300">
+                                      <el-tooltip effect="dark" :content="ele.nickName ? ele.nickName : ele.userName" placement="top" :open-delay="300">
                                         <img :src="ele.UserPic" alt="" class="from_header">
                                       </el-tooltip>
                                     <span class="file_message fr">
-                                      <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                      <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
                                         <i class='iconfont icon-pinglun'></i>
                                       </el-tooltip>
                                         {{ele.Count}}
@@ -311,7 +311,7 @@
                                         <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
                                         <el-dropdown-item @click.native="fileCommand('collect', index, ele, 0)">收藏</el-dropdown-item>
                                         <el-dropdown-item v-if='ele.isOwn && stageList.length === 1'>
-                                          <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                          <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                                             <span class="cur_dis">移交</span>
                                           </el-tooltip>
                                         </el-dropdown-item>
@@ -439,7 +439,7 @@
                                             v-if='power && group.fileList.length && stageList.length === 1' 
                                             @click.native="fileGroupCommand('transfer', index, group)"
                                             >
-                                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                            <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                                               <span class='cur_dis'>整组移交</span>
                                             </el-tooltip>
                                           </el-dropdown-item>
@@ -454,7 +454,7 @@
                                           <el-dropdown-item 
                                             v-else-if='power && group.fileList.length && !group.onlySelf' 
                                             >
-                                            <el-tooltip class="item" effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
+                                            <el-tooltip effect="dark" content="您只能移交自己的文件" placement="top" :open-delay="300">
                                               <span class='cur_dis'>整组移交</span>
                                             </el-tooltip>
                                           </el-dropdown-item>
@@ -614,11 +614,11 @@
                                             id="fileNameEdit"
                                             @blur="fileNameEditBlur($event, item)"
                                             />
-                                          <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                          <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                             <img :src="item.UserPic" alt="" class="from_header">
                                           </el-tooltip>
                                           <span class="file_message fr">
-                                            <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                            <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
                                               <i class='iconfont icon-pinglun'></i>
                                             </el-tooltip>
                                             {{item.Count}}
@@ -632,7 +632,7 @@
                                               <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
                                               <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
                                               <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
-                                                <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                                <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                                                   <span class="cur_dis">移交</span>
                                                 </el-tooltip>
                                               </el-dropdown-item>
@@ -699,11 +699,11 @@
                                         id="fileNameEdit"
                                         @blur="fileNameEditBlur($event, item)"
                                         />
-                                      <el-tooltip class="item" effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
+                                      <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                         <img :src="item.UserPic" alt="" class="from_header">
                                       </el-tooltip>
                                       <span class="file_message fr">
-                                        <el-tooltip class="item" effect="dark" content="评论" placement="top" :open-delay="300">
+                                        <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
                                           <i class='iconfont icon-pinglun'></i>
                                         </el-tooltip>
                                         {{item.Count}}
@@ -717,7 +717,7 @@
                                           <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
                                           <el-dropdown-item @click.native="fileCommand('collect', index1, item, group.pkid, index)">收藏</el-dropdown-item>
                                           <el-dropdown-item v-if='item.isOwn && stageList.length === 1'>
-                                            <el-tooltip class="item" effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
+                                            <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                                               <span class="cur_dis">移交</span>
                                             </el-tooltip>
                                           </el-dropdown-item>
@@ -778,16 +778,16 @@
                 <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
                   <div class="top_box">
                     <div class="left fl">
-                      <el-tooltip class="item" effect="dark" content="上传" placement="top" :open-delay="300">
+                      <el-tooltip effect="dark" content="上传" placement="top" :open-delay="300">
                         <i class='iconfont icon-shangchuan'></i>
                       </el-tooltip>
-                      <el-tooltip class="item" effect="dark" content="添加文字" placement="top" :open-delay="300">
+                      <el-tooltip effect="dark" content="添加文字" placement="top" :open-delay="300">
                         <i 
                           class='iconfont icon-tianjiawenzi'
                           @click.stop="inputTextShowToggle()"
                           ></i>
                       </el-tooltip>
-                      <el-tooltip class="item" effect="dark" content="新建文件夹" placement="top" :open-delay="300">
+                      <el-tooltip effect="dark" content="新建文件夹" placement="top" :open-delay="300">
                         <i 
                           class='iconfont icon-xinjianfenzu'
                           @click='newFolder'
@@ -1813,7 +1813,7 @@ export default {
     },
 
     // 发送请求，添加分组
-    addParth(title, item) {
+    addParth(title, item, dragItem) {
       return new Promise((resolve) => {
         let obj = {
           stageTaskId: this.stageTaskId,
@@ -1836,9 +1836,12 @@ export default {
             objs = Object.assign({}, res.result, data);
           }
           this.parthsGroup.splice(this.parthsGroup.length - 1, 1, objs);
+          this.fileIsSort(this.parthsGroup.length - 1, res.result.pkid, dragItem);
           this.$message.success('添加分组成功！');
-          console.log('添加分组成功！', objs);
-
+          //console.log('添加分组成功！', objs);
+          if(this.leftCenterFlag) {
+            this.countFileOne();
+          }
         }).catch(err => {
           console.log('err', err);
         });
@@ -1942,8 +1945,12 @@ export default {
         console.log('删除文件成功', res, this.operateFile);
         if(groupId === 0) { // 未分组文件
           this.notGroupedList.splice(index, 1);
+          this.notGroupedList = this.notGroupedList.concat();
+
         }else { // 分组文件
           this.parthsGroup[groupIndex].fileList.splice(index, 1);
+          this.parthsGroup = this.parthsGroup.concat();
+
         }
       }).catch(err => {
         console.log('删除文件失败', err);
@@ -1988,7 +1995,8 @@ export default {
           this.reminderText = '您确认要删除该分组么？ 删除后，分组内的文件将移入到未分组内';
         }else {
           let obj = {
-            filePartitionId: group.pkid
+            filePartitionId: group.pkid,
+            myUserId: this.userId
           };
           this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
             console.log('文件分组删除成功', res);
@@ -2007,11 +2015,21 @@ export default {
     // 文件组确认删除
     delGroupSure() {
       let obj = {
-        filePartitionId: this.filePartitionId
+        filePartitionId: this.filePartitionId,
+        myUserId: this.userId
       };
       this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
-        console.log('文件分组删除成功', res);
+        let addList = res.result;
+        addList = addList.splice(this.notGroupedList.length);
+        for(let y of addList) {
+          let returnObj = this.addFileAttr(y);
+          y = Object.assign(y, returnObj);
+        }
+        console.log('文件分组删除成功',res.result, addList);
+
+        this.notGroupedList.push(...addList);
         this.parthsGroup.splice(this.operateParth.index, 1);
+
       }).catch(err => {
         console.log(err);
       });
@@ -2066,13 +2084,17 @@ export default {
     },
 
     // 文件全选
-    fileCheckboxAll() {
+    fileCheckboxAll(flag) {
       let val = false;
       if(this.fileLength && this.checkedFileList && (this.checkedFileList.length === this.fileLength)) {
         val = false;
       }else {
         val = true;
       }
+      if(flag && flag === 'clear') { // 多选操作结束后，清空选中状态
+        val = false;
+      }
+
       if(!this.viewToggle) {
         this.$refs.otherView.fileCheckboxAll(val);
         return;
@@ -2090,7 +2112,6 @@ export default {
 
           }
         }
-        // this.oneChecked = true;
       }else {
         for(let y of this.notGroupedList) {
           y.checked = false;
@@ -2100,7 +2121,6 @@ export default {
             y.checked = false;
           }
         }
-        // this.oneChecked = false;
       }
 
       this.notGroupedList = this.notGroupedList.concat();
@@ -2223,7 +2243,10 @@ export default {
             this.checkedFileList[0].FileName +
             '" target="_blank"></a>'
         );
+
         link.get(0).click();
+        this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
+
       } else {
         let ids = [];
         if(this.transferType === 2) {
@@ -2231,33 +2254,19 @@ export default {
             ids.push(x.FilePkid);
           }
         }else if(this.transferType === 3) {
-          for(let x of item.fileList) {
-            ids.push(x.FilePkid);
-          }
+          ids.push(item.pkid);
         }
         
-        const str = `/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}`
-        
-        console.log('---ids', str);
         link = $(
           `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}" download="....zip" target="_blank"></a>`
         );
-         link.get(0).click();
-        return;
-        let obj = {
-          stageId: this.stageId,
-          taskId: this.taskId,
-          demandId: '',
-          vals: ids,
-          type: this.transferType - 1,
-        };
-        this.$HTTP('post', '/zipFileDown', obj).then(res => {
-          console.log('----', res);
-        }).catch(err => {
-
-        });
+        link.get(0).click();
+        if(this.transferType === 2) {
+          this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
+        } 
       }
     },
+
 
     // 文件拖拽---------------------------------start
     // 文件移动时的回调函数
@@ -2303,7 +2312,7 @@ export default {
 
       if(to === 'new') { // 先新增一个分组，再添加文件
         let last = this.parthsGroup[this.parthsGroup.length - 1];
-        this.addParth(last.groupName, last);
+        this.addParth(last.groupName, last, this.dragItem);
       }
       if (from !== "personal" && to === "personal") {
         // 添加到个人文档--copy
@@ -2331,7 +2340,9 @@ export default {
           }
         }
       }
-      this.fileIsSort(e.newIndex, to);
+      if(to !== 'new') {
+        this.fileIsSort(e.newIndex, to);
+      }
       if(from === to) {
         this.dragEndInit();
       }else {
@@ -2341,10 +2352,10 @@ export default {
     },
 
     // 文件移动排序
-    fileIsSort(newIndex, parthId) {
+    fileIsSort(newIndex, parthId, dragItem) {
       return new Promise((resolve, reject) => {
         let obj = {
-          FilePkid: this.dragItem.item.FilePkid,
+          FilePkid: dragItem ? dragItem.item.FilePkid : this.dragItem.item.FilePkid,
           filePartitionId: parthId === 'noGroup' ? 0 : parthId,
           isSort: newIndex
         };
