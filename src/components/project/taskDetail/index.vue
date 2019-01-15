@@ -2,7 +2,10 @@
     <div class='task_detail_yun'>
       <!-- 头部阶段 -->
       <div class="detail_top">
-          <div class="project_name">{{projectItem.title}}</div>
+          <!-- <el-tooltip v-if='!demandCount' effect="dark" content="返回列表" placement="top" :open-delay="300"> -->
+            <div class="project_name" @click='returnProject'>{{projectItem.title}}</div>
+          <!-- </el-tooltip> -->
+
           <!-- state=1(一开始) state=2(一完成) state=3(一未开始) state=4(一进行中) state=5(一已超时) state=6(一已关闭)  -->
           <div class="stage_list">
             <el-tabs v-model="stageId" @tab-click="taskStageDetail(taskId, stageId)">
@@ -263,14 +266,15 @@
                                 ghostClass: 'ghost_file', 
                                 dragClass: 'drag_file',
                                 chosenClass: 'chosen_file',
-                                disabled: dragDisabled
+                                disabled: dragDisabled,
+                                draggable: power ? '.draged' : '',
                               }"
                               :move='fileMove'
                               @start='dragStart($event, "noGroup")'
                               @end='dragEnd'
                           >
                               <div 
-                                  class="every_file"
+                                  class="every_file draged"
                                   v-for="(ele, index) in notGroupedList"
                                   :key="ele.FilePkid"
                                   :id='ele.FilePkid'
@@ -365,11 +369,15 @@
                           <template v-if='groupSortFlag'>
                             <draggable
                             v-model="parthsGroup"
-                            :options="{ghostClass: 'ghost_parth_sort', dragClass: 'drag_parth_sort'}"
+                            :options="{
+                              ghostClass: 'ghost_parth_sort', 
+                              dragClass: 'drag_parth_sort',
+                              draggable: power ? '.draged' : '',
+                              }"
                             @end='dragEndParth'
                             >
                               <div 
-                                class="parths_group is_sort"
+                                class="parths_group is_sort draged"
                                 v-for="group in parthsGroup"
                                 :key="group.pkid"
                                 :ids="group.pkid"
@@ -560,8 +568,8 @@
                                     group:{name: 'file',pull:'clone'},
                                     ghostClass: 'ghost_file', 
                                     dragClass: 'drag_file',
-                                    draggable: '.draged',
-                                    disabled: group.dragDisabled
+                                    disabled: group.dragDisabled,
+                                    draggable: power ? '.draged' : '',
                                   }"
                                   :move='fileMove'
                                   @start='dragStart($event, group.pkid)'
@@ -667,8 +675,9 @@
                                     group:{name: 'file',pull:'clone'},
                                     ghostClass: 'ghost_file', 
                                     dragClass: 'drag_file',
-                                    draggable: '.draged',
-                                    disabled: group.dragDisabled
+                                    disabled: group.dragDisabled,
+                                    draggable: power ? '.draged' : '',
+
                                   }"
                                   :move='fileMove'
                                   @start='dragStart($event, group.pkid)'
@@ -766,13 +775,10 @@
                   <!-- 切换视图 另一个视图 -->
                   <other-view
                     v-if='!viewToggle'
-                    :ids='idList'
                     ref="otherView"
-                    @uploadError="uploadError"
-                    @uploadSuccess="uploadSuccess"
-                    @uploadProgress="uploadProgress"
-                    @handleExceed="handleExceed"
-                    @beforeUpload="beforeUpload"
+                    :ids='idList'
+                    :stageList='stageList'
+                    :list="stageInfo.fileList"
                   />
                 </div>
                 <!-- 相关需求 -->
@@ -863,8 +869,9 @@
                             group:{name: 'file',pull:'clone'},
                             ghostClass: 'ghost_file', 
                             dragClass: 'drag_file',
-                            draggable: '.draged',
-                            disabled: dragDisabled_personal
+                            disabled: dragDisabled_personal,
+                            draggable: power ? '.draged' : '',
+
                           }"
                           :move='fileMove'
                           @start='dragStart($event, "personal")'
@@ -1035,6 +1042,44 @@ export default {
       // 文件上传
       uploadProgressFlag: false,
       fileProgressList: [],
+      fileTypeImg: [
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/0.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/2.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/3.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/4.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/5.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/6.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/7.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/8.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/9.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/10.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/11.png")
+        }
+      ], // 附件icon
 
 
       stageList: [], // 阶段列表
@@ -1150,44 +1195,6 @@ export default {
       oneCheckedSelf: false, // 个人文档--是否有一个文件被选中
       checkedList: [], // 已选中的文件列表
       checkedListSelf: [], // 个人文档--已选中的文件列表
-      fileTypeImg: [
-        {
-          src: require("../../../assets/img/file_b/0.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/0.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/2.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/3.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/4.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/5.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/6.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/7.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/8.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/9.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/10.png")
-        },
-        {
-          src: require("../../../assets/img/file_b/11.png")
-        }
-      ], // 附件icon
       delGroupFlag: false, // 删除分组的提示
       delFileFlag: false, // 删除文件的提示
       reminderText: '您确定要删除吗？', // 输出提示框的默认文字
@@ -1241,15 +1248,28 @@ export default {
         this.parthsGroup = this.parthsGroup.concat();
       }
     },
-    notGroupedList(val) {
-      let length = 0;
-      for(let x of this.parthsGroup) {
-        for(let y of x.fileList) {
-          length++;
+    notGroupedList: {
+      deep: true,
+      handler(val) {
+        let length = 0;
+        for(let x of this.parthsGroup) {
+          for(let y of x.fileList) {
+            length++;
+          }
+        }
+        this.FILELENGTH_CHANGE(val.length + length); // 文件长度变化
+        this.stageInfo.fileList[0].fileList = val; // 更新总的文件
+        /**
+         * 当为文件列表视图时：头部操作对列表视图的影响
+         * 上传文件
+         * 添加文字
+         * 多选操作：批量下载 批量收藏 批量移交
+         * 分组管理：添加分组 分组排序
+         * **/
+        if(!this.viewToggle) { // 更新另一个视图的文件
+          this.$refs.otherView.updateData(this.stageInfo.fileList);
         }
       }
-      this.FILELENGTH_CHANGE(val.length + length);
-      this.stageInfo.fileList[0].fileList = val;
     },
     parthsGroup: {
       deep: true,
@@ -1260,8 +1280,11 @@ export default {
             length++;
           }
         }
-        this.FILELENGTH_CHANGE(length + this.notGroupedList.length);
-        this.stageInfo.fileList = [].concat(this.stageInfo.fileList[0], list);
+        this.FILELENGTH_CHANGE(length + this.notGroupedList.length); // 文件长度变化
+        this.stageInfo.fileList = [].concat(this.stageInfo.fileList[0], list); // 更新总的文件
+        if(!this.viewToggle) { // 更新另一个视图的文件
+          this.$refs.otherView.updateData(this.stageInfo.fileList);
+        }
       }
     },
     stageList: {
@@ -1348,12 +1371,21 @@ export default {
     // 文件视图切换
     viewToggles() {
       this.viewToggle = !this.viewToggle;
-      if(this.viewToggle) {
-        const list = this.$refs.otherView.close();
-        this.checkedList = [...list];
-        // 进行文件多选的回选
-        this.returnSelection(list);
+      if(this.viewToggle) { // 默认视图
+       this.retrunData();
       }
+    },
+    // 文件视图切换后，文件的重新赋值
+    retrunData() {
+
+      const obj = this.$refs.otherView.close();
+      this.checkedList = [...obj.checkedList];
+      const list = [...obj.list];
+      this.notGroupedList = [].concat(list[0].fileList);
+      this.parthsGroup = [...list].splice(1);
+      this.leftCenterChange(this.leftCenterFlag);
+      // 进行文件多选的回选
+      // this.returnSelection(obj.checkedList);
     },
     // 文件时图切换后，复选框的回选
     returnSelection(list) {
@@ -1515,6 +1547,43 @@ export default {
     // 左右文件视图大小转换
     leftRightToggle() {
       this.leftCenterFlag = !this.leftCenterFlag;
+    },
+    // 左右文件视图大小转换
+    leftCenterChange(val) {
+      this.$nextTick(() => {
+        if (val) {
+          // 未分组占大份
+          $("#leftBox").removeClass("left_box_toggle");
+          $("#rightBox").removeClass("right_box_toggle");
+          this.countFileOne();
+          for (let x of this.parthsGroup) {
+            x.packUp = false;
+            if (x.overList) {
+              delete x.overList;
+            }
+          }
+          this.parthsGroup = this.parthsGroup.concat();
+        } else {
+          // 分组区域占大份
+          $("#leftBox").addClass("left_box_toggle");
+          $("#rightBox").addClass("right_box_toggle");
+          for (let x of this.parthsGroup) {
+            if (x.allList) {
+              delete x.allList;
+            }
+            if (x.overList) {
+              delete x.overList;
+            }
+          }
+          for (let i = 0; i < this.parthsGroup.length; i++) {
+            let x = this.parthsGroup[i];
+            if (!x.overList) {
+              this.countFileMore(i);
+            }
+          }
+          this.parthsGroup = this.parthsGroup.concat();
+        }
+      });
     },
 
     // 文件组折叠/展开
@@ -1712,66 +1781,76 @@ export default {
     },
     // 整体的分组管理
     groupCommand(type) {
-      let title = '新建分组';
-      let repeat = this.parthsGroup.findIndex(ele => ele.groupName === title);
-      // 分组名称判断
-      if(repeat !== -1) { // 文件名重复
-        let repeatNum = [];
-        for(let x of this.parthsGroup) {
-          let y = 0;
-          if(x.groupName.indexOf('新建分组') !== -1 && x.groupName.length > 4) {
-            y = x.groupName.slice(4);
-            y = parseInt(y);
-            !isNaN(y) && repeatNum.push(y);
+      if(this.viewToggle) { // 在默认视图操作分组管理
+        let title = '新建分组';
+        let repeat = this.parthsGroup.findIndex(ele => ele.groupName === title);
+        // 分组名称判断
+        if(repeat !== -1) { // 文件名重复
+          let repeatNum = [];
+          for(let x of this.parthsGroup) {
+            let y = 0;
+            if(x.groupName.indexOf('新建分组') !== -1 && x.groupName.length > 4) {
+              y = x.groupName.slice(4);
+              y = parseInt(y);
+              !isNaN(y) && repeatNum.push(y);
+            }
+          }
+          if(repeatNum.length) {
+            repeatNum.sort();
+            title = title + (repeatNum[repeatNum.length - 1] + 1);
+          } else {
+            title = title + 1;
           }
         }
-        if(repeatNum.length) {
-          repeatNum.sort();
-          title = title + (repeatNum[repeatNum.length - 1] + 1);
-        } else {
-          title = title + 1;
+        // 文件拖拽时默认临时加的分组
+        if(type === 'temporary') {
+          this.parthsGroup.push({
+            pkid: 'new',
+            groupName: title,
+            border: false,
+            packUp: null,
+            fileList: [],
+            dragDisabled: false,
+            edit: false,
+            temporary: true
+          });
+          return;
         }
-      }
-      // 文件拖拽时默认临时加的分组
-      if(type === 'temporary') {
-        this.parthsGroup.push({
-          pkid: 'new',
-          groupName: title,
-          border: false,
-          packUp: null,
-          fileList: [],
-          dragDisabled: false,
-          edit: false,
-          temporary: true
-        });
-        return;
-      }
-      // 新建分组
-      if(type === 'create') {
-        // 添加一条数据
-        this.parthsGroup.push({
-          pkid: 'new',
-          groupName: title,
-          fileList: [],
-          border: false,
-          packUp: null,
-          dragDisabled: false,
-          edit: true,
-          createdGroup: true
-        });
-        // 分组名获取焦点并选
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
-          ele.select();
-        });
-        return;
-      }
+        // 新建分组
+        if(type === 'create') {
+          // 添加一条数据
+          this.parthsGroup.push({
+            pkid: 'new',
+            groupName: title,
+            fileList: [],
+            border: false,
+            packUp: null,
+            dragDisabled: false,
+            edit: true,
+            createdGroup: true
+          });
+          // 分组名获取焦点并选
+          this.$nextTick(() => {
+            const ele = $(this.$refs.createdGroup[0]);
+            ele.focus();
+            ele.select();
+            // this.$refs.createdGroup[0].scrollIntoView({
+            //   behavior: "smooth"
+            // });
+          });
+          return;
+        }
 
-       // 分组排序
-      if(type === 'sort') {
-        this.groupSortFlag = true;
-        return;
+        // 分组排序
+        if(type === 'sort') {
+          this.groupSortFlag = true;
+          return;
+        }
+      }else { // 在另一个视图操作分组管理
+        this.$refs.otherView.groupCommand(type);
+        // if(this.leftCenterFlag) {
+        //   this.countFileOne();
+        // }
       }
     },
     // 退出分组排序
@@ -2211,14 +2290,12 @@ export default {
      * descText 移交时的需求描述
      * **/
     tranferSendHttp(val, arr, descText) {
-      console.log('transfer---',  val, arr, descText);
+      // console.log('transfer---',  val, arr, descText);
       return new Promise((resolve) => {
           if(!arr[0].length && !arr[1].length && !descText) {
               this.$message.warning('请选择交接文件或添加需求描述');
               return;
           }
-
-
           let obj = {
               projectId: this.projectId,
               oldstageId: this.stageId,
@@ -2231,7 +2308,9 @@ export default {
           }
           this.$HTTP('post', '/demand_add', obj).then(res => {
               this.$emit('handleSure');
-
+              if(this.transferType === 2) {
+                this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
+              } 
           }).catch(err => {
               console.log(err);
           });
@@ -2277,7 +2356,7 @@ export default {
         }else if(this.transferType === 3) {
           ids.push(item.pkid);
         }
-        
+        // console.log(`/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}`);
         link = $(
           `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}" download="....zip" target="_blank"></a>`
         );
@@ -2982,7 +3061,7 @@ export default {
       // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
       let file1 = this.addFileAttr(file);
       file1 = Object.assign({}, file, file1);
-
+      // console.log('----', file1);
       if(id) { // 分组
         let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
         this.parthsGroup[ids].fileList = this.parthsGroup[ids].fileList.concat(file1); 
@@ -3074,7 +3153,7 @@ export default {
         this.stageList = this.stageList.concat();
 
       }
-      console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
+      // console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
       if(type === 1) { // 人员改变
         if(info.add.length) {
           self = info.add.findIndex(ele => ele.toString() === this.userId.toString());
@@ -3119,26 +3198,27 @@ export default {
 
     // 任务/阶段--详情
     taskStageDetail(taskId, stageId) {
-      this.initData(); // 初始化数据
-      this.taskId = taskId;
-      this.stageId = stageId;
-      let obj = {
-        myUserId: this.userId,
-        projectId: this.projectId,
-        stageId: this.stageId,
-        taskId: this.taskId,
-      }
-      this.$HTTP("post", "/stagetask_get", obj, $('#app')[0])
-      .then(res => {
-        this.dataProcessing(res.result);
-        // console.log("获取任务详情", res.result);
+      return new Promise(() => {
+        this.initData(); // 初始化数据
+        this.taskId = taskId;
+        this.stageId = stageId;
+        let obj = {
+          myUserId: this.userId,
+          projectId: this.projectId,
+          stageId: this.stageId,
+          taskId: this.taskId,
+        }
+        this.$HTTP("post", "/stagetask_get", obj, $('#app')[0])
+        .then(res => {
+          this.dataProcessing(res.result);
+          // console.log("获取任务详情", res.result);
 
-      })
-      .catch(err => {
-        console.log("获取任务详情失败", err);
-        this.$message.error("获取任务详情失败，请检查网络");
+        })
+        .catch(err => {
+          console.log("获取任务详情失败", err);
+          this.$message.error("获取任务详情失败，请检查网络");
+        });
       });
-
     },
     // 详情切换时初始化数据
     initData() {
@@ -3220,7 +3300,8 @@ export default {
         edit: false,
         FileTitle: title,
         FileType: this.getFlieTyle(obj.Type),
-        isOwn: obj.UserPkid.toString() === this.userId.toString() ? true : false
+        isOwn: obj.UserPkid.toString() === this.userId.toString() ? true : false,
+        formatTime: this.format(new Date(obj.CreateTime), 'yyyy/MM/dd HH:mm')
       }
       if (data.FileType !== 1) {
         data.UrlMin = this.fileTypeImg[data.FileType].src;

@@ -47,7 +47,7 @@
                                  @change="usedCheckChange(list)"></el-checkbox>
                     <img class="el_tree_img"
                          :src="list.Images" />
-                    <span class="el_tree_name">{{ list.realname }}</span>
+                    <span class="el_tree_name">{{ list.nickName ? list.nickName : list.userName }}</span>
                   </li>
                 </ul>
                 <p class="no_body"
@@ -61,7 +61,7 @@
                       v-if="list.checked && !list.disabled">
                     <img class="el_tree_img"
                          :src="list.Images" />
-                    <span class="el_tree_name">{{ list.realname }}</span>
+                    <span class="el_tree_name">{{ list.nickName ? list.nickName : list.userName }}</span>
                     <i class="iconfont icon-delete"
                        @click="delCheckChange(list, index)"></i>
                   </li>
@@ -148,7 +148,7 @@ export default {
       userName: JSON.parse(localStorage.getItem('staffInfo')).realName, // 当前登录者的名字
       defaultProps: {
         children: "friendsList",
-        label: "realname"
+        label: "userName"
       },
       treeList: [], // 好友树状图列表
       usedList: [], // 常用联系人列表
@@ -467,7 +467,10 @@ export default {
         this.$HTTP('post', '/user_friends_getlist', obj).then(res => {
           this.treeList = [...res.result];
           for (let x of this.treeList) {
-            x.realname = x.groupName;
+            x.userName = x.groupName;
+            for(let ele of x.friendsList) {
+              ele.userName = ele.nickName ? ele.nickName : ele.userName;
+            }
             x.friendsList.map(ele => {
               return (ele.checked = false) && (ele.disabled = true);
             });
