@@ -292,6 +292,36 @@
           }
       }
     }
+    .full_view {
+      .add_human {
+        .add_human_yun {
+          left: -207px;
+          .arrow_div {
+            left: 212px;
+          }
+          .stage_people .people:first-child {
+              margin-bottom: 0 !important;
+          }
+          .selected_stage {
+            display: none;
+          }
+        }
+      }
+      .add_time {
+        .add_time_yun {
+          left: -334px;
+          .arrow_div {
+            left: 360px;
+          }
+          .stage_time_box .stage_time_list:first-child {
+            margin-bottom: 0 !important;
+          }
+          .selected_stage {
+            display: none;
+          }
+        }
+      }
+    }
 
     .every_file {
       width: 156px;
@@ -437,6 +467,9 @@
             display: inline-block; 
            }
        }
+    }
+    .every_file_operate {
+      border-color: @mainColor;
     }
 
     .detail_file {
@@ -680,6 +713,30 @@
                         }
                       }
                     }
+                    .drag_in_temporary {
+                      border: 1px solid #EEEEEE;
+                      background: #FBFBFF;
+                      .draggable {
+                        position: relative;
+                        .every_file {
+                          display: none;
+                        }
+                        &::after {
+                          content: '拖动到此处  建立新的分组';
+                          width: 74px;
+                          height: 32px;
+                          font-size: 12px;
+                          text-align: center;
+                          color: @mainColor;
+                          position: absolute;
+                          top: 50%;
+                          left: 50%;
+                          margin-top: - 16px;
+                          margin-left: -40px;
+                          z-index: 1;
+                        }
+                      }
+                    }
                     .drag_dis {
                       border: 1px dashed #fafafa;
                       background: #fafafa;
@@ -789,17 +846,28 @@
               width: calc(100% - 210px);
               .parths_group {
                   width: 100%;
-                  padding: 20px 20px 0;
+                  padding: 20px 0 0 20px;
+                  .box_sizing;
+
                   .group_top .group_name {
                     max-width: 90% !important;
                   }
                   .group_top {
                     padding: 0 !important;
+                    padding-right: 20px !important;
+                    .box_sizing;
+
                   }
-                  .box_sizing;
                   .group_file {
+                    width: 100% !important;
+
+
+                    .draggable {
+                      width: calc(100% + 24px);
+                      margin-left: -24px !important;
+                    }
                     .every_file {
-                      margin: 8px 24px 8px 0 !important;
+                      margin: 8px 0 8px 24px !important;
                       float: left !important;
                     }
                   }
@@ -994,6 +1062,4 @@
     opacity: 0.4;
   }
 
-
-  
 }

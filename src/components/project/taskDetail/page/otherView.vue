@@ -406,6 +406,7 @@ export default {
     parthsGroup: {
       deep: true,
       handler(list) {
+        console.log('watch0-----', list);
         let length = 0;
         for(let x of list) {
           for(let y of x.fileList) {
@@ -727,6 +728,7 @@ export default {
         this.$nextTick(() => {
           const ele = $(this.$refs.createdGroup[0]);
           ele.focus();
+          ele.select();
         });
         return;
       }
@@ -740,7 +742,8 @@ export default {
             myUserId: this.userId
           };
           this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
-            console.log('文件分组删除成功', res);
+            console.log('文件分组删除成功', res, index);
+            
             this.parthsGroup.splice(index, 1);
           }).catch(err => {
             console.log(err);
@@ -768,8 +771,8 @@ export default {
         }
 
         this.parthsGroup[0].fileList.push(...addList);
+        console.log('del--before', this.operateParth.index);
         this.parthsGroup.splice(this.operateParth.index, 1);
-        this.parthsGroup = this.parthsGroup.concat();
         console.log('文件分组删除成功',this.parthsGroup);
 
       }).catch(err => {
@@ -832,7 +835,7 @@ export default {
         this.$nextTick(() => {
           const ele = $('#fileNameEdit');
           ele.focus();
-        
+          ele.select();
         });
         return;
       }
@@ -1314,11 +1317,11 @@ export default {
     // 获取文件
     updateData(data) {
       if(data === 'init') {
-        this.checkedList = [...this.checkedFileList];
-        this.parthsGroup = [...this.list];
+        this.checkedList = JSON.parse(JSON.stringify(this.checkedFileList));
+        this.parthsGroup = JSON.parse(JSON.stringify(this.list));
         return;
       }
-      this.parthsGroup = [...data];
+      this.parthsGroup = JSON.parse(JSON.stringify(data));
       if(this.sortType) { // 无分组--排序
         this.setSort();
       }

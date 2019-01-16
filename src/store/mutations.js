@@ -18,6 +18,7 @@ import {
     TASKDELCHANGE,
 
     // new_yun
+    STAGEINFO_CHANGE,
     CHECKEDLIST_CHANGE,
     FILELENGTH_CHANGE,
     TASKIDS_CHANGE,
@@ -135,6 +136,9 @@ export default {
     },
 
     // new_yun
+    [STAGEINFO_CHANGE](state, info) {
+        state.stageInfos = info;
+    },
     [CHECKEDLIST_CHANGE](state, list) {
         state.checkedFileList = list;
     },
@@ -148,6 +152,7 @@ export default {
         state.power = power;
         // state.power = 1;
     },
+
     
 
 

@@ -68,10 +68,44 @@
           
       </div>
           
-
       <div class="detail_main">
+          <!-- 整体预览的头部操作按钮 -->
+          <div v-if='fullPreviewShow' class="top_operate full_view">
+            <div class="t_o_left fl">
+              <span>{{stageInfo.title}}</span>
+            </div>
+            <div class="t_o_right fr">
+              <!-- 加人 -->
+              <span class="add_human" @click.stop='addHumanHandle'>
+                <el-tooltip effect="dark" content="添加成员" placement="top" :open-delay="300">
+                  <i class='iconfont icon-haoyou1'></i>
+                </el-tooltip>
+                <add-human
+                  v-if='addHumanShow'
+                  :fullViewFlag='true'
+                  :defaultList='stageList'
+                  :ids='idList'
+                  @stageInfoChange="stageInfoChange"
+                />
+              </span>
+              <!-- 加时间 -->
+              <span class="add_time" @click.stop='addTimeHandle'>
+                 <el-tooltip effect="dark" content="添加时间" placement="top" :open-delay="300">
+                  <i class='iconfont icon-rili1'></i>
+                </el-tooltip>
+                <add-time
+                  v-if='addTimeShow'
+                  :fullViewFlag='true'
+                  :defaultList='stageList'
+                  :ids='idList'
+                  @stageInfoChange="stageInfoChange"
+
+                />
+              </span>
+            </div>
+          </div>
           <!-- 头部操作按钮 -->
-          <div class="top_operate">
+          <div v-else class="top_operate">
             <div class="t_o_left fl">
               <el-tooltip v-if='!demandCount' effect="dark" content="暂无相关需求" placement="top" :open-delay="300">
                 <span class="cur_dis">相关需求</span>
@@ -85,7 +119,7 @@
               <state-manage 
                 ref='stageManage'
                 v-if='stageInfo'
-                :info='stageInfo'
+                :info='stageInfos'
                 :ids='idList'
               />
               <span class="line"></span>
@@ -249,7 +283,8 @@
                         @focus="inputTextFocus"
                         @blur="inputTextBlur"
                         ></textarea>
-                      <button class="main_button_bg fr" @click="inputTextSure('left')">添加</button>
+                      <div v-if='addTextIng || !inputText' class="main_button_disabled_bg fr">添加</div>
+                      <button v-else class="main_button_bg fr" @click="inputTextSure('left')">添加</button>
                       <button class="main_button fr" @click="inputTextCancel('left')">取消</button>
                     </div>
                   </div>
@@ -275,6 +310,7 @@
                           >
                               <div 
                                   class="every_file draged"
+                                  :class="ele.checked || ele.hover || operateFile.FilePkid === ele.FilePkid ? 'every_file_operate' : ''"
                                   v-for="(ele, index) in notGroupedList"
                                   :key="ele.FilePkid"
                                   :id='ele.FilePkid'
@@ -283,7 +319,7 @@
                                   @mouseleave="leaveFile(ele)"
                                   >
                                   <span class="file_pic">
-                                    <template v-if='ele.FileType === 11'>
+                                    <template v-if='ele.FileType === 11 && ele.Desc'>
                                       <span class="text_desc"><span>{{ele.Desc}}</span></span>
                                     </template>
                                     <template v-else>
@@ -312,7 +348,10 @@
                                     <span class="fixed file_checkbox" v-if='oneChecked || ele.hover'>
                                       <el-checkbox v-model="ele.checked" @change="everyFileCheckbox($event, ele)"></el-checkbox>
                                     </span>
-                                    <el-dropdown class="fixed file_more">
+                                    <el-dropdown 
+                                     class="fixed file_more"
+                                      @visible-change="operateFileDropdown($event, ele)"
+                                      >
                                       <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                       <el-dropdown-menu slot="dropdown">
                                         <el-dropdown-item @click.native="fileCommand('download', index, ele, 0)">下载</el-dropdown-item>
@@ -487,7 +526,7 @@
                                 v-if='group.allList'
                                 :key="group.pkid"
                                 class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.temporary ? 'drag_in_temporary' : 'drag_in') : 'drag_dis') : ''"
                                 >
                                 <draggable
                                   class="draggable"
@@ -558,7 +597,7 @@
                                 v-else-if='group.overList'
                                 :key="group.pkid"
                                 class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? 'drag_in' : 'drag_dis') : ''"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.temporary ? 'drag_in_temporary' : 'drag_in') : 'drag_dis') : ''"
                                 >
                                 <draggable
                                   class="draggable"
@@ -608,7 +647,7 @@
                                       </template>
                                       <template v-else>
                                         <span class="file_pic">
-                                          <template v-if='item.FileType === 11'>
+                                          <template v-if='item.FileType === 11 && item.Desc'>
                                             <span class="text_desc"><span>{{item.Desc}}</span></span>
                                           </template>
                                           <template v-else>
@@ -665,7 +704,7 @@
                                 v-else-if='group.fileList'
                                 :key="group.pkid"
                                 class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : 'drag_in') : 'drag_dis') : (group.fileList.length ? '' : 'parths_empty')"
+                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.fileList.length ? 'group_border' : (group.temporary ? 'drag_in_temporary' : 'drag_in')) : 'drag_dis') : (group.fileList.length ? '' : 'parths_empty')"
                                 >
                                 <draggable
                                   class="draggable"
@@ -694,7 +733,7 @@
                                     @mouseleave="leaveFile(item)"
                                     >
                                     <span class="file_pic">
-                                      <template v-if='item.FileType === 11'>
+                                      <template v-if='item.FileType === 11 && item.Desc'>
                                         <span class="text_desc"><span>{{item.Desc}}</span></span>
                                       </template>
                                       <template v-else>
@@ -845,7 +884,8 @@
                         @focus="inputTextFocus"
                         @blur="inputTextBlur"
                         ></textarea>
-                      <button class="main_button_bg fr" @click="inputTextSure()">添加</button>
+                      <div v-if='addTextIng || !inputText' class="main_button_disabled_bg fr">添加</div>
+                      <button v-else class="main_button_bg fr" @click="inputTextSure()">添加</button>
                       <button class="main_button fr" @click="inputTextCancel()">取消</button>
                     </div>
                   </div>
@@ -912,7 +952,7 @@
                               <!-- 文件 -->
                               <template v-else>
                                   <span class="file_pic">
-                                    <template v-if='file.FileType === 11'>
+                                    <template v-if='file.FileType === 11 && file.Desc'>
                                       <span class="text_desc"><span>{{file.Desc}}</span></span>
                                     </template>
                                     <template v-else>
@@ -966,15 +1006,15 @@
             />
           </template>
       </div>
-      <!-- 温馨提示2_删除分组的提示 -->
+      <!-- 温馨提示2_移交文件的提示 -->
       <transition name="fade1">
         <transfer-view
           v-if='transferShow'
+          :default='transferDefaultStage'
           :selectList="transferStageList"
           @handleCancle="transferCancel"
           @handleSure="transferSure" 
         />
-
       </transition>
       <!-- 温馨提示2_删除分组的提示 -->
       <transition name="fade1">
@@ -1207,7 +1247,9 @@ export default {
       addTimeShow: false, // 加时间显示/隐藏
       transferShow: false, // 文件移交的弹窗
       transferStageList: [], // 移交选择的阶段列表
-      transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交
+      transferDefaultStage: [], // 移交时默认选择下一阶段阶段
+      transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交,
+      addTextIng: false, // 正在生成文本
     };
   },
   watch: {
@@ -1301,6 +1343,7 @@ export default {
   },
   computed: {
     ...mapState([
+      'stageInfos',
       'checkedFileList',
       'fileLength',
       'power' // 权限管理 0--未参加阶段任务 1--参加了阶段任务
@@ -1337,6 +1380,7 @@ export default {
   },
   methods: {
     ...mapMutations([
+      'STAGEINFO_CHANGE',
       'CHECKEDLIST_CHANGE',
       'FILELENGTH_CHANGE',
       'TASKIDS_CHANGE',
@@ -1455,6 +1499,10 @@ export default {
         this.$message.warning('请输入文字内容！');
         return;
       }
+      if(this.addTextIng) {
+        return;
+      }
+      this.addTextIng = true;
       if(flag === 'left') { // 任务文件
         let obj = {
           myUserId: this.userId,
@@ -1464,6 +1512,7 @@ export default {
           desc: this.inputText,
         };
         this.$HTTP('post', '/stageTaskInfo_add', obj).then(res => {
+          this.addTextIng = false;
           this.inputTextShow1 = false;
           this.inputText = '';
           let returnObj = this.addFileAttr(res.result);
@@ -1476,6 +1525,7 @@ export default {
         });
       }else { // 个人文档
         this.inputTextShow2 = false;
+        this.addTextIng = false;
       }
       
     },
@@ -1626,7 +1676,7 @@ export default {
           .eq(i)
           .find(".group_file")
           .eq(0)
-          .width();
+          .width() + 24;
         const x = Math.floor(w / this.fileBoxW);
         let list = [...this.parthsGroup[i].fileList];
         let length = list.length;
@@ -1947,7 +1997,15 @@ export default {
         });
       });
     },
-
+    // 文件的更多操作显示/隐藏
+    operateFileDropdown(val, item) {
+      return;
+      if(val) {
+      }else {
+      }
+      this.notGroupedList = this.notGroupedList.concat();
+      this.parthsGroup = this.parthsGroup.concat();
+    },
     // 文件的更多操作
     fileCommand(type, index1, item, groupId, index) {
       this.operateFile = Object.assign({}, item, {index: index1, groupId: groupId, groupIndex: index});
@@ -1975,6 +2033,7 @@ export default {
         this.$nextTick(() => {
           const ele = $('#fileNameEdit');
           ele.focus();
+          ele.select();
         
         });
         return;
@@ -2086,6 +2145,7 @@ export default {
         this.$nextTick(() => {
           const ele = $(this.$refs.createdGroup[0]);
           ele.focus();
+          ele.select();
         });
         return;
       }
@@ -2141,7 +2201,6 @@ export default {
       item.hover = true;
       this.notGroupedList = this.notGroupedList.concat();
       this.parthsGroup = this.parthsGroup.concat();
-      
 
     },
     // 鼠标移出文件
@@ -2149,8 +2208,8 @@ export default {
       item.hover = false;
       this.notGroupedList = this.notGroupedList.concat();
       this.parthsGroup = this.parthsGroup.concat();
-
     },
+
     // 文件的选中状态发生改变
     everyFileCheckbox(val, item) {
       let x1,x2, indexs;
@@ -2273,6 +2332,7 @@ export default {
     // 移交时选择的阶段列表
     getTransferStageList() {
       this.transferStageList = [];
+      this.transferDefaultStage = [];
       for (let x of this.stageList) {
           if(x.stageId != this.stageId) {
               this.transferStageList.push({
@@ -2281,6 +2341,12 @@ export default {
                   disabled: false
               });
           }
+      }
+      for(let i = 0; i < this.stageList.length; i++) {
+        if(this.stageList[i].stageId == this.stageId && i < this.stageList.length - 2) {
+          this.transferDefaultStage = [this.stageList[i + 1].stageId];
+          return;
+        } 
       }
     },
     // 移交时发送的请求
@@ -3151,16 +3217,13 @@ export default {
       if(indexs !== -1) {
         this.stageList.splice(indexs, 1, info.item);
         this.stageList = this.stageList.concat();
-
       }
-      // console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
       if(type === 1) { // 人员改变
         if(info.add.length) {
           self = info.add.findIndex(ele => ele.toString() === this.userId.toString());
           if(self !== -1) {
             this.stageInfo.isMyParticipate = true;
             this.POWER_CHANGE(1); // 设置权限
-
           }
         }
         if(info.del.length) {
@@ -3168,12 +3231,14 @@ export default {
           if(self !== -1) {
             this.stageInfo.isMyParticipate = false;
             this.POWER_CHANGE(0); // 设置权限
-
           }
         }
       }else { // 时间改变
 
       }
+      // console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
+      this.STAGEINFO_CHANGE(this.stageInfo);
+
     },
 
     // 获取任务列表
@@ -3278,7 +3343,7 @@ export default {
         filePartitionId: this.filePartitionId
       }
       this.TASKIDS_CHANGE(this.idList); // ids集合改变
-
+      this.STAGEINFO_CHANGE(this.stageInfo);
       let statePower = 0;
       if(res.isMyParticipate) {
         statePower = 1;
@@ -3325,9 +3390,6 @@ export default {
       });
     },
     // 获取数据及处理--------------------------------end
-
-
-
     
   },
   created() {

@@ -85,7 +85,7 @@ export default {
     AddPeople,
     Reminder2
   },
-  props: ["defaultList", "ids"],
+  props: ["defaultList", "ids", "fullViewFlag"],
   data() {
     return {
       stagePeopleList: [], // 阶段人员列表
@@ -104,6 +104,7 @@ export default {
       }
     };
   },
+
   methods: {
     // 鼠标移入参与者头像
     peopleEnter(item) {
@@ -181,7 +182,7 @@ export default {
             w1 = $('#addPeople').width();
             appW = $('#app').width();
             top = top + 40;
-            left = left - 80;
+            left = left - 155;
             if(left + w1 > appW) {
                 left = appW - w1 - 24;
             }
@@ -271,6 +272,7 @@ export default {
       this.addPeopleShow = false;
       this.inviteShow = true;
       this.inviteDefaultKeys = ids;
+
     },
 
     // 获取项目成员列表
@@ -295,11 +297,13 @@ export default {
 
     setData() {
       this.stagePeopleList = [...this.defaultList];
-      let indexs = this.stagePeopleList.findIndex( ele => ele.stageId == this.ids.stageId);
-      if(indexs > 0) {
-        let list = this.stagePeopleList[indexs];
-        this.stagePeopleList.splice(indexs, 1);
-        this.stagePeopleList.unshift(list);
+      if(!this.fullViewFlag) {
+        let indexs = this.stagePeopleList.findIndex( ele => ele.stageId == this.ids.stageId);
+        if(indexs > 0) {
+          let list = this.stagePeopleList[indexs];
+          this.stagePeopleList.splice(indexs, 1);
+          this.stagePeopleList.unshift(list);
+        }
       }
       for (let x of this.stagePeopleList) {
         this.$set(x, "show", false);
@@ -329,7 +333,7 @@ export default {
   background: rgba(255, 255, 255, 1);
   box-shadow: 0px 1px 15px 0px rgba(59, 81, 133, 0.3);
   border-radius: 4px;
-  z-index: 1;
+  z-index: 100;
 
   .stage_people {
     width: 100%;
@@ -456,7 +460,7 @@ export default {
         .arrow_div {
             position: absolute;
             top: -10px;
-            left: 85px;
+            left: 160px;
             width: 10px;
             height: 10px;
             overflow: hidden;
@@ -474,6 +478,9 @@ export default {
             margin-top: 7px;
             }
         }
+    }
+    .popup {
+      // background-color: rgba(255,255,255,0) !important;
     }
 }
 </style>
