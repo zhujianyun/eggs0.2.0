@@ -529,7 +529,7 @@ export default {
         background: #ffffff;
         .demand_box {
             width: 100%;
-            height: calc(100% - 40px);
+            height: calc(100% - 40px - 20px);
             padding: 0 24px;
             .box_sizing;
             overflow: auto;

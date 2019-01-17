@@ -174,7 +174,10 @@
                   <div class="top_box">
                     <div class="left fl">
                       <!-- 文件上传 -->
-                      <el-dropdown v-if='power' placement="bottom">
+                      <el-dropdown 
+                        v-if='power' 
+                        placement="bottom"
+                        >
                         <span class="el-dropdown-link">
                           <i class='iconfont icon-shangchuan'></i>
                         </span>
@@ -308,9 +311,10 @@
                               @start='dragStart($event, "noGroup")'
                               @end='dragEnd'
                           >
+                              <!-- :class="ele.checked || ele.hover || operateFile.FilePkid === ele.FilePkid ? 'every_file_operate' : ''" -->
                               <div 
                                   class="every_file draged"
-                                  :class="ele.checked || ele.hover || operateFile.FilePkid === ele.FilePkid ? 'every_file_operate' : ''"
+                                  :class="ele.hover || operateFile.FilePkid === ele.FilePkid ? 'every_file_operate' : ''"
                                   v-for="(ele, index) in notGroupedList"
                                   :key="ele.FilePkid"
                                   :id='ele.FilePkid'
@@ -411,7 +415,7 @@
                             :options="{
                               ghostClass: 'ghost_parth_sort', 
                               dragClass: 'drag_parth_sort',
-                              draggable: power ? '.draged' : '',
+                              draggable: power && parthsGroup.length > 1 ? '.draged' : '',
                               }"
                             @end='dragEndParth'
                             >
@@ -1292,7 +1296,7 @@ export default {
     },
     notGroupedList: {
       deep: true,
-      handler(val) {
+      handler(val, old) {
         let length = 0;
         for(let x of this.parthsGroup) {
           for(let y of x.fileList) {
@@ -1315,7 +1319,7 @@ export default {
     },
     parthsGroup: {
       deep: true,
-      handler(list) {
+      handler(list, old) {
         let length = 0;
         for(let x of list) {
           for(let y of x.fileList) {
@@ -1358,6 +1362,7 @@ export default {
     },
     fileCheckbox: {
       get() {
+
         if(this.fileLength && this.checkedFileList && (this.checkedFileList.length === this.fileLength)) {
           return true;
         }else {
@@ -1416,21 +1421,25 @@ export default {
     viewToggles() {
       this.viewToggle = !this.viewToggle;
       if(this.viewToggle) { // 默认视图
-       this.retrunData();
+       this.retrunData(true);
       }
     },
     // 文件视图切换后，文件的重新赋值
-    retrunData() {
-
-      const obj = this.$refs.otherView.close();
-      this.checkedList = [...obj.checkedList];
-      const list = [...obj.list];
-      this.notGroupedList = [].concat(list[0].fileList);
-      this.parthsGroup = [...list].splice(1);
-      this.leftCenterChange(this.leftCenterFlag);
+    retrunData(flag) {
+      return new Promise((resolve) => {
+        const obj = this.$refs.otherView.close();
+        this.checkedList = [...obj.checkedList];
+        const list = [...obj.list];
+        this.notGroupedList = [].concat(list[0].fileList);
+        this.parthsGroup = [...list].splice(1);
+        if(flag) {
+          this.leftCenterChange(this.leftCenterFlag);
+        }
+      });
       // 进行文件多选的回选
       // this.returnSelection(obj.checkedList);
     },
+
     // 文件时图切换后，复选框的回选
     returnSelection(list) {
       for(let x of this.parthsGroup) {
@@ -1583,7 +1592,7 @@ export default {
           myUserId: this.idList.userId,
         }
         this.$HTTP('post', '/demand_list', obj).then(res => {
-          console.log(res.result);
+          // console.log(res.result);
           this.demandList = [...res.result];
           this.demandOrGain = flag;
         }).catch(err => {
@@ -1868,6 +1877,9 @@ export default {
         }
         // 新建分组
         if(type === 'create') {
+          if(this.groupSortFlag) {
+            this.groupSortFlag = false;
+          }
           // 添加一条数据
           this.parthsGroup.push({
             pkid: 'new',
@@ -2064,7 +2076,11 @@ export default {
         repeat = this.notGroupedList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
       }
       if(repeat !== -1) {
-        this.$message.warning('已含有同名文件！');
+        this.$message.error('该分组内含有同名文件！·');
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        });
       }else {
         // 发送修改分组名的接口
         if(this.fileNameCopy !== item.FileTitle) {
@@ -2101,7 +2117,11 @@ export default {
         FilePkid: FilePkid
       };
       this.$HTTP('post', '/stageTaskFile_delete', obj).then(res => {
-        console.log('删除文件成功', res, this.operateFile);
+        // console.log('删除文件成功', res, this.operateFile);
+        if(this.operateFile.checked) {
+          const indexs = this.checkedList.findIndex(ele => ele.FilePkid === FilePkid);
+          indexs !== -1 && this.checkedList.splice(indexs, 1);
+        }
         if(groupId === 0) { // 未分组文件
           this.notGroupedList.splice(index, 1);
           this.notGroupedList = this.notGroupedList.concat();
@@ -2179,14 +2199,20 @@ export default {
         myUserId: this.userId
       };
       this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
+        for(let x of this.operateParth.fileList) {
+          if(x.checked) {
+            const indexs = this.checkedList.findIndex(ele => ele.FilePkid === x.FilePkid);
+            indexs !== -1 && this.checkedList.splice(indexs, 1);
+          }
+        }
+
         let addList = res.result;
         addList = addList.splice(this.notGroupedList.length);
         for(let y of addList) {
           let returnObj = this.addFileAttr(y);
           y = Object.assign(y, returnObj);
         }
-        console.log('文件分组删除成功',res.result, addList);
-
+        // console.log('文件分组删除成功',res.result, addList);
         this.notGroupedList.push(...addList);
         this.parthsGroup.splice(this.operateParth.index, 1);
 
@@ -2299,34 +2325,45 @@ export default {
       this.transferShow = false;
     },
     // 确认文件移交
-    transferSure(val, descText) {
-      this.transferShow = false;
-      let arr = [[], []];
-      if(this.transferType === 1) { // 单个文件
-        arr[0] = [this.operateFile.FilePkid];
-      }else if(this.transferType === 2) { // 多个文件
-        for(let x of this.notGroupedList) {
-          if(x.checked) {
-            arr[0].push(x.FilePkid);
+    async transferSure(val, descText) {
+      try {
+        await !this.viewToggle && this.retrunData(false);
+        const returnData = await this.transferSureProcessing(val, descText);
+        await this.tranferSendHttp(returnData);
+      }catch(err) {
+        console.log('文件移交失败', err);
+      }
+    },
+    // 确认移交时的数据处理
+    transferSureProcessing(val, descText) {
+      return new Promise((resolve, reject) => {
+        this.transferShow = false;
+        let arr = [[], []];
+        if(this.transferType === 1) { // 单个文件
+          arr[0] = [this.operateFile.FilePkid];
+        }else if(this.transferType === 2) { // 多个文件
+          for(let x of this.notGroupedList) {
+            if(x.checked) {
+              arr[0].push(x.FilePkid);
+            }
           }
-        }
-        for(let x of this.parthsGroup) {
-          let haves = x.fileList.findIndex(ele => !ele.checked);
-          if(haves === -1) {
-            arr[1].push(x.pkid);
-          }else {
-            for(let y of x.fileList) {
-              if(y.checked) {
-                arr[0].push(y.FilePkid);
+          for(let x of this.parthsGroup) {
+            let haves = x.fileList.findIndex(ele => !ele.checked);
+            if(haves === -1) {
+              arr[1].push(x.pkid);
+            }else {
+              for(let y of x.fileList) {
+                if(y.checked) {
+                  arr[0].push(y.FilePkid);
+                }
               }
             }
           }
+        }else { // 组文件
+          arr[1] = [this.filePartitionId];
         }
-
-      }else { // 组文件
-        arr[1] = [this.filePartitionId];
-      }
-      this.tranferSendHttp(val, arr, descText);
+        resolve({val, arr, descText})
+      });
     },
 
     // 移交时选择的阶段列表
@@ -2343,7 +2380,7 @@ export default {
           }
       }
       for(let i = 0; i < this.stageList.length; i++) {
-        if(this.stageList[i].stageId == this.stageId && i < this.stageList.length - 2) {
+        if(this.stageList[i].stageId == this.stageId && i < this.stageList.length - 1) {
           this.transferDefaultStage = [this.stageList[i + 1].stageId];
           return;
         } 
@@ -2355,8 +2392,8 @@ export default {
      * arr 要移交的文件ID arr[0]里是未分组的ID集合 arr[1]是分组的ID集合
      * descText 移交时的需求描述
      * **/
-    tranferSendHttp(val, arr, descText) {
-      // console.log('transfer---',  val, arr, descText);
+    tranferSendHttp(data) {
+      let {val, arr, descText} = data;
       return new Promise((resolve) => {
           if(!arr[0].length && !arr[1].length && !descText) {
               this.$message.warning('请选择交接文件或添加需求描述');
@@ -2942,6 +2979,9 @@ export default {
     // 当前点击的是哪个分组的上传
     handleClickUpload(groupId) {
       this.filePartitionId = groupId;
+      if(!this.viewToggle) { // 列表视图
+       this.retrunData(false);
+      }
     },
     // 关闭文件上传视图
     closeProgress() {
@@ -3123,8 +3163,6 @@ export default {
     uploadSuccess(res, _file) {
       const id = this.filePartitionId;
       let file = Object.assign({}, _file.response.result);
-      // let type = file.name.split(".")[1];
-      // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
       let file1 = this.addFileAttr(file);
       file1 = Object.assign({}, file, file1);
       // console.log('----', file1);
@@ -3390,6 +3428,9 @@ export default {
       });
     },
     // 获取数据及处理--------------------------------end
+
+
+
     
   },
   created() {

@@ -84,9 +84,9 @@
           <h2>{{list.title}}</h2>
           <i class="iconfont icon-star fr"
              v-if="list.isStar"
-             @click="LightStar(list)"></i>
+             @click.stop="LightStar(list)"></i>
           <i class="iconfont icon-shoucang fr"
-             @click="LightStar(list)"
+             @click.stop="LightStar(list)"
              v-else></i>
           <div class="statisticalFigures">
             <ul class="clearfix">
@@ -108,23 +108,36 @@
           </div>
           <div class="participantBottom">
             <ul class="clearfix">
-              <li class="lessThan5">
-                <img :src="list.creater.createrPic"
-                     alt="赵珂">
-              </li>
-              <li class="lessThan5"
-                  v-for="(img,index) in list.userlist"
-                  :key="index">
-                <img :src="img.image"
-                     alt="">
-              </li>
-              <li class="nums fr"
-                  v-if="list.userCount > 5">等{{list.userCount}}人</li>
-              <li :class="list.userCount > 5 ? 'moreThan5':'lessThan5'"
-                  v-if="list.userCount<1">
-                <img src=""
-                     alt="">
-              </li>
+              <div v-if="list.userCount<5">
+                <li class="lessThan5">
+                  <img :src="list.creater.createrPic"
+                       alt="赵珂">
+                </li>
+                <li class="lessThan5"
+                    v-for="(img,index) in list.userlist"
+                    :key="index">
+                  <img :src="img.image"
+                       alt="">
+                </li>
+              </div>
+
+              <div v-if="list.userCount >= 5 "
+                   class="moreUser clearfix">
+                <li class="moreThan5"
+                    :style="{'z-index': Math.abs( index-101)}">
+                  <img :src="list.creater.createrPic"
+                       alt="赵珂">
+                </li>
+                <li class="moreThan5"
+                    v-for="(img,index) in list.userlist"
+                    :key="index"
+                    :style="{'z-index': Math.abs( index-100)}">
+                  <img :src="img.image"
+                       alt="">
+                </li>
+                <li class="nums fr">等{{list.userCount}}人</li>
+              </div>
+
             </ul>
             <span @click.stop
                   class="moreButton">
@@ -168,13 +181,13 @@
         <div class="card fl"
              v-for="(list,index) in joinedAddList"
              :key="index"
-              @click="enterTask(list)">
+             @click="enterTask(list)">
           <h2>{{list.title}}</h2>
           <i class="iconfont icon-star fr"
              v-if="list.isStar"
-             @click="LightStar(list)"></i>
+             @click.stop="LightStar(list)"></i>
           <i class="iconfont icon-shoucang fr"
-             @click="LightStar(list)"
+             @click.stop="LightStar(list)"
              v-else></i>
           <div class="statisticalFigures">
             <ul class="clearfix">
@@ -186,25 +199,36 @@
           </div>
           <div class="participantBottom">
             <ul class="clearfix">
-              <li class="lessThan5">
-                <img :src="list.creater.createrPic"
-                     alt="赵珂">
-              </li>
-              <li class="lessThan5"
-                  v-for="(img,index) in list.userlist"
-                  :key="index">
-                <img :src="img.image"
-                     alt="">
-              </li>
-              <li class="nums fr"
-                  v-if="list.userCount > 5">等{{list.userCount}}人</li>
-              <li :class="list.userCount > 5 ? 'moreThan5':'lessThan5'"
-                  v-if="list.userCount<1"
-                  v-for="(img,index) in list.userlist"
-                  :key="index">
-                <img :src="img.image"
-                     alt="">
-              </li>
+              <div v-if="list.userCount<5">
+                <li class="lessThan5">
+                  <img :src="list.creater.createrPic"
+                       alt="赵珂">
+                </li>
+                <li class="lessThan5"
+                    v-for="(img,index) in list.userlist"
+                    :key="index">
+                  <img :src="img.image"
+                       alt="">
+                </li>
+              </div>
+
+              <div v-if="list.userCount >= 5 "
+                   class="moreUser clearfix">
+                <li class="moreThan5"
+                    :style="{'z-index': Math.abs( index-101)}">
+                  <img :src="list.creater.createrPic"
+                       alt="赵珂">
+                </li>
+                <li class="moreThan5"
+                    v-for="(img,index) in list.userlist"
+                    :key="index"
+                    :style="{'z-index': Math.abs( index-100)}">
+                  <img :src="img.image"
+                       alt="">
+                </li>
+                <li class="nums fr">等{{list.userCount}}人</li>
+              </div>
+
             </ul>
             <span @click.stop
                   class="moreButton">
@@ -249,9 +273,9 @@
             <h2>{{list.title}}</h2>
             <i class="iconfont icon-star fr"
                v-if="list.isStar"
-               @click="LightStar(list)"></i>
+                @click.stop="LightStar(list)"></i>
             <i class="iconfont icon-shoucang fr"
-               @click="LightStar(list)"
+                @click.stop="LightStar(list)"
                v-else></i>
             <div class="statisticalFigures">
               <div class="num saveTime">归档日期：{{list.saveTime}}</div>
@@ -271,6 +295,7 @@
                 <li class="nums fr"
                     v-if="list.userCount > 5">等{{list.userCount}}人</li>
                 <li :class="list.userCount > 5 ? 'moreThan5':'lessThan5'"
+                    :style="{'z-index':index-1}"
                     v-if="list.userCount<1"
                     v-for="(img,index) in list.userlist"
                     :key="index">
@@ -781,16 +806,55 @@ export default {
         .participantBottom {
           margin-top: 20px;
           position: relative;
+          .moreUser {
+            display: flex;
+            flex-flow: row;
+            .moreThan5 {
+              width: 25px;
+              height: 25px;
+              // float: right;
+              margin-right: -12px;
+              border: 1px solid #ffffff;
+              border-radius: 4px;
+              .box_sizing;
+              overflow: hidden;
+              img {
+                //     width: 25px;
+                // height: 25px;
+                width: 100%;
+                height: 100%;
+                display: block;
+                background: red;
+              }
+            }
+            li {
+              float: left;
+            }
+          }
           .moreButton {
             display: inline-block;
-            width: 18px;
-            height: 18px;
+            width: 45px;
+            height: 33px;
             position: absolute;
-            right: 0;
-            bottom: 0;
+            right: -15px;
+            bottom: -11px;
             .el-dropdown {
-              // position: absolute;
-              // left: 0;
+              width: 100%;
+              height: 100%;
+              line-height: 25px;
+              .el-dropdown-link {
+                display: inline-block;
+                width: 100%;
+                text-align: center;
+                height: 100%;
+                .icon-gengduo {
+                  display: inline-block;
+                  width: 100%;
+                  text-align: center;
+                  height: 100%;
+                  text-align: center;
+                }
+              }
             }
           }
           ul {
@@ -811,24 +875,7 @@ export default {
                 display: block;
               }
             }
-            .moreThan5 {
-              width: 25px;
-              height: 25px;
-              float: right;
-              margin-right: -12px;
-              border: 1px solid #ffffff;
-              border-radius: 4px;
-              .box_sizing;
-              overflow: hidden;
-              img {
-                //     width: 25px;
-                // height: 25px;
-                width: 100%;
-                height: 100%;
-                display: block;
-                background: red;
-              }
-            }
+
             .nums {
               min-width: 58px;
               margin-left: 27px;

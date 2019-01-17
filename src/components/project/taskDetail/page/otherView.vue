@@ -67,7 +67,7 @@
           :options="{
             ghostClass: 'ghost_parth_sort', 
             dragClass: 'drag_parth_sort',
-            draggable: power ? '.draged' : '',
+            draggable: power && parthsGroup.length > 2 ? '.draged' : '',
             }"
           @end='dragEndParth'
         >
@@ -110,7 +110,7 @@
                     <el-dropdown-menu slot="dropdown">
                       <el-dropdown-item 
                           v-if='power'
-                        @click.native="fileGroupCommand('upload', index, group)"
+                        @click.native="fileGroupCommand('upload', index0, group)"
                         >
                         <el-upload 
                           :ref="filePartitionId === group.pkid ? 'fileUpload' : ''"
@@ -184,9 +184,10 @@
                  <span v-if='!file.edit' class="file_title">{{file.FileName}}</span>
                   <input 
                     v-else 
-                    class="file_title edit" 
+                    class="edit" 
                     v-model='file.FileTitle' 
                     id="fileNameEdit"
+                    @input='fileNameEditChange($event, file)'
                     @blur="fileNameEditBlur($event, file)"
                     />
               </div>
@@ -234,7 +235,15 @@
             <div class="file_name every_common">
               <el-checkbox v-model='file.checked' @change='checkboxChange($event, file, 1)'></el-checkbox>
               <img :src="file.FileType === 1 ? fileTypeImg[1].src : file.UrlMin" alt="">
-              <span class="file_title">{{file.FileName}}</span>
+              <span v-if='!file.edit' class="file_title">{{file.FileName}}</span>
+              <input 
+                v-else 
+                class="edit" 
+                v-model='file.FileTitle' 
+                id="fileNameEdit"
+                @input='fileNameEditChange($event, file)'
+                @blur="fileNameEditBlur($event, file)"
+                />
             </div>
             <div class="file_from every_common">
               <span>{{file.nickName ? file.nickName : file.userName}}</span>
@@ -250,16 +259,16 @@
               <el-dropdown class="">
                 <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                 <el-dropdown-menu slot="dropdown">
-                  <el-dropdown-item @click.native="fileCommand('download', index, file, 0)">下载</el-dropdown-item>
-                  <el-dropdown-item @click.native="fileCommand('collect', index, file, 0)">收藏</el-dropdown-item>
+                  <el-dropdown-item @click.native="fileCommand('download', index, file, file.groupId, file.groupIndex)">下载</el-dropdown-item>
+                  <el-dropdown-item @click.native="fileCommand('collect', index, file, file.groupId, file.groupIndex)">收藏</el-dropdown-item>
                   <el-dropdown-item v-if='file.isOwn && stageList.length === 1'>
                     <el-tooltip effect="dark" content="没有可移交的阶段" placement="top" :open-delay="300">
                       <span class="cur_dis">移交</span>
                     </el-tooltip>
                   </el-dropdown-item>
-                  <el-dropdown-item v-if='file.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index, file, 0)">移交</el-dropdown-item>
-                  <el-dropdown-item v-if='file.isOwn' @click.native="fileCommand('rename', index, file, 0)">重命名</el-dropdown-item>
-                  <el-dropdown-item v-if='file.isOwn' @click.native="fileCommand('delete', index, file, 0)">删除</el-dropdown-item>
+                  <el-dropdown-item v-if='file.isOwn && stageList.length > 1' @click.native="fileCommand('transfer', index, file, file.groupId, file.groupIndex)">移交</el-dropdown-item>
+                  <el-dropdown-item v-if='file.isOwn' @click.native="fileCommand('rename', index, file, file.groupId, file.groupIndex)">重命名</el-dropdown-item>
+                  <el-dropdown-item v-if='file.isOwn' @click.native="fileCommand('delete', index, file, file.groupId, file.groupIndex)">删除</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </div>
@@ -267,10 +276,11 @@
         </div>
       </div>
     </div>
-    <!-- 温馨提示2_删除分组的提示 -->
+    <!-- 温馨提示2_移交文件的提示 -->
       <transition name="fade1">
         <transfer-view
           v-if='transferShow'
+          :default='transferDefaultStage'
           :selectList="transferStageList"
           @handleCancle="transferCancel"
           @handleSure="transferSure" 
@@ -376,6 +386,7 @@ export default {
       groupSortFlag: false, // 分组排序展示
       transferShow: false, // 文件移交的弹窗
       transferStageList: [], // 移交选择的阶段列表
+      transferDefaultStage: [], // 移交时默认选择下一阶段阶段
       transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交
 
     };
@@ -406,7 +417,6 @@ export default {
     parthsGroup: {
       deep: true,
       handler(list) {
-        console.log('watch0-----', list);
         let length = 0;
         for(let x of list) {
           for(let y of x.fileList) {
@@ -535,8 +545,14 @@ export default {
     // 排序后的数据
     setSort() {
       const list = [];
-      for(let x of this.parthsGroup) {
+      for(let i = 0; i < this.parthsGroup.length; i++) {
+        let x = this.parthsGroup[i];
+        for(let ele of x.fileList) {
+          ele.groupId = x.pkid; 
+          ele.groupIndex = i;
+        }
         list.push(...x.fileList);
+
       }
       this.fileList = [...list];
       this.fileList.sort(this.compare);
@@ -763,6 +779,13 @@ export default {
         myUserId: this.userId
       };
       this.$HTTP('post', '/filePpartition_delete', obj).then(res => {
+         for(let x of this.operateParth.fileList) {
+          if(x.checked) {
+            const indexs = this.checkedList.findIndex(ele => ele.FilePkid === x.FilePkid);
+            indexs !== -1 && this.checkedList.splice(indexs, 1);
+          }
+        }
+
         let addList = res.result;
         addList = addList.splice(this.parthsGroup[0].fileList.length);
         for(let y of addList) {
@@ -771,9 +794,8 @@ export default {
         }
 
         this.parthsGroup[0].fileList.push(...addList);
-        console.log('del--before', this.operateParth.index);
         this.parthsGroup.splice(this.operateParth.index, 1);
-        console.log('文件分组删除成功',this.parthsGroup);
+        // console.log('文件分组删除成功',this.parthsGroup);
 
       }).catch(err => {
         console.log(err);
@@ -834,6 +856,7 @@ export default {
 
         this.$nextTick(() => {
           const ele = $('#fileNameEdit');
+          ele.css({width: this.textWidth(ele.val()) + 4})
           ele.focus();
           ele.select();
         });
@@ -844,6 +867,23 @@ export default {
         this.reminderText = '您确定要删除该文件吗？';
         return;
       }
+    },
+    // 修改文件名
+    fileNameEditChange(e) {
+      let val = $(e.target).val();
+      $(e.target).css({width: this.textWidth(val) + 4})
+    },
+    // input内容自适应宽度
+    textWidth(text) {
+      let sensor = $('<pre>'+ text +'</pre>').css({display: 'none'}); 
+      $('body').append(sensor); 
+      let width = sensor.width();
+      let fw = $('.file_title').eq(0).width() - 10;
+      if(width >= fw) {
+        width = fw;
+      }
+      sensor.remove(); 
+      return width;
     },
     // 修改文件名失焦--保存
     fileNameEditBlur(e, item) {
@@ -860,10 +900,13 @@ export default {
       // 先判重，如果有重复的名字--提示，否则--发送请求
       let repeat = -1;
       repeat = this.parthsGroup[groupIndex].fileList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
-
       
       if(repeat !== -1) {
-        this.$message.warning('已含有同名文件！');
+        this.$message.error('该分组内含有同名文件！');
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        });
       }else {
         // 发送修改分组名的接口
         if(this.fileNameCopy !== item.FileTitle) {
@@ -896,16 +939,17 @@ export default {
         FilePkid: FilePkid
       };
       this.$HTTP('post', '/stageTaskFile_delete', obj).then(res => {
-        console.log('删除文件成功', res, this.operateFile);
-        if(groupId === 0) { // 未分组文件
-        return;
-          this.notGroupedList.splice(index, 1);
-          this.notGroupedList = this.notGroupedList.concat();
-
-        }else { // 分组文件
-          this.parthsGroup[groupIndex].fileList.splice(index, 1);
-          this.parthsGroup = this.parthsGroup.concat();
-
+        // console.log('删除文件成功', res);
+        if(this.operateFile.checked) {
+          const indexs = this.checkedList.findIndex(ele => ele.FilePkid === FilePkid);
+          indexs !== -1 && this.checkedList.splice(indexs, 1);
+        }
+        let lists = this.parthsGroup[groupIndex].fileList;
+        let num = lists.findIndex(ele => ele.FilePkid === FilePkid);
+        num !== -1 && this.parthsGroup[groupIndex].fileList.splice(num, 1);
+        this.parthsGroup = this.parthsGroup.concat();
+        if(this.sortType) { // 未分组文件
+          this.setSort();
         }
       }).catch(err => {
         console.log('删除文件失败', err);
@@ -960,6 +1004,7 @@ export default {
     // 移交时选择的阶段列表
     getTransferStageList() {
       this.transferStageList = [];
+      this.transferDefaultStage = [];
       for (let x of this.stageList) {
           if(x.stageId != this.stageId) {
               this.transferStageList.push({
@@ -969,7 +1014,14 @@ export default {
               });
           }
       }
+      for(let i = 0; i < this.stageList.length; i++) {
+        if(this.stageList[i].stageId == this.stageId && i < this.stageList.length - 1) {
+          this.transferDefaultStage = [this.stageList[i + 1].stageId];
+          return;
+        } 
+      }
     },
+
     // 移交时发送的请求
     /**
      * val 移交选择的分组
@@ -977,14 +1029,12 @@ export default {
      * descText 移交时的需求描述
      * **/
     tranferSendHttp(val, arr, descText) {
-      console.log('transfer---',  val, arr, descText);
+      // console.log('1111transfer---',  val, arr, descText);
       return new Promise((resolve) => {
           if(!arr[0].length && !arr[1].length && !descText) {
               this.$message.warning('请选择交接文件或添加需求描述');
               return;
           }
-
-
           let obj = {
               projectId: this.projectId,
               oldstageId: this.stageId,
@@ -1248,8 +1298,6 @@ export default {
       if(id) { // 分组
         let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
         this.parthsGroup[ids].fileList = this.parthsGroup[ids].fileList.concat(file1); 
-      }else { // 未分组
-        this.notGroupedList = this.notGroupedList.concat(file1); 
       }
       
       let ids = this.fileProgressList.findIndex(ele => {
@@ -1339,6 +1387,7 @@ export default {
         edit: false,
         FileTitle: title,
         FileType: this.getFlieTyle(obj.Type),
+        isOwn: obj.UserPkid.toString() === this.userId.toString() ? true : false,
         formatTime: this.format(new Date(obj.CreateTime), 'yyyy/MM/dd HH:mm')
       }
       data.UrlMin = this.fileTypeImg[data.FileType].src;
@@ -1362,23 +1411,6 @@ export default {
         }
         this.parthsGroup = this.parthsGroup.concat();
       }
-    },
-
-    // 文件上传
-    uploadError() {
-      this.$emit('uploadError');
-    },
-    uploadSuccess() {
-      this.$emit('uploadSuccess');
-    },
-    uploadProgress() {
-      this.$emit('uploadProgress');
-    },
-    handleExceed() {
-      this.$emit('handleExceed');
-    },
-    beforeUpload() {
-      this.$emit('beforeUpload');
     },
   },
   created() {
@@ -1420,12 +1452,16 @@ export default {
 			margin-top: -4px;
     }
     .edit {
-      width: 136px;
+      max-width: calc(100% - 74px);
       height: 20px;
+      line-height: 38px;
+      display: inline-block;
+			vertical-align: middle;
+      overflow: hidden;
       border: 1px solid #999999;
-      margin: 6px 10px;
+      margin-top: -4px;
       text-align: left;
-      padding: 4px;
+      padding: 2px;
       &::selection {
         background: #3684FF;
         color: #fff;

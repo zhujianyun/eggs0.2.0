@@ -60,7 +60,7 @@
                 v-if="inviteShow"
                 :defaultTreeKeys="inviteDefaultKeys"
                 :fromInfo="fromInfo"
-                @handleCancel="cancelAddPeople" 
+                @handleCancel="handleAddPeople" 
                 />
         </transition>
         
@@ -199,7 +199,7 @@ export default {
     },
 
     // 取消添加人员/邀请人员中发生变化事发送请求
-    cancelAddPeople(obj) {
+    handleAddPeople(obj) {
       if (obj) {
         obj.invite === false && (this.inviteShow = false);
         // 发送请求，taskPeopleList发生变化
@@ -212,8 +212,6 @@ export default {
 
     // 添加/删除人员成功
     addPeopleSure(data) {
-        console.log("add-people", data);
-
       let index = this.selectedIndex[0];
       let index1 = this.selectedIndex[1];
       let nowList = this.stagePeopleList[index].userList;

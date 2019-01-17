@@ -48,7 +48,6 @@
                        class=""> {{list.userId}}
                   <span> {{list.nickName ||list.userName}}</span>
                 </el-dropdown-item>
-
               </draggable>
               <div class="inviteButton cur">邀请好友</div>
             </div>
@@ -76,7 +75,7 @@
       </div>
       <div class="project_search fr">
         <el-input placeholder="请输入搜索的任务标题"
-                  clearable
+                  :clearable='false'
                   prefix-icon="el-icon-search"
                   size="small"
                   v-model="searchValue"
@@ -108,6 +107,7 @@
         </div>
         <div class="mainContent"
              :class="{'mainContentFixed':isFixed}">
+
           <!-- 未分区 -->
           <div class="partitionsMain noPartitions"
                :data-partitionid='noPartitions.partitionId'>
@@ -151,28 +151,40 @@
                   <div class="stageTittle">{{noPartitions.partitionTitle}}</div>
                 </div>
                 <!-- 空白占位 -->
-                <li v-if="noPartitions.isBlank"
-                    class="stageBox">
-                  <span class="stageLists">
-                    <textarea class="stageName"
-                              style="resize:none"
-                              v-model="noPartitions.newStageName"
-                              @blur="newStageBlur(noPartitions,noPartitions.newStageName)">
-                    </textarea>
-                  </span>
-                  <div class="stageListsBox">
-                    <div v-for="(list,index) in stageList"
-                         :key="list.pkid"
-                         class="stage"></div>
-                  </div>
-                </li>
+                <draggable v-model="userList"
+                           @start='userListMove'
+                           @choose='userListChoose'
+                           class="userlist"
+                           :options="{
+                                group:{name: 'file',pull:'clone'},
+                                 dragClass: 'drag_userImg',
+                                 }">
+                  <li v-if="noPartitions.isBlank"
+                      class="stageBox ">
+                    <span class="stageLists">
+                      <textarea class="stageName"
+                                style="resize:none"
+                                @keydown='checkEnter'
+                                v-model="noPartitions.newStageName"
+                                @blur="newStageBlur(noPartitions,noPartitions.newStageName)">
+                      </textarea>
+                    </span>
+                    <div class="stageListsBox ">
+                      <div v-for="(list,index) in newTask.stageTaskList"
+                           :key="list.stageId"
+                           class="stage">
+                        <!-- {{list}} -->
+                      </div>
+                    </div>
+                  </li>
+                </draggable>
 
                 <draggable v-model="noPartitions.taskList"
                            class="box"
                            :move='getdata2'
                            @start='taskMoveStart(noPartitions)'
                            @end='taskMoveEnd(noPartitions)'
-                           @update="datadragEnd2"
+                           @update="datadragEnd2(noPartitions)"
                            :options="{
                                  group: 'file', 
                                  ghostClass: 'ghost_file', 
@@ -186,6 +198,7 @@
                         v-if='item.taskId'
                         :key="item.taskId"
                         class="stageBox"
+                        
                         @mouseenter="mouseEnter(item,index)"
                         :class="{'stageBoxFixed':leftFixed,'dragging':item.taskId!==''}">
                       <span class="stageLists cur"
@@ -195,9 +208,9 @@
                                       effect="dark"
                                       content="移动"
                                       placement="top-start">
-                            <span class="icon moveStageHandel cur">
-                              <i class="iconfont icon-pailie"
-                                 @click="movePartitions(item)"></i>
+                            <span class="icon moveStageHandel cur"
+                                  @click.stop="movePartitions(item)">
+                              <i class="iconfont icon-pailie"></i>
                             </span>
                           </el-tooltip>
                           <el-tooltip class="item"
@@ -205,7 +218,7 @@
                                       content="添加"
                                       placement="top-start">
                             <span class="icon"
-                                  @click="addStage(noPartitions.taskList,index,'noPartitions')">
+                                  @click.stop="addStage(noPartitions.taskList,index,'noPartitions')">
                               <i class="iconfont icon-jia1 cur"></i>
                             </span>
                           </el-tooltip>
@@ -241,9 +254,8 @@
                             <i class="iconfont icon-wancheng"></i>完成</div>
                           <!-- 3.开启状态 显示内容 -->
                           <div class="stageInfo cur"
-                               v-if="lists.enabled ==true&&lists.stageTaskState==false">
+                               v-if="lists.enabled ==true ">
                             <div class="participantImg">
-                              <!-- {{lists.isRepeat}} -->
                               <draggable :list=" lists.userList"
                                          :class="{'red':!lists.isRepeat}"
                                          :options="{group:!lists.isRepeat?'article':'', disabled: false}">
@@ -258,7 +270,6 @@
                                       v-if="lists.userList.length > 5">+{{lists.userList.length-5}}人</span>
                               </draggable>
                             </div>
-
                             <div class="participantMain">
                               <span class="pieChart"
                                     v-if="lists.taskTime==0"></span>
@@ -328,7 +339,6 @@
                                 </span>
                               </el-button>
                             </el-tooltip>
-
                             <el-tooltip class="item"
                                         effect="dark"
                                         content="添加时间"
@@ -338,7 +348,7 @@
                                   <el-date-picker v-model="value6"
                                                   prefix-icon='iconfont icon-rili1'
                                                   type="datetimerange"
-                                                  clearable
+                                                  :clearable='false'
                                                   @change="checkTime(item,lists,value6)"
                                                   range-separator="至"
                                                   start-placeholder="开始日期"
@@ -347,9 +357,9 @@
                                 </div>
                               </el-button>
                             </el-tooltip>
-                            <div class="people">
+                            <div class="people ml-5">
                               <div class="add_people_box"
-                                   @click.stop="addPeople(item,lists)">
+                                   @click.stop="addPeople(item,lists,index,noPartitions)">
                                 <el-tooltip class="item"
                                             effect="dark"
                                             content="添加成员"
@@ -370,21 +380,15 @@
                                 </el-collapse-transition>
                               </div>
                             </div>
-                            <el-dropdown>
+                            <!-- 文件上传 -->
+                            <el-dropdown placement="bottom">
                               <span class="el-dropdown-link">
-                                <el-tooltip class="item"
-                                            effect="dark"
-                                            content="上传文件"
-                                            placement="top-start">
-                                  <el-button>
-                                    <i class="iconfont icon-shangchuan otherColor"></i>
-                                  </el-button>
-                                </el-tooltip>
+                                <i class='iconfont icon-shangchuan'></i>
                               </span>
                               <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item>
-                                  <el-upload ref="demandUpload"
-                                             class="from_local dis-in-bl"
+                                <el-dropdown-item @click.native="handleClickUpload(lists)">
+                                  <el-upload ref="fileUpload"
+                                             class="upload_file"
                                              :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageTaskId+'&filePartitionId=0'"
                                              :show-file-list="false"
                                              :multiple="true"
@@ -393,17 +397,27 @@
                                              :on-progress="uploadProgress"
                                              :limit="9"
                                              :on-exceed="handleExceed"
-                                             :before-upload="beforeUpload">
-                                    <span class="upload_name">本地上传</span>
+                                             :before-upload="beforeUpload">本地上传
                                   </el-upload>
-
                                 </el-dropdown-item>
                                 <el-dropdown-item>从个人文档上传</el-dropdown-item>
                               </el-dropdown-menu>
                             </el-dropdown>
-                            <el-tooltip class="item"
+
+                            <el-tooltip class="item ml-5"
                                         effect="dark"
-                                        :content="lists.userList.length?'已有内容无法关闭':'关闭阶段'"
+                                        v-if="lists.userList.length"
+                                        content='已有内容无法关闭'
+                                        placement="top-start">
+                              <el-button>
+                                <i class="iconfont icon-jinzhi otherColor "
+                                   :class="{'cur_dis':lists.userList.length}"></i>
+                              </el-button>
+                            </el-tooltip>
+                            <el-tooltip class="item ml-5"
+                                        effect="dark"
+                                        v-else
+                                        content="关闭阶段"
                                         @click.native="closeStage(item, lists)"
                                         placement="top-start">
                               <el-button>
@@ -452,16 +466,15 @@
             <div class="thumbnailList"
                  v-if="noPartitions.autoExpand && noPartitions.partitionId==0">
               <div class="iconBox_">
-                <el-tooltip class="item moveHandel"
+                <el-tooltip class="item"
                             effect="dark"
                             :content="noPartitions.partitionId==0?'默认分区无法移动':'移动'"
                             placement="top-start">
                   <span class="icon moveHandel"
-                        @click="move"
+                        @click.stop="movePartitions"
                         :class="{'cur_dis':noPartitions.partitionId==0}">
                     <i class="iconfont icon-pailie"
-                       :class="{'cur_dis':noPartitions.partitionId==0 ,'cur':noPartitions.partitionId!==0}"
-                       @click="movePartitions"></i>
+                       :class="{'cur_dis':noPartitions.partitionId==0 ,'cur':noPartitions.partitionId!==0}"></i>
                   </span>
                 </el-tooltip>
                 <el-tooltip class="item"
@@ -469,7 +482,7 @@
                             content="添加"
                             placement="top-start">
                   <span class="icon"
-                        @click="addPartition(noPartitions,0,'noPartitions')">
+                        @click.stop="addPartition(noPartitions,0,'noPartitions')">
                     <i class="iconfont icon-jia1 cur"></i>
                   </span>
                 </el-tooltip>
@@ -478,7 +491,7 @@
                             :content="noPartitions.partitionId==0?'默认分区无法删除':'删除'"
                             placement="top-start">
                   <span class="icon"
-                        @click="openDelPartition(noPartitions,index)"
+                        @click.stop="openDelPartition(noPartitions,index)"
                         :class="{'cur_dis':noPartitions.partitionId==0}">
                     <i class="iconfont icon-delete cur"
                        :class="{'cur_dis':noPartitions.partitionId==0 ,'cur':noPartitions.partitionId!==0}"></i>
@@ -489,7 +502,7 @@
                 <transition name="flodRotate">
                   <i class="iconfont"
                      :class="!noPartitions.autoExpand ? 'icon-unfold':'icon-packup'"
-                     @click="goFlod(noPartitions)"></i>
+                     @click.stop="goFlod(noPartitions)"></i>
                 </transition>
                 <span>
                   {{noPartitions.partitionTitle}}
@@ -522,14 +535,13 @@
                          :style="'height:'+ ((element.taskList.length )* 72) +'px;'">
                       <span class="iconBox">
                         <!-- 移动分区 -->
-                        <el-tooltip class="item moveHandel"
+                        <el-tooltip class="item"
                                     effect="dark"
                                     content="移动"
                                     placement="top-start">
                           <span class="icon moveHandel"
-                                @click="move">
-                            <i class="iconfont icon-pailie cur"
-                               @click="movePartitions"></i>
+                                @click.stop="movePartitions">
+                            <i class="iconfont icon-pailie cur"></i>
                           </span>
                         </el-tooltip>
                         <!-- 添加分区 -->
@@ -538,7 +550,7 @@
                                     content="添加"
                                     placement="top-start">
                           <span class="icon"
-                                @click="addPartition(element,index,'addPartition')">
+                                @click.stop="addPartition(element,index,'addPartition')">
                             <i class="iconfont icon-jia1 cur"></i>
                           </span>
                         </el-tooltip>
@@ -549,7 +561,7 @@
                                     placement="top-start">
                           <span class="icon"
                                 v-if="element.partitionUserId==userPkid"
-                                @click="openDelPartition(element,index)">
+                                @click.stop="openDelPartition(element,index)">
                             <i class="iconfont icon-delete cur"></i>
                           </span>
                           <span class="icon"
@@ -558,16 +570,16 @@
                                :class="{'cur_dis':element.partitionUserId!==userPkid}"></i>
                           </span>
                         </el-tooltip>
-
                       </span>
                       <i class="iconfont cur unfold"
                          :class="!element.autoExpand?'icon-unfold':'icon-packup'"
                          @click="goFlod(element)"></i>
                       <textarea type="text"
                                 class="stageTittle"
+                                contenteditable="true"
                                 v-model="element.partitionTitle"
+                                @keydown='checkEnter'
                                 style="resize:none"
-                                @keyup.enter='dse'
                                 @blur="partitionBlur(element,index,element.partitionTitle)"
                                 @focus="partitionFocus(element.partitionTitle,element,index)"></textarea>
                     </div>
@@ -577,20 +589,23 @@
                       <span class="stageLists">
                         <textarea class="stageName"
                                   style="resize:none"
+                                  @keydown='checkEnter'
                                   v-model="element.newStageName"
                                   @blur="newStageBlur(element,element.newStageName)">
                         </textarea>
                       </span>
-                      <div class="stageListsBox">
-                        <div v-for="(list,index) in stageList"
-                             :key="list.pkid"
-                             class="stage"></div>
+                      <div class="stageListsBox ">
+                        <div v-for="(list,index) in newTask.stageTaskList"
+                             :key="list.stageId"
+                             class="stage">
+                          <!-- {{list}} -->
+                        </div>
                       </div>
                     </span>
                     <draggable v-model="element.taskList"
                                class="box"
                                :move='getdata2'
-                               @update="datadragEnd2"
+                               @update="datadragEnd2(element)"
                                :options="{
                                  group: 'file', 
                                  ghostClass: 'ghost_file', 
@@ -612,9 +627,9 @@
                                           effect="dark"
                                           content="移动"
                                           placement="top-start">
-                                <span class="icon moveStageHandel cur">
-                                  <i class="iconfont icon-pailie"
-                                     @click="movePartitions"></i>
+                                <span class="icon moveStageHandel cur"
+                                      @click.stop="movePartitions">
+                                  <i class="iconfont icon-pailie"></i>
                                 </span>
                               </el-tooltip>
 
@@ -662,7 +677,7 @@
                               <div class="stageInfo cur"
                                    v-if="lists.enabled ==true&&lists.stageTaskState==false">
                                 <div class="participantImg">
-                                  <draggable :list=" lists.userList"
+                                  <draggable :list="lists.userList"
                                              :options="{group:{'article':lists.isRepeat}, disabled: false}">
                                     <span class="img"
                                           v-for="(i,index) in lists.userList"
@@ -670,17 +685,18 @@
                                           v-if="index <5">
                                       <img :src="i.userPic"
                                            alt="">
+
                                       <span class="numsInfo"
                                             v-if="lists.userList.length>5">+{{lists.userList.length-5}}人</span>
                                     </span>
                                   </draggable>
                                 </div>
-
                                 <div class="participantMain">
+                                  <!-- {{lists.startTimeArr}}开始时间 -->
                                   <span class="pieChart"
-                                        v-if="lists.taskTime==0"></span>
+                                        v-show="lists.taskTime==0"></span>
                                   <svg viewBox="0 0 32 32"
-                                       v-if='lists.taskTime'>
+                                       v-show='lists.taskTime'>
                                     <circle r="16"
                                             cx="16"
                                             cy="16"
@@ -748,7 +764,7 @@
                                   </el-button>
                                 </el-tooltip>
 
-                                <el-tooltip class="item"
+                                <el-tooltip class="item ml-5"
                                             effect="dark"
                                             content="添加时间"
                                             placement="top-start">
@@ -757,18 +773,18 @@
                                       <el-date-picker v-model="value6"
                                                       prefix-icon='iconfont icon-rili1'
                                                       type="datetimerange"
-                                                      clearable
+                                                      :clearable='false'
                                                       @change="checkTime(item,lists,value6)"
                                                       range-separator="至"
-                                                      start-placeholder="开始日期"
-                                                      end-placeholder="结束日期">
+                                                      :start-placeholder="lists.startTime"
+                                                      :end-placeholder="lists.endTime">
                                       </el-date-picker>
                                     </div>
                                   </el-button>
                                 </el-tooltip>
-                                <div class="people">
+                                <div class="people ml-5 ">
                                   <div class="add_people_box"
-                                       @click.stop="addPeople(item,lists)">
+                                       @click.stop="addPeople(item,lists,index,element)">
                                     <el-tooltip class="item"
                                                 effect="dark"
                                                 content="添加成员"
@@ -790,22 +806,16 @@
                                     </el-collapse-transition>
                                   </div>
                                 </div>
-                                <el-dropdown>
+                                <!-- 文件上传 -->
+                                <el-dropdown placement="bottom">
                                   <span class="el-dropdown-link">
-                                    <el-tooltip class="item"
-                                                effect="dark"
-                                                content="上传文件"
-                                                placement="top-start">
-                                      <el-button>
-                                        <i class="iconfont icon-shangchuan otherColor"></i>
-                                      </el-button>
-                                    </el-tooltip>
+                                    <i class='iconfont icon-shangchuan'></i>
                                   </span>
                                   <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item>
-                                      <el-upload ref="demandUpload"
-                                                 class="from_local dis-in-bl"
-                                                 :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageId+'&filePartitionId=0'"
+                                    <el-dropdown-item @click.native="handleClickUpload(lists)">
+                                      <el-upload ref="fileUpload"
+                                                 class="upload_file"
+                                                 :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageTaskId+'&filePartitionId=0'"
                                                  :show-file-list="false"
                                                  :multiple="true"
                                                  :on-error="uploadError"
@@ -813,18 +823,27 @@
                                                  :on-progress="uploadProgress"
                                                  :limit="9"
                                                  :on-exceed="handleExceed"
-                                                 :before-upload="beforeUpload">
-                                        <span class="upload_name">本地上传</span>
+                                                 :before-upload="beforeUpload">本地上传
                                       </el-upload>
-
                                     </el-dropdown-item>
                                     <el-dropdown-item>从个人文档上传</el-dropdown-item>
                                   </el-dropdown-menu>
                                 </el-dropdown>
 
-                                <el-tooltip class="item"
+                                <el-tooltip class="item ml-5"
                                             effect="dark"
-                                            :content="lists.userList.length?'已有内容无法关闭':'关闭阶段'"
+                                            v-if="lists.userList.length"
+                                            content='已有内容无法关闭'
+                                            placement="top-start">
+                                  <el-button>
+                                    <i class="iconfont icon-jinzhi otherColor "
+                                       :class="{'cur_dis':lists.userList.length}"></i>
+                                  </el-button>
+                                </el-tooltip>
+                                <el-tooltip class="item ml-5"
+                                            effect="dark"
+                                            v-else
+                                            content="关闭阶段"
                                             @click.native="closeStage(item, lists)"
                                             placement="top-start">
                                   <el-button>
@@ -832,7 +851,6 @@
                                        :class="{'cur_dis':lists.userList.length}"></i>
                                   </el-button>
                                 </el-tooltip>
-
                               </div>
 
                               <div class="finishHover"
@@ -874,16 +892,15 @@
                 <div class="thumbnailList"
                      v-if="element.autoExpand && element.partitionId!==0">
                   <div class="iconBox_">
-                    <el-tooltip class="item moveHandel"
+                    <el-tooltip class="item "
                                 effect="dark"
                                 :content="element.partitionId==0?'默认分区无法移动':'移动'"
                                 placement="top-start">
                       <span class="icon moveHandel"
-                            @click="move"
-                            :class="{'cur_dis':element.partitionId==0}">
+                            :class="{'cur_dis':element.partitionId==0}"
+                            @click.stop="movePartitions">
                         <i class="iconfont icon-pailie"
-                           :class="{'cur_dis':element.partitionId==0 ,'cur':element.partitionId!==0}"
-                           @click="movePartitions"></i>
+                           :class="{'cur_dis':element.partitionId==0 ,'cur':element.partitionId!==0}"></i>
                       </span>
                     </el-tooltip>
                     <el-tooltip class="item"
@@ -891,7 +908,7 @@
                                 content="添加"
                                 placement="top-start">
                       <span class="icon"
-                            @click="addPartition(element,index,'addPartition')">
+                            @click.stop="addPartition(element,index,'addPartition')">
                         <i class="iconfont icon-jia1 cur"></i>
                       </span>
                     </el-tooltip>
@@ -958,6 +975,20 @@
                   :defaultTreeKeys="inviteDefaultKeys"
                   @handleCancel="cancelAddPeople" />
     </transition>
+    <!-- 温馨提示2_删除文件的提示 -->
+    <transition name="fade1">
+      <Reminder2 v-if="delFileFlag"
+                 :type="1"
+                 :text="reminderText"
+                 @handleCancle="delFileCancel"
+                 @handleSure="delFileSure" />
+    </transition>
+    <!-- 文件上传进度条 -->
+    <upload-progress v-if="uploadProgressFlag"
+                     :fileProgressList="fileProgressList"
+                     @closeProgress="closeProgress"
+                     @handleCancel="cancelUpload"
+                     @handleRe="reUpload" />
   </div>
 </template>
 <script>
@@ -966,8 +997,8 @@ import Info from "../common/info";
 import ShadePop from "../common/shadePop";
 import ToLead from "./common/toLead";
 import Participant from "../common/participant";
-
 import UploadProgress from "../../common/uploadProgress";
+
 import AddPeople from "../../common/addPeople";
 
 import Reminder2 from "../../common/reminder2";
@@ -1021,9 +1052,9 @@ export default {
       detailsShow: false,
       taskId: '',
 
-      nowTaskId: '', //当前点击的 id
-      nowStageId: '', //当前点击的 id
-
+      nowTaskId: '', //当前点击的 任务id
+      nowStageId: '', //当前点击的 片段id
+      nowPartitionId: '',//当前点击的 分区id
       searchValue: '',
       //  表格选项
       isFixed: false,
@@ -1049,7 +1080,6 @@ export default {
       nowYear: '', //当前年
       userList: [], //项目参与人员列表
       addPeopleShow: false, // 添加参与者是否显示
-      fileProgressList: '',
       inviteShow: false, // 邀请添加人员
 
       defaultKeys: [], //默认添加的人员
@@ -1095,6 +1125,17 @@ export default {
           src: require("../../../assets/img/file_b/11.png")
         }
       ],
+      blurTime: '', // 失去焦点时的时间
+      // 文件上传
+
+      uploadProgressFlag: false,
+      fileProgressList: [],
+      delFileFlag: false, // 删除文件的提示
+      notGroupedList: [], // 未分组文件列表 
+      fileNum: '',
+
+      nowTime: '', //当前时间
+      nowBlurTime: "",//当前失焦时间
     };
   },
   watch: {
@@ -1126,38 +1167,9 @@ export default {
     ...mapMutations(['DETAILS_CHANGE', 'TASKITEM_CHANGE', 'TASK_POSITION', 'PROJECT_CHANGE']),
     // 项目列表人员拖拽 放下
     userListMove(evt) {
-      // console.log(2)
-      // let userId = evt.item.dataset.pkid;
-      // for (let list of this.noPartitions.taskList) {
-      //   for (let i of list.stageTaskList) {
-      //     let index = i.userList.findIndex(res => {
-      //       return res.userpkid == userId;
-      //     });
-      //     if (index !== -1) {
-      //       list.stageTaskList[index].isRepeat = false;
-      //       console.log(i, index)
-      //       // i[index].isRepeat = true;
-      //     }
-      //   }
-      //   // console.log(list)
-      // }
-      // for (let item of this.partitionsList) {
-      //   for (let list of item.taskList) {
-      //     for (let i of list.stageTaskList) {
-      //       let index = i.userList.findIndex(res => {
-      //         return res.userpkid == userId;
-      //       });
-      //       if (index !== -1) {
-      //         i.isRepeat = true;
-      //       }
-      //     }
-      //     // console.log(list)
-      //   }
-      // }
+
     },
     userListChoose(evt) {
-      // console.log(this.noPartitions)
-      // return
       let userId = evt.item.dataset.pkid;
       for (let list of this.noPartitions.taskList) {
         for (let i of list.stageTaskList) {
@@ -1169,15 +1181,6 @@ export default {
               console.log(i)
             }
           }
-          // console.log(i, '所有阶段')
-          // let index = i.userList.findIndex(res => {
-          //   return res.userpkid == userId;
-          // });
-          // if (index !== -1) {
-          //   list.stageTaskList[index].isRepeat = true;
-          // } else {
-          //   i.isRepeat = false;
-          // }
         }
       }
       this.noPartitions.taskList = [...this.noPartitions.taskList];
@@ -1185,13 +1188,7 @@ export default {
       // console.log(this.noPartitions)
 
     },
-    async add(list) {
-      try {
-        await this.getProjectUsers();
-      } catch (err) {
-        console.log(err);
-      }
-    },
+
     // 获取项目成员列表
     getProjectUsers() {
       return new Promise((resolve, reject) => {
@@ -1207,12 +1204,22 @@ export default {
         });
       });
     },
-    dse(e) {
-      e.preventDefault();
-      return false;
-    },
-    //项目星标
 
+    checkEnter(e) {
+      var et = e || window.event;
+      var keycode = et.charCode || et.keyCode;
+      if (keycode == 13) {
+        if (window.event) {
+          $('.stageTittle').blur();
+          window.event.returnValue = false;
+        } else {
+          $('.stageTittle').blur();
+          e.preventDefault(); //for firefox
+        }
+      }
+    },
+
+    //项目星标
     projectStart() {
       this.starFlag = !this.starFlag;
       let obj = { 'projectId': this.projectId, 'userId': this.userPkid }
@@ -1220,9 +1227,7 @@ export default {
         // localStorage.setItem('projectItem', this.starFlag);
       })
     },
-    // 展开详情
 
-    // 取消
     // 上下分区判断位置
     mouseEnter(el, index) {
       this.mouseLeftIndex = el.taskId;
@@ -1231,6 +1236,7 @@ export default {
     mouseTopEnter(el, index) {
       this.mouseTopIndex = index;
     },
+
     // 点击邀请好友
     invitePeople(ids) {
       // this.addPeopleShow = false;
@@ -1245,7 +1251,6 @@ export default {
         // 发送请求，taskPeopleList发生变化
         console.log("add-people", obj);
         this.addPeopleSure(Object.assign(obj, { add: obj.addIds, del: [] }));
-
       } else {
         this.inviteShow = false;
       }
@@ -1278,39 +1283,47 @@ export default {
     checkTime(item, list, val) {
       let starttime = this.format(val[0], "yyyy-MM-dd HH:mm:ss").split(' ');
       let endTime = this.format(val[1], "yyyy-MM-dd HH:mm:ss").split(' ');
-
-      if (starttime && endTime) {
-        starttime = starttime[0].split('-').concat(starttime[1].split(':'));
-        endTime = endTime[0].split('-').concat(endTime[1].split(':'));
-
-        list.startTimeArr = [
-          {
-            year: starttime[0].substring(2, 4),
-            month: starttime[1],
-            day: starttime[2],
-            hour: starttime[3],
-            minute: starttime[4]
-          }
-        ]
-        list.endTimeArr = [
-          {
-            year: endTime[0].substring(2, 4),
-            month: endTime[1],
-            day: endTime[2],
-            hour: endTime[3],
-            minute: endTime[4]
-          }
-        ]
-      }
-      this.partitionsList = [...this.partitionsList];
       let data = {
         'stageId': list.stageId,
         'taskId': item.taskId,
         'startTime': this.format(val[0], "yyyy-MM-dd HH:mm:ss"),
         'endTime': this.format(val[1], "yyyy-MM-dd HH:mm:ss"),
+        'myUserId': this.userPkid
       };
       this.$HTTP('post', '/stageTask_date_update', data).then(res => {
         console.log(res)
+        if (starttime && endTime) {
+          starttime = starttime[0].split('-').concat(starttime[1].split(':'));
+          endTime = endTime[0].split('-').concat(endTime[1].split(':'));
+          list.startTimeArr = [{
+            year: starttime[0].substring(2, 4),
+            month: starttime[1],
+            day: starttime[2],
+            hour: starttime[3],
+            minute: starttime[4]
+          }];
+          list.endTimeArr =
+            [{
+              year: endTime[0].substring(2, 4),
+              month: endTime[1],
+              day: endTime[2],
+              hour: endTime[3],
+              minute: endTime[4]
+            }];
+          if (new Date(list.endTime) - new Date() <= 0) {
+            list.taskTime = 0;
+            console.log(2)
+          } else {
+            let ratio = (new Date() - new Date(list.startTime)) / (new Date(list.endTime) - new Date(list.startTime));
+            console.log(ratio)
+            list.ratio = ratio * 100;
+            list.taskTime = 1;
+            console.log(1, list.ratio)
+          }
+          this.partitionsList = [...this.partitionsList];
+          console.log(1, list)
+
+        }
       })
     },
     // 5.1关闭阶段
@@ -1363,13 +1376,20 @@ export default {
         });
       });
     },
-    async addPeople(list, item, ) {
+    async addPeople(list, item, index, element) {
+      let userlist = [];
+      for (let i of item.userList) {
+        userlist.push(i.userpkid);
+      }
+      this.defaultKeys = userlist;
+      this.nowPartitionId = element.partitionId;
       this.nowTaskId = list.taskId;
       this.nowStageId = item.stageId;
       this.taskPeopleList = item.userList;
+
+
       try {
         await this.getProjectUser(item);
-        // this.addPeopleShow = true;;
       } catch (err) {
         console.log(err);
       }
@@ -1384,34 +1404,34 @@ export default {
 
     // 添加/删除人员成功
     addPeopleSure(data) {
-      this.addPeopleShow = false; // 隐藏
-      console.log('participant', data);
       // 发送请求
       if (data && (data.add || data.del)) {
         let add = [...data.add];
         let del = [...data.del];
         let obj = {
-          addVale: add.join(','),
-          delVale: del.join(','),
-          stageId: this.nowStageId,
-          taskId: this.nowTaskId,
+          'addVale': add.join(','),
+          'delVale': del.join(','),
+          'stageId': this.nowStageId,
+          'taskId': this.nowTaskId,
           'myUserId': this.userPkid,
           'projectId': this.projectId
         }
         this.$HTTP('post', '/stageTask_user_update', obj).then(res => {
           // 发送请求，taskPeopleList发生变化
           let arr = res.result;
-          if (del) {
-            for (let x = 0; x < del.length; x++) {
-              for (let y = 0; y < this.taskPeopleList.length; y++) {
-                if (del[x] == this.taskPeopleList[y].userId) {
-                  this.taskPeopleList.splice(y, 1);
-                  y--;
+          for (let list of this.partitionsList) {
+            if (list.partitionId == this.nowPartitionId) {
+              for (let item of list.taskList) {
+                if (item.taskId == this.nowTaskId) {
+                  let index = item.stageTaskList.findIndex(res => {
+                    return res.stageId == this.nowStageId;
+                  })
+                  item.stageTaskList[index].addPopShow = false;
+                  item.stageTaskList[index].userList = arr.userList;
                 }
               }
             }
           }
-          // this.taskPeopleList = this.taskPeopleList.concat(arr.taskUserList);
           console.log('任务添加人员', res);
         }).catch(err => {
           console.log('任务添加人员失败', err);
@@ -1424,110 +1444,7 @@ export default {
     // 文件上传
 
 
-    // 文件上传失败
-    uploadError(err, file) {
-      console.log(err)
-      return
-      let ids = this.fileProgressList.findIndex(ele => {
-        return ele.uid === file.uid;
-      });
-      if (ids !== -1) {
-        this.fileProgressList[ids].status = 3;
-      }
-    },
-    // 文件上传成功
-    uploadSuccess(res, _file) {
 
-      return
-      let file = Object.assign({}, _file.response.result);
-      // let type = file.name.split(".")[1];
-      // this.$set(file, "FileTypeNum", this.getFlieTyle(file.FileType));
-      let file1 = Object.assign({}, file);
-      file1 = this.handleFile([file1]);
-      this.demandFile = this.demandFile.concat(file1);
-
-      let ids = this.fileProgressList.findIndex(ele => {
-        return ele.uid === file.uid;
-      });
-      if (ids !== -1) {
-        this.fileProgressList[ids].status = 2;
-      }
-      let returns = this.popFileProgress(this.fileProgressList);
-      if (this.uploadProgressFlag && returns) {
-        setTimeout(() => {
-          this.closeProgress();
-        }, 2000);
-      }
-    },
-    // 文件上传超出提示
-    handleExceed(files, fileList) {
-      this.$message.warning("最多只能选择9个文件");
-    },
-    // 文件上传前
-    beforeUpload(file) {
-      // 先判断有没有重复
-      return
-      let index = this.demandFile.findIndex(ele => {
-        return ele.name == file.name;
-      });
-      if (index !== -1) {
-        this.$message("文件重复");
-        return false;
-      }
-
-      if (!this.uploadProgressFlag) {
-        this.uploadProgressFlag = true;
-      }
-      let sizes = this.conver(file.size);
-      let FileTypeNum = this.getSuffix(file.name);
-      FileTypeNum = this.getFlieTyle(FileTypeNum);
-      let obj = {
-        uid: file.uid,
-        size: file.size,
-        sizes: sizes,
-        nowSize: 0,
-        name: file.name,
-        type: 2,
-        progress: 0,
-        status: 1,
-        FileTypeNum: FileTypeNum,
-        imgUrl: "",
-        file: file
-      };
-      this.fileProgressList.unshift(obj);
-    },
-
-    // 文件上传中
-    uploadProgress(event, file, fileList) {
-      return
-      let percents = parseInt(event.percent);
-      let ids = this.fileProgressList.findIndex(ele => {
-        return ele.uid === file.uid;
-      });
-
-      if (ids !== -1) {
-        this.fileProgressList[ids].progress = percents;
-        this.fileProgressList[ids].nowSize = this.conver(percents / 100 * this.fileProgressList[ids].size);
-
-        // 测试重新上传
-        if (percents > 30 && percents < 35) {
-          if (file.reUploadXhr) {
-            file.reUploadXhr.abort();
-            file.reUploadXhr = null;
-          } else {
-            this.$refs.demandUpload.abort(file);
-          }
-          this.uploadError('err', file);
-        }
-
-        if (
-          !this.fileProgressList[ids].imgUrl &&
-          this.fileProgressList[ids].FileTypeNum == 1
-        ) {
-          this.fileProgressList[ids].imgUrl = file.url;
-        }
-      }
-    },
 
     // ======================================================
     // 导入功能
@@ -1539,6 +1456,8 @@ export default {
     closePop() {
       this.popShow = false;
       this.toLeadShow = false;
+      this.getstageList();
+      this.getProjectAll();
     },
     parthCommand(command) {
       if (command == 'editStage') {
@@ -1565,8 +1484,11 @@ export default {
     //  确认
     reminderSure() {
       if (this.delFlage == 'stage') {
+        console.log('fileNames 任务')
         this.okdelStage(this.delStageLists, this.delNowStageLists, this.delStageIndex);
       } else if (this.delFlage == 'project') {
+        // 删除任务
+        console.log('fileNames 分区')
         this.delPartition(this.delPartitionLists, this.delIndex);
       }
       // this.partitionsList.splice(index, 1);
@@ -1594,10 +1516,12 @@ export default {
     },
     // 搜索功能
     searchChange(val) {
-
+      let data = { project: this.projectId, myUserId: this.userPkid, 'keys': val }
+      this.$HTTP('post', '/project_get_info', data).then(res => {
+        console.log(res.result);
+        this.partitionsList = res.result;
+      })
     },
-
-
 
     // 关闭
     closeInfo() {
@@ -1606,46 +1530,33 @@ export default {
 
     // 未分区
     // 1.添加分区操作
-    // 添加分区
     // el:大数组 index:位置 name:分区名字
-    // async addPartition(el, index, name) {
-    //   try {
-    //     await this.getProjectUsers();
-    //   } catch (err) {
-    //     console.log(err);
-    //   }
-    // },
-
     addPartition(el, index, name) {
-      this.isNewP = true;
-
-      console.log(isNewP)
-      // var t = setTimeout(res => {
-      let indexs = this.partitionsList.findIndex(res => {
-        return res.partitionId == -1;
-      })
-      this.partitionsList.splice(indexs.splice, 1);
-      this.EmptyData.partitionTitle = '';
-      if (name == 'addPartition') {
-        // console.log('分区内容', index)
-        this.partitionsList.splice(index + 1, 0, this.EmptyData);
-        this.$nextTick(res => {
-          $('.hhah').children().eq(index).find('.stageTittle').focus();
-          this.EmptyData.partitionId = -1;
-        })
-      } else {
-        this.partitionsList.splice(0, 0, this.EmptyData);
-        this.$nextTick(res => {
-          $('.hhah').children().eq(0).find('.stageTittle').focus();
-          this.EmptyData.partitionId = -1;
-        })
+      this.nowTime = new Date().getTime();
+      if (this.nowTime - this.nowBlurTime >= 1000) {
+        this.isNewP = true;
+        this.EmptyData.partitionTitle = '';
+        if (name == 'addPartition') {
+          this.partitionsList.splice(index + 1, 0, this.EmptyData);
+          this.EmptyData.partitionId = this.partitionsList.length + 1;
+          this.$nextTick(res => {
+            $('.hhah').children().eq(index).find('.stageTittle').focus();
+          })
+        } else {
+          this.partitionsList.splice(1, 0, this.EmptyData);
+          this.EmptyData.partitionId = this.partitionsList.length + 1;
+          this.$nextTick(res => {
+            $('.hhah').children().eq(0).find('.stageTittle').focus();
+          })
+        }
       }
-      // }, 800);
     },
     // 分区失去焦点 
     partitionBlur(el, index, name) {
+      this.nowBlurTime = new Date().getTime();
       // 先判断 是否是新建项目
       if (this.isNewP) {
+        console.log(2)
         if (name) {
           let obj = { 'myUserId': this.userPkid, 'projectId': this.projectId, title: name, 'iSort': index + 1 }
           this.$HTTP('post', '/partition_iSort_add', obj).then(res => {
@@ -1753,7 +1664,6 @@ export default {
           })
         }
       }, 600);
-
     },
     // 添加任务 失焦判断
     stageNameBlur(name, item, el, index) {
@@ -1800,27 +1710,26 @@ export default {
     },
     // 删除任务
     delStage(el, item, index, name) {
+      console.log(index, '当前删除的任务的index')
       // 您确认删除该任务？
       // 删除后文件内容也会被删除
       this.delStageLists = item; //当前删除的任务
       this.delNowStageLists = el; //当前删除的任务
       this.delStageIndex = index; //当前删除的任务的index
       this.delFlage = 'stage'; //删除对象
-      console.log(this.delStageLists, this.delNowStageLists)
+      // console.log(this.delStageLists, this.delNowStageLists)
       // return
       this.reminder2Flag = true;
       this.errMessage = ' 您确认删除该任务？删除后文件内容也会被删除';
     },
     // 确认删除任务
     okdelStage(item, el, index) {
+
       let obj = { 'taskId': el.taskId };
       this.$HTTP('post', '/task_del', obj).then(res => {
         this.delFlage == '';
         this.reminder2Flag = false;
         item.taskList.splice(index, 1);
-        if (item.taskList.length <= 1) {
-          item.isBlank = true;
-        }
       })
     },
 
@@ -1833,7 +1742,6 @@ export default {
       console.log('ceshi ', item);
     },
 
-    move() { },
     startDrag(data) {
       console.log('startDrag: ', data)
     },
@@ -1870,19 +1778,30 @@ export default {
     },
     // 任务 移动到的操作
     taskMoveEnd(list) {
+      
+      console.log(1,list)
       // if (list.taskList.length <= 1) {
       //   list.isBlank = true;
       // }
       console.log(list, '结束后的list')
     },
     getdata2(evt) {
+      console.log(2,evt)
+      
       evt.preventDefault();
       // console.log(evt.draggedContext.element.id, 'element.id')
     },
-
     datadragEnd2(evt) {
-      console.log('拖动前的索引 :' + evt.oldIndex)
-      console.log('拖动后的索引 :' + evt.newIndex)
+      console.log('eeeeeeee')
+        console.log(evt)
+      // let data={'taskId':'','partitionId':'','isSort':''}
+      // this.$HTTP('post','/task_group_update_isSort',data).then(res=>{
+
+      // })
+      // task_group_update_isSort
+        // filePartition_update_isSort
+      // console.log('拖动前的索引 :' + evt.oldIndex)
+      // console.log('拖动后的索引 :' + evt.newIndex)
     },
     // 获取阶段列表
     getstageList() {
@@ -1899,12 +1818,13 @@ export default {
             ]          }
 
         this.newTask = { 'taskId': -1, 'stageTaskList': newList }
+        console.log(this.stageList, this.newTask, '=================')
       })
     },
     // 获取项目所有列表
     getProjectAll() {
-      let data = { project: this.projectId, 'myUserId': this.userPkid }
-      this.$HTTP('post', '/project_get_info', data).then(res => {
+      let data = { project: this.projectId, 'myUserId': this.userPkid, 'keys': '' };
+      this.$HTTP('post', '/project_get_info2', data).then(res => {
         this.partitionsList = res.result;
         for (let list of this.partitionsList) {
           list.isnew = false;
@@ -1937,10 +1857,11 @@ export default {
                   if (new Date(item.endTime) - new Date() <= 0) {
                     item.taskTime = 0;
                   } else {
+
                     item.taskTime = 1;
                     let ratio = (new Date() - new Date(item.startTime)) / (new Date(item.endTime) - new Date(item.startTime));
-                    parseInt(ratio)
-                    item.ratio = parseInt(ratio * 100);
+                    // console.log(ratio * 100)
+                    item.ratio = ratio * 100;
                   }
                 }
 
@@ -1972,9 +1893,7 @@ export default {
             }
           }
         }
-        console.log(this.partitionsList)
         this.noPartitions = this.partitionsList[0];
-        // this.partitionsList.splice(0, 1)
       })
     },
     // 获取项目参与人员列表
@@ -1985,10 +1904,220 @@ export default {
       }
       this.$HTTP('post', '/project_usersList_get', obj).then(res => {
         this.userList = res.result;
-        console.log(this.userList)
-
       })
     },
+
+
+    // 文件上传--------------------------------start
+    // 当前点击的是哪个分组的上传
+    handleClickUpload(lists) {
+      this.fileNum = lists.fileCont;
+      console.log(lists)
+      this.filePartitionId = 0;
+    },
+    // 关闭文件上传视图
+    closeProgress() {
+      this.uploadProgressFlag = false;
+      this.fileProgressList = [];
+    },
+
+    // 取消上传
+    cancelUpload(file) {
+      this.getDelFile(file.uid, true);
+      if (file.error) { return; }
+      if (file.reUploadXhr) {
+        file.reUploadXhr.abort();
+      } else {
+        this.$nextTick(() => {
+          if (Array.isArray(this.$refs.fileUpload)) {
+            this.$refs.fileUpload[0].abort(file);
+          } else {
+            this.$refs.fileUpload.abort(file);
+          }
+        });
+
+      }
+
+    },
+    // 重新上传
+    reUpload(file) {
+      file.status = 1;
+      file.reUploadXhr = 1;
+      var formData = new FormData();
+      formData.append('file', file.file);
+      this.$nextTick(() => {
+        if (Array.isArray(this.$refs.fileUpload)) {
+          this.$refs.fileUpload[0].httpRequest = this.uploadFile(formData, file);
+        } else {
+          this.$refs.fileUpload.httpRequest = this.uploadFile(formData, file);
+        }
+      });
+
+    },
+    // 重新上传的请求
+    uploadFile(formData, file) {
+      let _ = this;
+      file.reUploadXhr = $.ajax({
+        url: `/ProjectFile.ashx?&myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=0}`,
+        type: "post",
+        dataType: "json",
+        data: formData,
+        // async: false,
+        cache: false,
+        contentType: false,
+        processData: false,
+        xhr: function (e) {
+          let uploadXhr = $.ajaxSettings.xhr();
+          if (uploadXhr.upload) { // check if upload property exists 
+            uploadXhr.upload.addEventListener('progress', function (e) {
+              let loaded = e.loaded;//已经上传大小情况
+              let tot = e.total;//附件总大小
+              let per = Math.floor(100 * loaded / tot);  //已经上传的百分比
+              _.uploadProgress({ percent: per }, file);
+            }, false); // for handling the progress of the upload
+
+          }
+          return uploadXhr;
+        }, success(data) {
+          _.uploadSuccess(data, file);
+        }, error(err) {
+          _.uploadError('err', file);
+          if (file.reUploadXhr) {
+            file.reUploadXhr = null;
+          }
+        }
+      });
+    },
+
+    // 判断是否上传完
+    popFileProgress(list) {
+      let indexs = list.findIndex(ele => {
+        return ele.progress < 100;
+      });
+      if (indexs == -1) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    // 文件上传超出提示
+    handleExceed(files, fileList) {
+      this.$message.warning("最多只能选择9个文件");
+    },
+    // 文件上传前
+    beforeUpload(file) {
+      const id = this.filePartitionId;
+      if (!this.uploadProgressFlag) {
+        this.uploadProgressFlag = true;
+      }
+      let sizes = this.conver(file.size);
+      let FileTypeNum = this.getSuffix(file.name);
+      FileTypeNum = this.getFlieTyle(FileTypeNum);
+      let obj = {
+        uid: file.uid,
+        size: file.size,
+        sizes: sizes,
+        nowSize: 0,
+        name: file.name,
+        type: 2,
+        progress: 0,
+        status: 1,
+        FileTypeNum: FileTypeNum,
+        imgUrl: "",
+        file: file
+      };
+      // 判重--该目录下已包含同名文件
+      if (id) { // 分组
+        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
+        let index = this.parthsGroup[ids].fileList.findIndex(ele => {
+          return ele.FileName == file.name;
+        });
+        if (index !== -1) {
+          this.$set(obj, 'error', 1);
+          this.fileProgressList.unshift(obj);
+          this.$message.error("该目录下已含有同名文件");
+          return false; // 只写return不能阻止文件继续上传
+        }
+      } else { // 未分组
+        let index = this.notGroupedList.findIndex(ele => {
+          return ele.FileName == file.name;
+        });
+        if (index !== -1) {
+          this.$set(obj, 'error', 1);
+          this.fileProgressList.unshift(obj);
+          this.$message.error("该目录下已含有同名文件");
+          return false;
+        }
+      }
+      // 文件过大--文件大于1G，无法上传
+      const _size = (file.size / (1024 * 1024 * 1024)).toFixed(2);
+      if (_size >= 1) {
+        this.$set(obj, 'error', 2);
+        this.fileProgressList.unshift(obj);
+        this.$message.error("文件大于1G，无法上传");
+        return false;
+      }
+      this.fileProgressList.unshift(obj);
+    },
+
+    // 文件上传中
+    uploadProgress(event, file, fileList) {
+      let percents = parseInt(event.percent);
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+
+      if (ids !== -1) {
+        this.fileProgressList[ids].progress = percents;
+        this.fileProgressList[ids].nowSize = this.conver(percents / 100 * this.fileProgressList[ids].size);
+        if (
+          !this.fileProgressList[ids].imgUrl &&
+          this.fileProgressList[ids].FileTypeNum == 1
+        ) {
+          this.fileProgressList[ids].imgUrl = file.url;
+        }
+      }
+      console.log(this.fileProgressList)
+    },
+
+    // 文件上传成功
+    uploadSuccess(res, _file) {
+
+      console.log('chengogng', this.fileNum)
+    },
+
+    // 文件上传失败
+    uploadError(err, file) {
+      let ids = this.fileProgressList.findIndex(ele => {
+        return ele.uid === file.uid;
+      });
+      if (ids !== -1) {
+        this.fileProgressList[ids].status = 3;
+      }
+    },
+
+    // 删除文件时改变数组，触发父组件的方法
+    getDelFile(fileid, cancel) {
+      // fileProgressList
+      let indexs1 = this.fileProgressList.findIndex(el => {
+        return el.uid == fileid;
+      });
+      if (indexs1 !== -1) {
+        if (
+          cancel == undefined &&
+          this.fileProgressList[indexs1].progress < 100
+        ) {
+          this.cancelUpload(this.fileProgressList[indexs1]);
+        }
+        this.fileProgressList.splice(indexs1, 1);
+        if (!this.fileProgressList.length) {
+          this.closeProgress();
+        }
+      }
+    },
+
+
+    // 文件上传--------------------------------end
   },
   created() {
     let nowTime = new Date();
@@ -2045,6 +2174,9 @@ export default {
 .el-button:hover {
   color: red !important;
   background-color: #ffffff !important;
+}
+.ml-5 {
+  margin-left: 5px !important;
 }
 .fade-enter-active,
 .fade-leave-active {
@@ -2384,6 +2516,12 @@ export default {
                       }
                       .otherColor {
                         color: #666666;
+                      }
+                      .calendar {
+                        width: 14px;
+                        .el-date-editor {
+                          width: 14px;
+                        }
                       }
                     }
                     .iconBg {
