@@ -33,7 +33,13 @@
             <div class="leftFileOne">
                 <!-- 文件预览 -->
                 <div class="file">
-                    1344
+
+                    <img src=""
+                         alt="">
+
+
+
+                         
                 </div>
                 <!-- 全部评论 -->
                 <div class="commentBox">
@@ -79,12 +85,19 @@
                         </el-option>
                     </el-select>
                 </template>
-                <ul>
-                    <li>
-                        <span class="check"></span>
-                        <img src=""
-                             alt="">
-                        <p> 标题</p>
+                <ul class="allFileLists">
+                    <li v-for="(list,index) of fileLists"
+                        :key="index"
+                        @click="checkFile(list,index)"
+                        class="allList"
+                        :class="{'allListCheck':checkIndex==index}">
+                        <span class="check"
+                              v-show="checkIndex==index"></span>
+                        <div class="fileBox">
+                            <img :src="list.UrlMin"
+                                 alt="">
+                            <p>{{list.FileTitle}}</p>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -98,28 +111,27 @@ export default {
             options: [{
                 value: '选项1',
                 label: '黄金糕'
-            }, {
-                value: '选项2',
-                label: '双皮奶'
-            }, {
-                value: '选项3',
-                label: '蚵仔煎'
-            }, {
-                value: '选项4',
-                label: '龙须面'
-            }, {
-                value: '选项5',
-                label: '北京烤鸭'
             }],
-            value: ''
+            value: '',
+            fileLists: '', //文件列表 总
+            checkIndex: 0, //当前选择index
         }
     },
+    props: ['fileLists'],
     methods: {
         // 关闭文件详情
         closeDetails() {
             this.$emit('closeDetails');
+        },
+        // 切换文件
+        checkFile(list, index) {
+            this.checkIndex = index;
+            console.log(list)
         }
+    },
+    created() {
 
+        this.fileLists = this.fileLists;
     }
 }
 </script>
@@ -198,9 +210,66 @@ export default {
     .rightFileLists {
       margin-left: 24px;
       width: 207px;
-      height: 100%;
+      height: calc(100% - 75px);
       overflow: scroll;
       background: #ffffff;
+      border-radius: 4px;
+      .allFileLists {
+        .allList {
+          width: 207px;
+          height: 152px;
+          border-radius: 4px;
+          background: #ffffff;
+          position: relative;
+          padding: 7px 0 0 0;
+          .box_sizing;
+          .check {
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            font-size: 0; /*是因为, 虽然宽高度为0, 但在IE6下会具有默认的 */
+            line-height: 0; /* 字体大小和行高, 导致盒子呈现被撑开的长矩形 */
+            border-width: 7px;
+            border-style: solid dashed dashed dashed; /*IE6下, 设置余下三条边的border-style为dashed,即可达到透明的效果*/
+            border-color: transparent transparent transparent #3684ff;
+            position: absolute;
+            top: 50%;
+            margin-top: -4px;
+            left: 10px;
+          }
+          .fileBox {
+            margin: 0 auto;
+            width: 156px;
+            height: 117px;
+            // line-height: 117px;
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid rgba(238, 238, 238, 1);
+            border-radius: 4px;
+            overflow: hidden;
+            img {
+              //   vertical-align: middle;
+              max-height: 100%;
+            }
+            p {
+              position: absolute;
+              bottom: 5px;
+              left: 50%;
+              margin-left: -51px;
+              width: 119px;
+              height: 14px;
+              font-size: 12px;
+              font-family: "PingFang-SC-Regular";
+              overflow: hidden;
+              font-weight: 400;
+              color: rgba(51, 51, 51, 1);
+            }
+          }
+        }
+        .allListCheck {
+          background: rgba(242, 242, 242, 1);
+        }
+      }
     }
   }
 }

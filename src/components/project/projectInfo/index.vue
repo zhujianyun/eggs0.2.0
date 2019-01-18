@@ -45,7 +45,7 @@
                                   :key="index"
                                   :data-pkid='list.userId'>
                   <img :src="list.userPic"
-                       class=""> {{list.userId}}
+                       class="">
                   <span> {{list.nickName ||list.userName}}</span>
                 </el-dropdown-item>
               </draggable>
@@ -254,9 +254,9 @@
                             <i class="iconfont icon-wancheng"></i>完成</div>
                           <!-- 3.开启状态 显示内容 -->
                           <div class="stageInfo cur"
-                               v-if="lists.enabled ==true ">
+                               v-if="lists.enabled==true||lists.enabled==''">
                             <div class="participantImg">
-                              <draggable :list=" lists.userList"
+                              <draggable :list="lists.userList"
                                          :class="{'red':!lists.isRepeat}"
                                          :options="{group:!lists.isRepeat?'article':'', disabled: false}">
                                 <span class="img"
@@ -270,7 +270,8 @@
                                       v-if="lists.userList.length > 5">+{{lists.userList.length-5}}人</span>
                               </draggable>
                             </div>
-                            <div class="participantMain">
+                            <div class="participantMain"
+                                 :class="{'fontRed':lists.taskTime==0}">
                               <span class="pieChart"
                                     v-if="lists.taskTime==0"></span>
                               <svg viewBox="0 0 32 32"
@@ -386,7 +387,7 @@
                                 <i class='iconfont icon-shangchuan'></i>
                               </span>
                               <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item @click.native="handleClickUpload(lists)">
+                                <el-dropdown-item @click.native="handleClickUpload(item,lists,noPartitions,'noPartitions')">
                                   <el-upload ref="fileUpload"
                                              class="upload_file"
                                              :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageTaskId+'&filePartitionId=0'"
@@ -598,7 +599,6 @@
                         <div v-for="(list,index) in newTask.stageTaskList"
                              :key="list.stageId"
                              class="stage">
-                          <!-- {{list}} -->
                         </div>
                       </div>
                     </span>
@@ -653,6 +653,7 @@
                               </el-tooltip>
                             </span>
                             <textarea v-model="item.taskTitle"
+                                      name='intro'
                                       class="stageName"
                                       style="resize:none"
                                       @keydown='checkEnter'
@@ -676,7 +677,7 @@
                                 <i class="iconfont icon-wancheng"></i>完成</div>
                               <!-- 3.开启状态 显示内容 -->
                               <div class="stageInfo cur"
-                                   v-if="lists.enabled ==true&&lists.stageTaskState==false">
+                                   v-if="lists.enabled ==true||lists.enabled ==''&&lists.stageTaskState==false">
                                 <div class="participantImg">
                                   <draggable :list="lists.userList"
                                              :options="{group:{'article':lists.isRepeat}, disabled: false}">
@@ -686,13 +687,13 @@
                                           v-if="index <5">
                                       <img :src="i.userPic"
                                            alt="">
-
                                       <span class="numsInfo"
                                             v-if="lists.userList.length>5">+{{lists.userList.length-5}}人</span>
                                     </span>
                                   </draggable>
                                 </div>
-                                <div class="participantMain">
+                                <div class="participantMain"
+                                     :class="{'fontRed':lists.taskTime==0}">
                                   <!-- {{lists.startTimeArr}}开始时间 -->
                                   <span class="pieChart"
                                         v-show="lists.taskTime==0"></span>
@@ -813,7 +814,7 @@
                                     <i class='iconfont icon-shangchuan'></i>
                                   </span>
                                   <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item @click.native="handleClickUpload(lists)">
+                                    <el-dropdown-item @click.native="handleClickUpload(item,lists,element,'partitions')">
                                       <el-upload ref="fileUpload"
                                                  class="upload_file"
                                                  :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageTaskId+'&filePartitionId=0'"
@@ -1137,6 +1138,8 @@ export default {
 
       nowTime: '', //当前时间
       nowBlurTime: "",//当前失焦时间
+
+      nowUploadId: [], //当前上传片段id集合
     };
   },
   watch: {
@@ -1324,18 +1327,16 @@ export default {
             console.log(1, this.partitionsList)
           }
         }
-         list = JSON.parse(JSON.stringify(list));
-          this.partitionsList = [...this.partitionsList];
-
-          // this.partitionsList = JSON.parse(JSON.stringify(this.partitionsList));
+        list = JSON.parse(JSON.stringify(list));
+        this.partitionsList = [...this.partitionsList];
+        // this.partitionsList = JSON.parse(JSON.stringify(this.partitionsList));
       })
-      
+
     },
     // 5.1关闭阶段
     closeStage(item, list) {
       list.enabled = false;
       this.partitionsList = [...this.partitionsList];
-
       let data = {
         'stageId': list.stageId,
         'taskId': item.taskId,
@@ -1436,6 +1437,8 @@ export default {
                 }
               }
             }
+            console.log(this.partitionsList, ' this.partitionsList')
+            this.partitionsList = [...this.partitionsList]
           }
           console.log('任务添加人员', res);
         }).catch(err => {
@@ -1522,9 +1525,10 @@ export default {
     // 搜索功能
     searchChange(val) {
       let data = { project: this.projectId, myUserId: this.userPkid, 'keys': val }
-      this.$HTTP('post', '/project_get_info', data).then(res => {
+      this.$HTTP('post', '/project_get_info2', data).then(res => {
         console.log(res.result);
-        this.partitionsList = res.result;
+        // this.partitionsList = res.result;
+
       })
     },
 
@@ -1610,8 +1614,8 @@ export default {
         let taskIds = [];
         for (let list of element.taskList) {
           // taskId=='' 时 说明没有任务 可以直接删除 不用移动
-          this.noPartitions.taskList.push(list)
           if (list.taskId !== '') {
+            this.noPartitions.taskList.push(list);
             taskIds.push(list.taskId);
           }
         }
@@ -1919,10 +1923,14 @@ export default {
 
     // 文件上传--------------------------------start
     // 当前点击的是哪个分组的上传
-    handleClickUpload(lists) {
+    handleClickUpload(item, lists, element, name) {
       this.fileNum = lists.fileCont;
-      console.log(lists)
       this.filePartitionId = 0;
+      console.log(lists)
+
+      this.notGroupedList = lists.fileNames;
+      console.log(this.notGroupedList)
+      this.nowUploadId = { 'name': name, 'taskId': item.taskId, 'stage': lists.stageId, 'partitionId': element.partitionId };
     },
     // 关闭文件上传视图
     closeProgress() {
@@ -1944,9 +1952,7 @@ export default {
             this.$refs.fileUpload.abort(file);
           }
         });
-
       }
-
     },
     // 重新上传
     reUpload(file) {
@@ -2021,6 +2027,7 @@ export default {
       }
       let sizes = this.conver(file.size);
       let FileTypeNum = this.getSuffix(file.name);
+
       FileTypeNum = this.getFlieTyle(FileTypeNum);
       let obj = {
         uid: file.uid,
@@ -2035,21 +2042,11 @@ export default {
         imgUrl: "",
         file: file
       };
+      console.log(file, 'file')
       // 判重--该目录下已包含同名文件
-      if (id) { // 分组
-        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
-        let index = this.parthsGroup[ids].fileList.findIndex(ele => {
-          return ele.FileName == file.name;
-        });
-        if (index !== -1) {
-          this.$set(obj, 'error', 1);
-          this.fileProgressList.unshift(obj);
-          this.$message.error("该目录下已含有同名文件");
-          return false; // 只写return不能阻止文件继续上传
-        }
-      } else { // 未分组
+      if (this.notGroupedList) {
         let index = this.notGroupedList.findIndex(ele => {
-          return ele.FileName == file.name;
+          return ele == file.name;
         });
         if (index !== -1) {
           this.$set(obj, 'error', 1);
@@ -2058,6 +2055,8 @@ export default {
           return false;
         }
       }
+
+
       // 文件过大--文件大于1G，无法上传
       const _size = (file.size / (1024 * 1024 * 1024)).toFixed(2);
       if (_size >= 1) {
@@ -2067,6 +2066,7 @@ export default {
         return false;
       }
       this.fileProgressList.unshift(obj);
+      console.log(this.fileProgressList, 'this.fileProgressList')
     },
 
     // 文件上传中
@@ -2091,8 +2091,37 @@ export default {
 
     // 文件上传成功
     uploadSuccess(res, _file) {
+      this.fileNum++;
 
-      console.log('chengogng', this.fileNum)
+      if (this.nowUploadId.name == 'noPartitions') {
+        let index = this.noPartitions.taskList.findIndex(res => {
+          return res.taskId == this.nowUploadId.taskId;
+        })
+        for (let list of this.noPartitions.taskList[index].stageTaskList) {
+          if (list.stageId == this.nowUploadId.stage) {
+            list.fileCont = this.fileNum;
+          }
+        }
+        // this.noPartitions = [...this.noPartitions];
+      } else {
+        for (let list of this.partitionsList) {
+          if (list.partitionId == this.nowUploadId.partitionId) {
+            for (let item of list.taskList) {
+              if (item.taskId == this.nowUploadId.taskId) {
+                for (let i of item.stageTaskList) {
+                  if (i.stageId == this.nowUploadId.stage) {
+                    i.fileCont = this.fileNum;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // console.log(res)
+      console.log('2chengogng', this.fileNum);
+
     },
 
     // 文件上传失败
@@ -2139,6 +2168,11 @@ export default {
   mounted() {
     let _ = this;
     $('.tableBox')[0].addEventListener('scroll', _.handleScroll);
+    var $textarea = $('textarea[name=intro]');
+
+    var html = $textarea.val();
+
+    $textarea.val($(html).text());
     // window.onresize = () => {
     //   return (() => {
     //     if (this.detailsShow) {
@@ -2260,10 +2294,10 @@ export default {
   // height: calc(~ '100% - 50px');
   overflow: hidden;
   .icon-unfold {
-    font-size: 12px;
+    font-size: 12px !important;
   }
   .icon-packup {
-    font-size: 12px;
+    font-size: 12px !important;
   }
   .project_task_top {
     width: 100%;
@@ -2515,6 +2549,9 @@ export default {
                     padding: 15px 35px;
                     display: none;
                     .box_sizing;
+                    i {
+                      font-size: 14px !important;
+                    }
                     .el-button {
                       border: none !important;
                       background: none;
@@ -2765,6 +2802,9 @@ export default {
                       i {
                         font-size: 12px;
                       }
+                    }
+                    .fontRed {
+                      color: red;
                     }
                   }
                 }

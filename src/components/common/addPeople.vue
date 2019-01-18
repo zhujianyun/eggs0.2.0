@@ -20,7 +20,7 @@
                         show-checkbox
                         node-key="pkid"
                         ref="tree1"
-                        :default-expanded-keys="[treeList[0].pkid]"
+                        default-expand-all
                         :default-checked-keys="defaultTreeKeys"
                         :props="defaultProps"
                         @check-change="treeCheckChange">
