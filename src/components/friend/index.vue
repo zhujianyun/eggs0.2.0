@@ -701,7 +701,6 @@ export default {
                 }
             }
             this.updateGroup([ele.pkid], id);
-
         },
 
         // 移动分组方法

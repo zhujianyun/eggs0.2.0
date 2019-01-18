@@ -181,7 +181,7 @@
 
                 <draggable v-model="noPartitions.taskList"
                            class="box"
-                           :move='getdata2(noPartitions)'
+                           :move='getdata2'
                            @start='taskMoveStart(noPartitions)'
                            @end='taskMoveEnd(noPartitions)'
                            @update="datadragEnd2(noPartitions)"
@@ -217,7 +217,7 @@
                                       content="添加"
                                       placement="top-start">
                             <span class="icon"
-                                  @click.stop="addStage(noPartitions.taskList,index,'noPartitions',noPartitions)">
+                                  @click.stop="addStage(noPartitions.taskList,index,'noPartitions')">
                               <i class="iconfont icon-jia1 cur"></i>
                             </span>
                           </el-tooltip>
@@ -604,7 +604,7 @@
                     </span>
                     <draggable v-model="element.taskList"
                                class="box"
-                               :move='getdata2(element)'
+                               :move='getdata2'
                                @update="datadragEnd2(element)"
                                :options="{
                                  group: 'file', 
@@ -943,7 +943,7 @@
       </div>
     </div>
     <!-- <div class="guide">
-      <img src="../../../assets" alt="">
+
     </div> -->
     <transition name="fade1">
       <Info v-if="itemInformationShow"
@@ -1137,6 +1137,8 @@ export default {
 
       nowTime: '', //当前时间
       nowBlurTime: "",//当前失焦时间
+
+      taskIndex: '', //点击+当前选择的 任务index
     };
   },
   watch: {
@@ -1212,11 +1214,9 @@ export default {
       if (keycode == 13) {
         if (window.event) {
           $('.stageTittle').blur();
-          $('.stageName').blur();
           window.event.returnValue = false;
         } else {
           $('.stageTittle').blur();
-          $('.stageName').blur();
           e.preventDefault(); //for firefox
         }
       }
@@ -1315,21 +1315,19 @@ export default {
             }];
           if (new Date(list.endTime) - new Date() <= 0) {
             list.taskTime = 0;
+            console.log(2)
           } else {
-            console.log(3);
             let ratio = (new Date() - new Date(list.startTime)) / (new Date(list.endTime) - new Date(list.startTime));
+            console.log(ratio)
             list.ratio = ratio * 100;
             list.taskTime = 1;
-            console.log(1, list)
-            console.log(1, this.partitionsList)
+            console.log(1, list.ratio)
           }
-        }
-         list = JSON.parse(JSON.stringify(list));
           this.partitionsList = [...this.partitionsList];
+          console.log(1, list)
 
-          // this.partitionsList = JSON.parse(JSON.stringify(this.partitionsList));
+        }
       })
-      
     },
     // 5.1关闭阶段
     closeStage(item, list) {
@@ -1538,7 +1536,8 @@ export default {
     // el:大数组 index:位置 name:分区名字
     addPartition(el, index, name) {
       this.nowTime = new Date().getTime();
-      if (this.nowTime - this.nowBlurTime >= 1000) {
+      // if (this.nowTime - this.nowBlurTime >= 1000) {
+      let t = setTimeout(() => {
         this.isNewP = true;
         this.EmptyData.partitionTitle = '';
         if (name == 'addPartition') {
@@ -1554,12 +1553,14 @@ export default {
             $('.hhah').children().eq(0).find('.stageTittle').focus();
           })
         }
-      }
+      }, 600);
+      // }
     },
     // 分区失去焦点 
     partitionBlur(el, index, name) {
       this.nowBlurTime = new Date().getTime();
       // 先判断 是否是新建项目
+
       if (this.isNewP) {
         console.log(2)
         if (name) {
@@ -1579,6 +1580,7 @@ export default {
           this.modifyPartitionName(el.partitionId, name);
         }
       }
+
       // 判断 名字是否需要修改 
     },
     // 分区获取焦点
@@ -1652,23 +1654,25 @@ export default {
     // 任务操作
     // 1.添加任务
     addStage(el, index, name, element) {
+
+      this.newTask.taskTitle = '';
+      this.isNewS = true;
+      this.taskIndex = this.partitionsList.findIndex(res => {
+        return res.partitionId == element.partitionId;
+      })
       let t = setTimeout(() => {
-        let taskIndex = this.partitionsList.findIndex(res => {
-          return res.partitionId == element.partitionId;
-        })
         if (name == 'Partitions') {
-          this.newTask.taskTitle = '';
-          this.isNewS = true;
           el.splice(index + 1, 0, this.newTask);
           this.$nextTick(res => {
-            $(".hhah").children().eq(taskIndex - 1).find('.stageName').eq(index + 1).focus();
+            $(".hhah").children().eq(this.taskIndex - 1).find('.stageName').focus();
           })
         } else {
+          console.log(2, name)
           this.newTask.taskTitle = '';
           this.isNewS = true;
           el.splice(index + 1, 0, this.newTask);
           this.$nextTick(res => {
-            $('.taskLists').children().eq(index + 1).find('.stageName').focus();
+            $(".hhah").children().eq(this.taskIndex - 1).find('.stageName').focus();
           })
         }
       }, 600);
@@ -1676,6 +1680,7 @@ export default {
     // 添加任务 失焦判断
     stageNameBlur(name, item, el, index) {
       console.log(name, item, el, index);
+
       // 先判断 是否是新建阶段
       if (this.isNewS) {
         if (name) {
@@ -1686,24 +1691,26 @@ export default {
             'title': name,
             'iSort': index          }
           this.$HTTP('post', '/task_add', obj).then(res => {
+            // this.partitionsList
             el.taskList.splice(index, 1, res.result);
             res.result.isnew = false;
             this.isNewS = false;
           })
         } else {
+          console.log('zhixinglw')
+          // console.log(el.taskList[index])
+          el.taskList.splice(index - 1, 1);
           this.isNewS = false;
-          el.taskList.splice(index, 1);
+          // this.partitionsList = [...this.partitionsList];
         }
       } else {
         if (this.nowStageName !== name) {
           this.ModifyTaskName(item.taskId, name);
         }
-        return
       }
     },
     // 添加任务 获取焦点
     stageFocus(name, item, el, index) {
-      console.log(this.isNewS, name);
       if (!this.isNewS) {
         this.nowStageName = name;
       } else {
@@ -1794,10 +1801,9 @@ export default {
       console.log(list, '结束后的list')
     },
     getdata2(evt) {
+      console.log(2, evt)
 
-      // console.log(2, evt);
-
-      // evt.preventDefault();
+      evt.preventDefault();
       // console.log(evt.draggedContext.element.id, 'element.id')
     },
     datadragEnd2(evt) {
@@ -2174,7 +2180,16 @@ export default {
   left: 0;
   z-index: 100;
 }
-
+.el-button {
+  border: none !important;
+  background: none;
+  padding: 0 !important;
+}
+.el-button:focus,
+.el-button:hover {
+  color: red !important;
+  background-color: #ffffff !important;
+}
 .ml-5 {
   margin-left: 5px !important;
 }
@@ -2260,9 +2275,6 @@ export default {
   // height: calc(~ '100% - 50px');
   overflow: hidden;
   .icon-unfold {
-    font-size: 12px;
-  }
-  .icon-packup {
     font-size: 12px;
   }
   .project_task_top {
@@ -2516,9 +2528,6 @@ export default {
                     display: none;
                     .box_sizing;
                     .el-button {
-                      border: none !important;
-                      background: none;
-                      padding: 0 !important;
                       i {
                         color: #fff;
                         font-size: 14px;
@@ -2532,12 +2541,6 @@ export default {
                           width: 14px;
                         }
                       }
-                    }
-
-                    .el-button:focus,
-                    .el-button:hover {
-                      color: red !important;
-                      background-color: #ffffff !important;
                     }
                     .iconBg {
                       display: inline-block;
