@@ -26,7 +26,7 @@ module.exports = {
                         logLevel: 'debug',
                         changeOrigin: true
                   },
-                  "/img.ashx": {
+                  "/PersonalFile.ashx": {
                         target: "http://eggs.apexgame.cn/",
                         logLevel: 'debug',
                         changeOrigin: true

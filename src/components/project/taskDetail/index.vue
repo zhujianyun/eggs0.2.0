@@ -188,7 +188,7 @@
                             <el-upload 
                               :ref="uploadFrom === 1 ? 'fileUpload' : ''"
                               class="upload_file"
-                              :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                              :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
                               :show-file-list="false"
                               :multiple="true"
                               :on-error="uploadError"
@@ -303,7 +303,7 @@
                         :ref="uploadFrom === 2 ? 'fileUpload' : ''"
                         class="file_empty_upload"
                         :drag="power ? true : false"
-                        :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+0"
+                        :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+0"
                         :show-file-list="false"
                         :multiple="true"
                         :on-error="uploadError"
@@ -446,7 +446,7 @@
                                 :ref="uploadFrom === 4 && filePartitionId === group.pkid ? 'fileUpload' : ''"
                                 class="file_empty_upload"
                                 :drag="power ? true : false"
-                                :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+group.pkid"
+                                :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+group.pkid"
                                 :show-file-list="false"
                                 :multiple="true"
                                 :on-error="uploadError"
@@ -488,7 +488,7 @@
                                               <el-upload 
                                                 :ref="uploadFrom === 3 && filePartitionId === group.pkid ? 'fileUpload' : ''"
                                                 class="upload_file"
-                                                :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                                                :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
                                                 :show-file-list="false"
                                                 :multiple="true"
                                                 :on-error="uploadError"
@@ -857,9 +857,25 @@
                 <div v-if="personalFilesShow" id="personalFiles" class="personal_files">
                   <div class="top_box">
                     <div class="left fl">
-                      <el-tooltip effect="dark" content="上传" placement="top" :open-delay="300">
-                        <i class='iconfont icon-shangchuan'></i>
-                      </el-tooltip>
+                      <el-upload 
+                        :ref="uploadFrom === 5 ? 'fileUpload' : ''"
+                        class="upload_file"
+                        :action="'/PersonalFile.ashx?myUserId='+userId+'&fatherId='+personalFolder.fatherId+'&iLevel='+personalFolder.iLevel+'&title='+personalFolder.fatherName"
+                        :show-file-list="false"
+                        :multiple="true"
+                        :on-error="uploadError"
+                        :on-success="uploadSuccess"
+                        :on-progress="uploadProgress"
+                        :limit="9"
+                        :on-exceed="handleExceed"
+                        :before-upload="beforeUpload"
+                        >
+                        <el-tooltip effect="dark" content="上传" placement="top" :open-delay="300">
+                          <i 
+                            class='iconfont icon-shangchuan' 
+                            @click="handleClickUpload('personal')"></i>
+                        </el-tooltip>
+                      </el-upload>
                       <el-tooltip effect="dark" content="添加文字" placement="top" :open-delay="300">
                         <i 
                           class='iconfont icon-tianjiawenzi'
@@ -886,8 +902,12 @@
                         v-model="fileCheckboxSelf" 
                         @change='fileCheckboxAllSelf'>全选</el-checkbox>
                         <template v-if='checkedListSelf.length'>
-                          <i class="iconfont icon-xiazai"></i>
-                          <i class="iconfont icon-delete"></i>
+                         <el-tooltip effect="dark" content="下载" placement="top" :open-delay="300">
+                            <i class="iconfont icon-xiazai" @click='multipleDownload1'></i>
+                          </el-tooltip>
+                          <el-tooltip effect="dark" content="收藏" placement="top" :open-delay="300">
+                            <i class="iconfont icon-shoucang1"></i>
+                          </el-tooltip>
                         </template>
                     </div>
                     <div class="right fr" v-if='false'>
@@ -944,7 +964,7 @@
                           @end='dragEnd'
                           >
                           <div 
-                              :class="file.children ? 'every_file' : 'draged every_file'"
+                              class="draged every_file"
                               v-for="(file, index) in personalFiles"
                               :key="file.FilePkid"
                               :id='file.FilePkid'
@@ -953,67 +973,52 @@
                               @mouseenter="enterFileSelf(file)"
                               @mouseleave="leaveFileSelf(file)"
                               >
-                              <!-- 文件夹 -->
-                              <template v-if='file.children'>
-                                <span class="file_pic">
-                                  <img src="./style/wenjianjia.png" alt="">
-                                  <span class="none"></span>
+                              <span class="file_pic">
+                                <template v-if='file.FileType === 11 && file.Desc'>
+                                  <span class="text_desc"><span>{{file.Desc}}</span></span>
+                                </template>
+                                <template v-else>
+                                  <img :src="file.UrlMin ? file.UrlMin : '../../../assets/img/file_b/12.png'" alt="">
+                                </template>
+                                <span class="none"></span>
+                              </span>
+                              <div class="file_info">
+                                <p v-if='!file.edit && !file.createdFolder' class="title">{{file.FileName}}</p>
+                                <input 
+                                  v-else 
+                                  class="title edit" 
+                                  v-model='file.FileTitle' 
+                                  id="fileNameEdit"
+                                  @blur="personalFileBlur($event, file, index)"
+                                  />
+                                <p v-if='file.FileType === 12' class="file_num">{{file.Count}}个文件</p>
+                                <p  v-else class="file_num">{{file.Size}}</p>
+                                <span class="fixed file_checkbox" v-if='oneCheckedSelf || file.hover'>
+                                  <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
                                 </span>
-                                <div class="file_info">
-                                  <p v-if='!file.edit' class="title">{{file.FileName}}</p>
-                                  <input 
-                                    v-else 
-                                    :ref="file.createdFolder ? 'createdFolder' : ''" 
-                                    class="title edit" 
-                                    type="text" 
-                                    v-model='file.FileName'
-                                    @blur='folderBlur(file)'
-                                    />
-                                  <p class="file_num">{{file.children.length}}个文件</p>
-                                  <!-- <span class="fixed file_checkbox">
-                                    <el-checkbox v-model="fileCheckbox"></el-checkbox>
-                                  </span> -->
-                                </div>
-                              </template>
-                              <!-- 文件 -->
-                              <template v-else>
-                                  <span class="file_pic">
-                                    <template v-if='file.FileType === 11 && file.Desc'>
-                                      <span class="text_desc"><span>{{file.Desc}}</span></span>
-                                    </template>
-                                    <template v-else>
-                                      <img :src="file.UrlMin" alt="">
-                                    </template>
-                                  <span class="none"></span>
-                                </span>
-                                <div class="file_info">
-                                  <!-- <p v-if='!file.edit' class="title">{{file.FileName}}</p>
-                                  <input 
-                                    v-else 
-                                    class="title edit" 
-                                    v-model='file.FileTitle' 
-                                    id="fileNameEdit"
-                                    @blur="fileNameEditBlur($event, file)"
-                                    /> -->
-                                  <p class="title">{{file.FileName}}</p>
-                                  <p class="file_num">123KB</p>
-                                  <span class="fixed file_checkbox">
-                                    <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
-                                  </span>
-
-                                  <span class="fixed file_checkbox" v-if='oneCheckedSelf || file.hover'>
-                                    <el-checkbox v-model="file.checked" @change="everyFileCheckboxSelf($event, file)"></el-checkbox>
-                                  </span>
-                                  <el-dropdown class="fixed file_more">
-                                    <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
-                                    <el-dropdown-menu slot="dropdown">
-                                      <el-dropdown-item @click.native="fileCommand('download', index, file)">下载</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('rename', index, file)">重命名</el-dropdown-item>
-                                      <el-dropdown-item @click.native="fileCommand('delete', index, file)">删除</el-dropdown-item>
-                                    </el-dropdown-menu>
-                                  </el-dropdown>
-                                </div>
-                              </template>
+                                <el-dropdown class="fixed file_more">
+                                  <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
+                                  <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item 
+                                      v-if='(file.FileType === 12 && file.Count) || file.FileType !== 12'
+                                      @click.native="personalFileCommand('download', index, file)"
+                                      >
+                                      <span>下载</span>
+                                    </el-dropdown-item>
+                                     <el-dropdown-item v-else>
+                                      <span class='cur_dis'>下载</span>
+                                    </el-dropdown-item>
+                                    <el-dropdown-item 
+                                      v-if='file.FilePkid > 0'
+                                      @click.native="personalFileCommand('rename', index, file)"
+                                      >重命名</el-dropdown-item>
+                                    <el-dropdown-item 
+                                      v-if='file.FilePkid > 0'
+                                      @click.native="personalFileCommand('delete', index, file)"
+                                      >删除</el-dropdown-item>
+                                  </el-dropdown-menu>
+                                </el-dropdown>
+                              </div>
                           </div>
                           <div v-if='navBar.length - 1 && !personalFiles.length' class="folder_empty">
                             <p>该文件夹为空</p>
@@ -1057,6 +1062,14 @@
             :text="reminderText"
             @handleCancle="delFileCancel"
             @handleSure="delFileSure" />
+      </transition>
+      <!-- 温馨提示2_删除个人文档文件（夹）的提示 -->
+      <transition name="fade1">
+        <Reminder2 v-if="delFileFlag1"
+            :type="1"
+            :text="reminderText"
+            @handleCancle="delFileCancel1"
+            @handleSure="delFileSure1" />
       </transition>
       <!-- 文件上传进度条 -->
       <upload-progress v-if="uploadProgressFlag"
@@ -1151,6 +1164,9 @@ export default {
         },
         {
           src: require("../../../assets/img/file_b/11.png")
+        },
+        {
+          src: require("../../../assets/img/file_b/12.png")
         }
       ], // 附件icon file_b
       fileTypeImgM: [
@@ -1205,84 +1221,14 @@ export default {
       notGroupedList: [], // 未分组文件列表 
       parthsGroup: [], // 分组文件列表
       personalFilesShow: false, // 个人文档是否显示
-      personalFiles: [
-        {
-          FilePkid: "408",
-          FileName: "bg",
-          UrlMin:
-            "/upload/file/20181213070700/d0b06e24-5111-497c-a512-8d4b139fd475/55924df2-63b6-4914-ade4-0ba667d577db_s1.png",
-          FileType: "svg",
-          userName: "祝建云"
-        },
-        {
-          FilePkid: "406",
-          FileName: "video2",
-          UrlMin:
-            "/upload/file/20180817071340/5e0dba23-b76a-43a6-9589-1aee0ae38fdb/f7088adf-dbc4-4b83-994a-5d69c4a66c0d_s1.png",
-          FileType: "mp4",
-          userName: "祝建云"
-        },
-        {
-          FilePkid: 2,
-          FileName: "我的文件",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          default: true,
-          children: [
-            {
-              FilePkid: "407",
-              FileName: "WX20181220-170213",
-              UrlMin:
-                "/upload/file/20180528070747/8b10d083-a85b-45a4-825a-9437fd47fa4a/logo-3.png",
-              FileType: "png",
-              userName: "祝建云"
-            },
-            {
-              FilePkid: "405",
-              FileName: "video",
-              UrlMin:
-                "/upload/file/20180711020446/9ccd7618-5010-40f4-ac2e-008e64108a22/165310yogoihqr63svh6tm.jpg",
-              FileType: "mp4",
-              userName: "祝建云"
-            }
-          ]
-        },
-        {
-          FilePkid: 3,
-          FileName: "我的收藏",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          default: true,
-          children: [
-            {
-              FilePkid: "408",
-              FileName: "bg",
-              UrlMin:
-                "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
-              FileType: "svg",
-              userName: "祝建云"
-            },
-            {
-              FilePkid: 5,
-              FileName: "文件夹2--第二个文件夹中文件夹",
-              UrlMin: null,
-              FileType: 0,
-              userName: null,
-              children: []
-            }
-          ]
-        },
-        {
-          FilePkid: 4,
-          FileName: "文件夹3--工作文件夹之我的项目",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          children: []
-        }
-      ], // 个人文档列表
+      personalFiles: [], // 个人文档列表
+      personalFolder: {
+        fatherId: 0, // 当前个人文件夹层级的ID
+        iLevel: 0, // 当前个人文件夹的层级
+        fatherName: '个人文档'
+      },
+      operatePersonalFile: {}, // 当前正在操作个人文件的文件
+      delFileFlag1: false, // 删除个人文件（夹）的温馨提示
       dragFileId: "", // 当前拖拽文件的ID
       moveOrClone: "move", // 是移动还是copy
       dragDisabled: false, // 未分组是否禁止拖拽
@@ -1318,9 +1264,18 @@ export default {
       transferShow: false, // 文件移交的弹窗
       transferStageList: [], // 移交选择的阶段列表
       transferDefaultStage: [], // 移交时默认选择下一阶段阶段
-      transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交,
+      operateType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交,
       addTextIng: false, // 正在生成文本
-      uploadFrom: 1, // 1--左上角点击从本地上传； 2--未分组从本地拖拽上传； 3--右侧分组点击分组里的上传； 4--右侧分组从本地拖拽上传
+      //    
+      /**
+       * 1--左上角点击从本地上传；
+       * 2--未分组从本地拖拽上传；
+       * 3--右侧分组点击分组里的上传；
+       * 4--右侧分组从本地拖拽上传；
+       * 5--个人文件夹点击上传
+       * 6--个人文件夹从本地拖拽上传
+       * **/
+      uploadFrom: 1, 
       filedetailsShow: false , //文件预览是否显示
     };
   },
@@ -2105,7 +2060,7 @@ export default {
     // 文件的更多操作
     fileCommand(type, index1, item, groupId, index) {
       this.operateFile = Object.assign({}, item, {index: index1, groupId: groupId, groupIndex: index});
-      this.transferType = 1; // 单个文件移交
+      this.operateType = 1; // 单个文件移交
       if(type === 'download') { // 下载
         this.fileDownlod(item);
         return;
@@ -2225,7 +2180,7 @@ export default {
     fileGroupCommand(type, index, group) {
       this.filePartitionId = group.pkid;
       this.operateParth = Object.assign({}, group, {index: index});
-      this.transferType = 3; // 整组移交
+      this.operateType = 3; // 整组移交
 
       if(type === 'upload') { // 上传文件
         return;
@@ -2401,7 +2356,7 @@ export default {
     multipleTransfer() {
       this.getTransferStageList();
       this.transferShow = true;
-      this.transferType = 2; // 多个文件移交
+      this.operateType = 2; // 多个文件移交
 
     },
 
@@ -2424,9 +2379,9 @@ export default {
       return new Promise((resolve, reject) => {
         this.transferShow = false;
         let arr = [[], []];
-        if(this.transferType === 1) { // 单个文件
+        if(this.operateType === 1) { // 单个文件
           arr[0] = [this.operateFile.FilePkid];
-        }else if(this.transferType === 2) { // 多个文件
+        }else if(this.operateType === 2) { // 多个文件
           for(let x of this.notGroupedList) {
             if(x.checked) {
               arr[0].push(x.FilePkid);
@@ -2496,7 +2451,7 @@ export default {
           }
           this.$HTTP('post', '/demand_add', obj).then(res => {
               this.$emit('handleSure');
-              if(this.transferType === 2) {
+              if(this.operateType === 2) {
                 this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
               } 
           }).catch(err => {
@@ -2507,14 +2462,14 @@ export default {
 
     // 多选下载
     multipleDownload() {
-      this.transferType = 2; // 多个文件移交
+      this.operateType = 2; // 多个文件移交
       this.fileDownlod();
     },
 
     // 文件下载
     fileDownlod(item) {
       let link = "";
-      if(this.transferType === 1) {
+      if(this.operateType === 1) {
         link = $(
           '<a href="' +
             item.Url +
@@ -2523,7 +2478,7 @@ export default {
             '" target="_blank"></a>'
         );
         link.get(0).click();
-      }else if (this.transferType === 2 && this.checkedFileList.length === 1) {
+      }else if (this.operateType === 2 && this.checkedFileList.length === 1) {
         link = $(
           '<a href="' +
             this.checkedFileList[0].Url +
@@ -2537,19 +2492,19 @@ export default {
 
       } else {
         let ids = [];
-        if(this.transferType === 2) {
+        if(this.operateType === 2) {
           for(let x of this.checkedFileList) {
             ids.push(x.FilePkid);
           }
-        }else if(this.transferType === 3) {
+        }else if(this.operateType === 3) {
           ids.push(item.pkid);
         }
-        // console.log(`/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}`);
+        // console.log(`/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.operateType - 1}`);
         link = $(
-          `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.transferType - 1}" download="....zip" target="_blank"></a>`
+          `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.operateType - 1}" download="....zip" target="_blank"></a>`
         );
         link.get(0).click();
-        if(this.transferType === 2) {
+        if(this.operateType === 2) {
           this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
         } 
       }
@@ -2853,95 +2808,26 @@ export default {
 
     // 双击文件夹
     dbFolder(file) {
-      if (!file.children) {
+      if (file.FileType !== 12) {
         return;
       }
-      this.personalFiles = file.children;
-      this.navBar.push({ id: this.navBar.length, name: file.FileName });
+      this.getPersonalFile(file);
+      // 发送请求
+      return;
     },
     // 返回上一级
     goBack(index) {
       if (index === this.navBar.length - 1) {
         return;
       }
-      this.personalFiles = [
-        {
-          FilePkid: "408",
-          FileName: "bg",
-          UrlMin:
-            "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
-          FileType: "svg",
-          userName: "祝建云"
-        },
-        {
-          FilePkid: "406",
-          FileName: "video2",
-          UrlMin:
-            "/upload/file/20181224063835/472243c2-382a-423c-80ab-9ce41a6d790f/b3c9bc00-538f-4167-83b9-879676690519.mp4",
-          FileType: "mp4",
-          userName: "祝建云"
-        },
-        {
-          FilePkid: 2,
-          FileName: "文件夹1",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          children: [
-            {
-              FilePkid: "407",
-              FileName: "WX20181220-170213",
-              UrlMin:
-                "/upload/file/20181224063844/2288995a-d1c0-4144-9c94-a8eb2a1c568c/3ab87050-c290-40df-9171-f2543be97c68.png",
-              FileType: "png",
-              userName: "祝建云"
-            },
-
-            {
-              FilePkid: "405",
-              FileName: "video",
-              UrlMin:
-                "/upload/file/20181224063835/e85c7a46-b564-46d5-8743-18e63e4a6588/eeb294ad-6ce7-4b86-950a-2869fd7814e8.mp4",
-              FileType: "mp4",
-              userName: "祝建云"
-            }
-          ]
-        },
-        {
-          FilePkid: 3,
-          FileName: "文件夹2--这是我的文件夹中的第二个",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          children: [
-            {
-              FilePkid: "408",
-              FileName: "bg",
-              UrlMin:
-                "/upload/file/20181224063855/7e9a5d52-d934-4f26-afba-9229d7524bfe/9ca290fc-5f78-421f-b237-9228b1a41263.svg",
-              FileType: "svg",
-              userName: "祝建云"
-            },
-            {
-              FilePkid: 5,
-              FileName: "文件夹2--第二个文件夹中文件夹",
-              UrlMin: null,
-              FileType: 0,
-              userName: null,
-              children: []
-            }
-          ]
-        },
-        {
-          FilePkid: 4,
-          FileName: "文件夹3--工作文件夹之我的项目",
-          UrlMin: null,
-          FileType: 0,
-          userName: null,
-          children: []
-        }
-      ];
-      this.navBar = [{ id: 0, name: "个人文档" }];
+      if(index === 0) {
+        this.navBar = [{ id: 0, name: "个人文档" }];
+      }else {
+        this.personalFolder.iLevel = index;
+        this.navBar = this.navBar.splice(0, index + 1);
+      }
+      // 发送请求
+      this.getPersonalFile();
     },
 
     // 点击新建文件夹
@@ -2965,40 +2851,137 @@ export default {
           title = title + ' ' + 1;
         }
       }
+
       this.personalFiles.push({
+        Count: 0,
         FilePkid: this.personalFiles.length,
         FileName: title,
+        FileTitle: title,
         UrlMin: null,
-        FileType: 0,
+        FileType: 12,
+        UrlMin: this.fileTypeImg[12].src,
         userName: null,
-        children: [],
+        Type: "folder",
         edit: true,
         createdFolder: true
       });
+
       this.$nextTick(() => {
-        const ele = $(this.$refs.createdFolder[0]);
+        const ele = $('#fileNameEdit');
         ele.focus();
         ele.select();
       });
     },
-
+    // 个人文档的文件（夹）的更多操作
+    personalFileCommand(type, index, item) {
+      this.operatePersonalFile = Object.assign({}, item, {index: index});
+      this.operateType = 1;
+      if(type === 'download') { // 下载
+        this.fileDownlod1(item);
+        return;
+      }
+     
+      if(type === 'rename') { // 重命名
+        item.edit = true;
+        this.fileNameCopy = item.FileTitle;
+        this.personalFiles = this.personalFiles.concat();
+       
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+          ele.select();
+        
+        });
+        return;
+      }
+      if(type === 'delete') { // 删除
+        this.delFileFlag1 = true;
+        this.reminderText = `您确定要删除该文件${item.FileType === 12 ? '夹' : ''}吗？`;
+        return;
+      }
+    },
+  
     // 添加/修改文件夹失去焦点--保存
-    folderBlur(file) {
+    personalFileBlur(e, file, index) {
+      const newTitle = file.FileType === 12 ? file.FileTitle : file.FileTitle + '.' + file.Type;
+      if(file.FileTitle == '') {
+        this.$message.warning(`文件${file.FileType === 12 ? '夹' : ''}名不能为空！`);
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        });
+        return;
+      }
+      
+      let repeat = this.personalFiles.findIndex(ele => (ele.FileName === newTitle && ele.Type === file.Type && ele.FilePkid !== file.FilePkid));
+      if(repeat !== -1) {
+        this.$message.warning(`该目录下已含有同名文件${file.FileType === 12 ? '夹' : ''}！`);
+        this.$nextTick(() => {
+          const ele = $('#fileNameEdit');
+          ele.focus();
+        });
+        return;
+      }
       if(file.createdFolder) { // 新建
         // 发送请求---新建文件夹
-        file.edit = false;
-        delete file.createdFolder;
-        console.log('新建成功');
+        let obj = {
+          myUserId: this.userId,
+          fatherId: this.personalFolder.fatherId,
+          iLevel: this.personalFolder.iLevel,
+          title: file.FileTitle,
+        };
+        this.$HTTP('post', '/persona_add', obj).then(res => {
+          console.log('创建文件夹成功', res);
+          let result = res.result;
+          let returnObj = this.addFileAttr(result);
+          result = Object.assign(result, returnObj);
+          this.personalFiles.splice(index, 1, result);
+        }).catch(err => {
+          console.log('创建文件夹失败', err);
+        });
       }else { // 编辑
-        // 先判重，如果有重复的名字--提示，否则--发送请求
-        let repeat = this.personalFiles.findIndex(ele => ele.FileName === file.FileName);
-        if(repeat !== -1) {
-          this.$message.warning('该目录下已含有同名文件夹！');
-        }else {
-          // 发送修改文件名的接口
-          console.log('文件名修改成功');
+        // 发送修改文件名的接口
+        if(this.fileNameCopy !== file.FileTitle) {
+          let obj = {
+            FilePkid: file.FilePkid,
+            newTitle: newTitle
+          };
+          this.$HTTP('post', '/persona_update', obj).then(res => {
+            console.log(`文件${file.FileType === 12 ? '夹' : ''}名修改成功`, res);
+            this.$message.success('修改文件名成功');
+          }).catch(err => {
+            console.log('修改文件名失败', err);
+          });
+          file.FileName = newTitle;
+          file.edit = false;
+          this.personalFiles = this.personalFiles.concat();
         }
       }
+    },
+ 
+    // 取消删除文件
+    delFileCancel1() {
+      this.delFileFlag1 = false;
+
+    },
+    // 确认删除文件
+    delFileSure1() {
+      this.delFileFlag1 = false;
+      const { FilePkid, index } = this.operatePersonalFile;
+      let obj = {
+        FilePkid: FilePkid
+      };
+      this.$HTTP('post', '/persona_delete', obj).then(res => {
+        // console.log('删除文件成功', res, this.operatePersonalFile);
+        if(this.operatePersonalFile.checked) {
+          const indexs = this.checkedListSelf.findIndex(ele => ele.FilePkid === FilePkid);
+          indexs !== -1 && this.checkedListSelf.splice(indexs, 1);
+        }
+        this.personalFiles.splice(index, 1);
+        this.personalFiles = this.personalFiles.concat();
+      }).catch(err => {
+        console.log('删除文件失败', err);
+      });
     },
 
     // 个人文档--鼠标移入文件
@@ -3043,42 +3026,70 @@ export default {
       this.checkedListSelf = [];
       if(val) {
         for(let y of this.personalFiles) {
-          if(!y.hasOwnProperty('children')) {
-            y.checked = true
-            this.checkedListSelf.push(y);
-          }
+          y.checked = true
+          this.checkedListSelf.push(y);
         }
         this.oneCheckedSelf = true;
       }else {
         for(let y of this.personalFiles) {
-          if(!y.hasOwnProperty('children')) {
-            y.checked = false
-          }
+          y.checked = false
         }
         this.oneCheckedSelf = false;
+        this.fileCheckboxSelf = false;
       }
-
       this.personalFiles = this.personalFiles.concat();
     },
 
-    // 递归遍历文件夹层级，给每个文件加checked
-    fibChecked(list) {
-      for(let y of list) {
-        if(y.children) {
-          return this.fibChecked(y.children);
-        }else {
-          y.Count = 0;
-          y.Desc = '0'; // 文字描述
-          y.SystemType = 0; // 0--上传的文件 1--文字描述
-          let indexs = y.FileName.lastIndexOf('.');
-          y.Type = y.FileName.slice(indexs + 1);
-          y.UserPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
-          y.userPkid = 0;
-          y.checked = false;
-          y.hover = false;
+    // 多选下载
+    multipleDownload1() {
+      this.operateType = 2; // 多个文件移交
+      this.fileDownlod1();
+    },
+
+
+    // 个人文档文件下载
+    fileDownlod1(item) {
+      let link = "";
+      if(this.operateType === 1 && item.FileType !== 12) {
+        link = $(
+          '<a href="' +
+            item.Url +
+            '" download="' +
+            item.FileName +
+            '" target="_blank"></a>'
+        );
+        link.get(0).click();
+      }else if (this.operateType === 2 && this.checkedListSelf.length === 1 && this.checkedListSelf[0].FileType !== 12) {
+        link = $(
+          '<a href="' +
+            this.checkedListSelf[0].Url +
+            '" download="' +
+            this.checkedListSelf[0].FileName +
+            '" target="_blank"></a>'
+        );
+
+        link.get(0).click();
+        this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
+
+      } else {
+        let ids = [];
+        if(this.operateType === 1) {
+          ids.push(item.pkid);
+        }else if(this.operateType === 2) {
+          for(let x of this.checkedListSelf) {
+            ids.push(x.FilePkid); // 包含文件和文件夹
+          }
         }
+        link = $(
+          `<a href="/EggsWebService.asmx/zipFileDown?stageId=${this.stageId}&taskId=${this.taskId}&demandId=''&vals=${ids.join(',')}&type=${this.operateType - 1}" download="....zip" target="_blank"></a>`
+        );
+        // link.get(0).click();
+        if(this.operateType === 2) {
+          this.fileCheckboxAllSelf(false); // 多选操作完成后把选中状态还原
+        } 
       }
     },
+
     // 个人文档的操作--------------------------------end
 
 
@@ -3086,7 +3097,31 @@ export default {
 
     
     // 文件上传--------------------------------start
+    // 文件上传成果对数据的处理
+    self_uploadSuccess(res,  _file) {
+      let file = Object.assign({}, _file.response.result);
+      let file1 = this.addFileAttr(file);
+      file1 = Object.assign({}, file, file1);
+      if(this.uploadFrom >= 5) { // 个人文档
+        this.personalFiles = this.personalFiles.concat(file1); 
+        return;
+      }
+      let id = this.filePartitionId;
+      // console.log('----', file1);
+      if(id) { // 分组
+        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
+        this.parthsGroup[ids].fileList = this.parthsGroup[ids].fileList.concat(file1);
+        this.groupFileChange(ids); 
+      }else { // 未分组
+        this.notGroupedList = this.notGroupedList.concat(file1); 
+      }
+    },
+    
     parthDragEnter(id) {
+      if(id === 'personal') {
+        this.uploadFrom = 6;
+        return;
+      }
       this.filePartitionId = id;
       if(id) {
         this.uploadFrom = 4;
@@ -3096,6 +3131,10 @@ export default {
     },
     // 当前点击的是哪个分组的上传
     handleClickUpload(groupId) {
+      if(groupId === 'personal') {
+        this.uploadFrom = 5;
+        return;
+      }
       this.filePartitionId = groupId;
       if(groupId) {
         this.uploadFrom = 3;
@@ -3149,7 +3188,7 @@ export default {
     uploadFile(formData, file) {
       let _ = this;
       file.reUploadXhr = $.ajax({
-        url:`/ProjectFile.ashx?&myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=${this.filePartitionId}`,
+        url:`/ProjectFile.ashx?myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=${this.filePartitionId}`,
         type: "post",
         dataType: "json",
         data: formData,
@@ -3198,10 +3237,10 @@ export default {
     // 文件上传前
     beforeUpload(file) {
       // console.log('--before', file);
-      const id = this.filePartitionId;
       if (!this.uploadProgressFlag) {
         this.uploadProgressFlag = true;
       }
+      const id = this.filePartitionId;
       let sizes = this.conver(file.size);
       let FileTypeNum = this.getSuffix(file.name);
       FileTypeNum = this.getFlieTyle(FileTypeNum);
@@ -3219,7 +3258,17 @@ export default {
         file: file
       };
       // 判重--该目录下已包含同名文件
-      if(id) { // 分组
+      if(this.uploadFrom >= 5) { // 个人文档
+        let index = this.personalFiles.findIndex(ele => {
+          return ele.FileName == file.name;
+        });
+        if (index !== -1) {
+          this.$set(obj, 'error', 1);
+          this.fileProgressList.unshift(obj);
+          this.$message.error("该目录下已含有同名文件");
+          return false;
+        }
+      }else if(id) { // 分组
         let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
         let index = this.parthsGroup[ids].fileList.findIndex(ele => {
           return ele.FileName == file.name;
@@ -3227,7 +3276,7 @@ export default {
         if (index !== -1) {
           this.$set(obj, 'error', 1);
           this.fileProgressList.unshift(obj);
-          this.$message.error("该目录下已含有同名文件");
+          this.$message.error("该分组下已含有同名文件");
           return false; // 只写return不能阻止文件继续上传
         }
       }else { // 未分组
@@ -3237,7 +3286,7 @@ export default {
         if (index !== -1) {
           this.$set(obj, 'error', 1);
           this.fileProgressList.unshift(obj);
-          this.$message.error("该目录下已含有同名文件");
+          this.$message.error("该分组下已含有同名文件");
           return false;
         }
       }
@@ -3285,18 +3334,8 @@ export default {
 
     // 文件上传成功
     uploadSuccess(res, _file) {
-      const id = this.filePartitionId;
-      let file = Object.assign({}, _file.response.result);
-      let file1 = this.addFileAttr(file);
-      file1 = Object.assign({}, file, file1);
-      // console.log('----', file1);
-      if(id) { // 分组
-        let ids = this.parthsGroup.findIndex(ele => ele.pkid === id);
-        this.parthsGroup[ids].fileList = this.parthsGroup[ids].fileList.concat(file1);
-        this.groupFileChange(ids); 
-      }else { // 未分组
-        this.notGroupedList = this.notGroupedList.concat(file1); 
-      }
+      // 文件上传成果对数据的处理
+      this.self_uploadSuccess(res,  _file);
       
       let ids = this.fileProgressList.findIndex(ele => {
         return ele.uid === _file.uid;
@@ -3304,7 +3343,6 @@ export default {
       if (ids !== -1) {
         this.fileProgressList[ids].status = 2;
       }
-      
       let returns = this.popFileProgress(this.fileProgressList);
       if (this.uploadProgressFlag && returns) {
         setTimeout(() => {
@@ -3353,24 +3391,29 @@ export default {
 
     // 获取数据及处理--------------------------------start
     // 获取个人文档列表
-    getPersonalFile() {
-      
-      this.personalFiles = this.personalFiles.concat();
-      for(let y of this.personalFiles) {
-        if(!y.hasOwnProperty('children')) {
-          y.Count = 0;
-          y.Desc = '0'; // 文字描述
-          y.SystemType = 0; // 0--上传的文件 1--文字描述
-          let indexs = y.FileName.lastIndexOf('.');
-          y.Type = y.FileName.slice(indexs + 1);
-          y.UserPic = 'http://server.apexgame.cn/upload/user/20180719110629240.jpeg';
-          y.userPkid = 0;
-          y.checked = false;
-          y.hover = false;
+    getPersonalFile(file) {
+      let obj = {
+        myUserId: this.userId,
+        fatherId: file ? file.FilePkid : 0,
+        iLevel: this.personalFolder.iLevel,
+      };
+      this.$HTTP('post', '/persona_get_list', obj).then(res => {
+        let result = Object.assign({}, res.result);
+        this.personalFiles = result.fileItemList;
+        this.personalFolder.fatherId = result.fatherId;
+        this.personalFolder.iLevel = result.iLevel;
+        this.personalFolder.fatherName = result.fatherName;
+        for(let y of this.personalFiles) {
+          let returnObj = this.addFileAttr(y);
+          y = Object.assign(y, returnObj);
         }
-      }
-      // this.fibChecked(this.personalFiles);
-      console.log(this.personalFiles);
+        if(result.iLevel) {
+          this.navBar.push({ id: this.personalFolder.iLevel, name: this.personalFolder.fatherName });
+        }
+        console.log('---getPersonalFile', this.personalFiles);
+      }).catch(err => {
+        console.log(err);
+      });
     },
 
     // 修改状态/人员/时间 更新stageinfo
@@ -3415,7 +3458,7 @@ export default {
           for (let y of this.tasksList) {
             y.extend = true;
           }
-          console.log("获取任务列表", this.tasksList);
+          // console.log("获取任务列表", this.tasksList);
           this.taskStageDetail(this.taskId ,this.stageId);
         })
         .catch(err => {
@@ -3521,7 +3564,7 @@ export default {
     // 添加文件时，对文件的属性进行处理
     addFileAttr(obj) {
       let len = obj.Type.length;
-      let title = obj.FileName.slice(0, obj.FileName.length - (len + 1));
+      let title = obj.Type === 'folder' ? obj.FileName : obj.FileName.slice(0, obj.FileName.length - (len + 1));
       let data = {
         checked: false,
         hover: false,
@@ -3533,6 +3576,9 @@ export default {
       }
       if (data.FileType !== 1) {
         data.UrlMin = this.fileTypeImg[data.FileType].src;
+      }
+      if(data.FileType !== 12) {
+        data.Size = this.conver(obj.Size);
       }
       return data;
     },

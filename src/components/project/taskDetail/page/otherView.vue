@@ -37,7 +37,7 @@
         class="file_empty_upload"
         :ref="uploadFrom === 1 ? 'fileUpload' : ''"
         :drag='power && !groupSortFlag && uploadFrom === 1 ? true : false'
-        :action="'/ProjectFile.ashx?&myUserId='+ids.userId+'&projectId='+ids.projectId+'&stageTaskId='+ids.stageTaskId+'&filePartitionId='+0"
+        :action="'/ProjectFile.ashx?myUserId='+ids.userId+'&projectId='+ids.projectId+'&stageTaskId='+ids.stageTaskId+'&filePartitionId='+0"
         :show-file-list="false"
         :multiple="true"
         :on-error="uploadError"
@@ -96,7 +96,7 @@
                 class="file_empty_upload"
                 :ref="uploadFrom === 2 ? 'fileUpload' : ''"
                 :drag='power && !groupSortFlag ? true : false'
-                :action="'/ProjectFile.ashx?&myUserId='+ids.userId+'&projectId='+ids.projectId+'&stageTaskId='+ids.stageTaskId+'&filePartitionId='+group.pkid"
+                :action="'/ProjectFile.ashx?myUserId='+ids.userId+'&projectId='+ids.projectId+'&stageTaskId='+ids.stageTaskId+'&filePartitionId='+group.pkid"
                 :show-file-list="false"
                 :multiple="true"
                 :on-error="uploadError"
@@ -133,7 +133,7 @@
                               <el-upload 
                                 :ref="uploadFrom === 3 && filePartitionId === group.pkid ? 'fileUpload' : ''"
                                 class="upload_file"
-                                :action="'/ProjectFile.ashx?&myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+group.pkid"
+                                :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+group.pkid"
                                 :show-file-list="false"
                                 :multiple="true"
                                 :on-error="uploadError"
@@ -1184,7 +1184,7 @@ export default {
     uploadFile(formData, file) {
       let _ = this;
       file.reUploadXhr = $.ajax({
-        url:`/ProjectFile.ashx?&myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=${this.filePartitionId}`,
+        url:`/ProjectFile.ashx?myUserId${this.userId}&projectId=${this.projectId}&stageTaskId=${this.stageTaskId}&filePartitionId=${this.filePartitionId}`,
         type: "post",
         dataType: "json",
         data: formData,
