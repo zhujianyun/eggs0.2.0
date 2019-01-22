@@ -30,7 +30,17 @@ module.exports = {
                         target: "http://eggs.apexgame.cn/",
                         logLevel: 'debug',
                         changeOrigin: true
-                  }
+                  },
+                  '/ExcelFile.ashx': {
+                        target: 'http://eggs.apexgame.cn/',
+                        logLevel: 'debug',
+                        changeOrigin: true
+                  },
+                  '/img.ashx': {
+                        target: 'http://eggs.apexgame.cn/',
+                        logLevel: 'debug',
+                        changeOrigin: true
+                  },
             },
 
             // Various Dev Server settings

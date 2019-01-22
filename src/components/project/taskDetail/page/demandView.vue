@@ -20,7 +20,7 @@
                         <i class="iconfont icon-xiazai" @click='multipleDownload'></i>
                     </el-tooltip>
                     <el-tooltip effect="dark" content="收藏" placement="top" :open-delay="300">
-                        <i class="iconfont icon-shoucang1"></i>
+                        <i class="iconfont icon-shoucang1" @click='multipleCollect'></i>
                     </el-tooltip>
                 </template>
             </div>
@@ -205,6 +205,7 @@ export default {
     props: ['list'],
     data() {
         return {
+            userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
             fileTypeImg: [
                 {
                     src: require("../../../../assets/img/file_b/0.png")
@@ -295,6 +296,7 @@ export default {
                 return;
             }
             if(type === 'collect') { // 收藏
+                this.fileCollect(group);
                 return;
             }
 
@@ -309,6 +311,7 @@ export default {
                 return;
             }
             if(type === 'collect') { // 收藏
+                this.fileCollect(item);
                 return;
             }
             
@@ -376,9 +379,13 @@ export default {
         multipleDownload() {
             this.fromType = 3;
             this.fileDownlod();
-            console.log('demandView--download');
         },
 
+        // 多选收藏
+        multipleCollect() {
+            this.fromType = 3; // 多个文件移交
+            this.fileCollect();
+        },
 
         // 文件下载
         fileDownlod(item) {
@@ -421,6 +428,41 @@ export default {
                     this.fileCheckboxAll(false); // 多选操作完成后把选中状态还原
                 } 
             }
+        },
+
+        // 文件收藏
+        fileCollect(item) {
+            // 3--多选 4--分组 5 单个文件
+            let ids = [];
+            if(this.fromType === 5) {
+                ids = [item.FilePkid];
+            }else if (this.fromType === 3 && this.checkedList.length === 1) {
+                ids = [this.checkedList[0].FilePkid];
+            } else if(this.fromType === 3 && this.checkedList.length > 1) {
+                for(let x of this.checkedList) {
+                    ids.push(x.FilePkid);
+                }
+            }else if(this.fromType === 4) {
+                if(item.Pkid) { // 分组
+                    ids.push(item.Pkid);
+                }else { // 未分组
+                    for(let x of item.FileItemList) {
+                        ids.push(x.FilePkid);
+                    }
+                }
+            }
+            let obj = {
+                myUserId: this.userId,
+                vale: ids.join(','),
+                type: 2,
+                idType: this.fromType === 4 && item.Pkid ? 2 : 1,
+                fatherId: 0,
+                iLevel: 1,
+            };
+            this.$emit('handleCollect', obj);
+            if(this.fromType === 3) {
+                this.fileCheckboxAll(false); // 多选操作完成后把选中状态还原
+            } 
         },
            // 窗口/元素大小变化对文件分组收起时的影响
         sizeChange() {

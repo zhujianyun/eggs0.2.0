@@ -1,5 +1,5 @@
 <template>
-	<div class="other_view" @click.stop='() => {}'>
+	<div id='otherView' class="other_view" @click.stop>
 		<div class="top_header" v-if='!groupSortFlag'>
 			<div class="file_name header_item">
 				<span @click='sortHandle(0)'>文件</span>
@@ -46,11 +46,11 @@
         :limit="9"
         :on-exceed="handleExceed"
         :before-upload="beforeUpload"
-        @click.native.stop.prevent='(e) => { e.preventDefault(); return false}'
+        @click.native.prevent
         >
         <!-- 文件为空的时候 -->
         <template v-if='fileEmpty'>
-          <div class="file_empty">
+          <div class="file_empty" @click.stop>
             <div class="empty_img">
               <img src="../../../../assets/img/file_empty.png" alt="">
             </div>
@@ -60,7 +60,7 @@
         </template>
         <!-- 有分组（无排序） -->
         <template v-else-if='sortType === 0'>
-          <p class="mainColor_underline_text go_back_sort" v-if='groupSortFlag' @click='backParthSort'>退出分组排序</p>
+          <p class="mainColor_underline_text go_back_sort" v-if='groupSortFlag' @click.stop='backParthSort'>退出分组排序</p>
           <!-- 分组排序 -->
           <template v-if='groupSortFlag'>
             <draggable
@@ -71,7 +71,8 @@
                 draggable: power && parthsGroup.length > 2 ? '.draged' : '',
                 }"
               @end='dragEndParth'
-            >
+              @click.native.stop
+              >
               <div 
                 class="parths_group is_sort draged"
                 v-if='group.pkid'
@@ -91,6 +92,7 @@
               v-for="(group, index0) in parthsGroup"
               :key="group.pkid"
               @dragenter.stop="parthDragEnter(group.pkid)"
+              @click.stop
               >
               <el-upload
                 class="file_empty_upload"
@@ -105,10 +107,10 @@
                 :limit="9"
                 :on-exceed="handleExceed"
                 :before-upload="beforeUpload"
-                @click.native.stop='(e) => { e.preventDefault(); return false}'
+                @click.native.prevent
                 >
                 <!-- 分组的头部操作 -->
-                <div class="group_top">
+                <div class="group_top" @click.stop>
                     <span v-if='!group.edit' class="group_name">{{group.groupName}}</span>
                       <input 
                         v-else 
@@ -190,7 +192,7 @@
                         </el-dropdown>
                     </div>
                 </div>
-                <div class="group_file">
+                <div class="group_file" @click.stop>
                   <div 
                     class="every_files"
                     v-for="(file, index) in group.fileList"
@@ -244,7 +246,7 @@
         </template>
         <!-- 无分组（排序） -->
         <template v-else>
-           <div class="no_group parths_group">
+          <div class="no_group parths_group"  @click.stop>
             <div class="group_file">
               <div 
                 class="every_files"
@@ -511,16 +513,15 @@ export default {
       }
       if(this.sortType) { // 排序
         if(checked) { // 全选
-          this.fileList.map(ele => ele.ckecked = true);
+          this.fileList.map(ele => ele.checked = true);
           this.checkedList = this.fileList.concat();
         }else { // 全不选
-          this.fileList.map(ele => ele.ckecked = false);
+          this.fileList.map(ele => ele.checked = false);
           this.checkedList = [];
         }
         this.fileList = this.fileList.concat();
       }else {
         if(checked) { // 全选
-
           this.checkedList = [];
           for(let x of this.parthsGroup) {
             for(let y of x.fileList) {
@@ -562,7 +563,7 @@ export default {
         this.setSort();
 			}else { // 恢复默认排序
 				this.sortType = 0;
-			}
+      }
     },
     // 排序后的数据
     setSort() {
@@ -751,6 +752,7 @@ export default {
         return;
       }
       if(type === 'collect') { // 收藏
+        this.fileCollect(group);
         return;
       }
       if(type === 'transfer') { // 整组移交
@@ -864,6 +866,7 @@ export default {
         return;
       }
       if(type === 'collect') { // 收藏
+        this.fileCollect(item);
         return;
       }
       if(type === 'transfer') { // 移交
@@ -1124,6 +1127,29 @@ export default {
           this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
         } 
       }
+    },
+
+
+
+    // 文件收藏
+    fileCollect(item) {
+      // transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交
+      let ids = [];
+      if(this.transferType === 1) {
+        ids = [item.FilePkid];
+      }else if(this.transferType === 3) {
+        ids.push(item.pkid);
+      }
+      let obj = {
+        myUserId: this.userId,
+        vale: ids.join(','),
+        type: 1,
+        idType: this.transferType === 3 ? 2 : 1,
+        fatherId: 0,
+        iLevel: 1,
+      };
+      this.$emit('handleCollect', obj);
+      
     },
 
 
@@ -1394,7 +1420,6 @@ export default {
       if(this.sortType) { // 无分组--排序
         this.setSort();
       }
-      
       
     },
 
