@@ -344,6 +344,7 @@ export default {
                     }
                 }
             }
+            this.fileCheckbox = val;
             this.demandList = this.demandList.concat();
         },
         // 文件的选中状态发生改变

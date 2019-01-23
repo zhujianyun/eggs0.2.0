@@ -323,7 +323,7 @@
                                 groupid='noGroup'
                                 v-model="notGroupedList"
                                 :options="{
-                                  group:{name: 'file',pull: 'clone'}, 
+                                  group:{name: 'file',pull: 'clone', put: ['file', 'file1']}, 
                                   ghostClass: 'ghost_file', 
                                   dragClass: 'drag_file',
                                   chosenClass: 'chosen_file',
@@ -567,7 +567,7 @@
                                   :groupid='group.pkid'
                                   v-model="group.allList"
                                   :options="{
-                                    group:{name: 'file',pull:'clone'},
+                                    group:{name: 'file',pull:'clone', put: ['file', 'file1']},
                                     ghostClass: 'ghost_file', 
                                     dragClass: 'drag_file',
                                     draggable: '.draged',
@@ -619,10 +619,9 @@
                                         <div class="file_info">
                                           <p class="file_length">暂无文件</p>
                                         </div>
-
+                                        <div class="null"></div>
                                     </div>
                                   </template>
-                                  <div class="null"></div>
                                 </draggable>
                               </div>
 
@@ -639,7 +638,7 @@
                                   :groupid='group.pkid'
                                   v-model="group.overList"
                                   :options="{
-                                    group:{name: 'file',pull:'clone'},
+                                    group:{name: 'file',pull:'clone', put: ['file', 'file1']},
                                     ghostClass: 'ghost_file', 
                                     dragClass: 'drag_file',
                                     disabled: group.dragDisabled,
@@ -747,7 +746,7 @@
                                   :groupid='group.pkid'
                                   v-model="group.fileList"
                                   :options="{
-                                    group:{name: 'file',pull:'clone'},
+                                    group:{name: 'file',pull:'clone', put: ['file', 'file1']},
                                     ghostClass: 'ghost_file', 
                                     dragClass: 'drag_file',
                                     disabled: group.dragDisabled,
@@ -814,8 +813,8 @@
                                         </el-dropdown-menu>
                                       </el-dropdown>
                                     </div>
+                                    <div class="null"></div>
                                   </div>
-                                  <div class="null"></div>
                                 </draggable>
 
                               </div>
@@ -966,20 +965,21 @@
                           groupid='personal'
                           v-model="personalFiles"
                           :options="{
-                            group:{name: 'file',pull:'clone'},
+                            group:{name: 'file1', pull:'clone', put: ['file']},
                             ghostClass: 'ghost_file', 
                             dragClass: 'drag_file',
                             disabled: dragDisabled_personal,
                             draggable: '.draged',
-
+                            sort: false
                           }"
                           :move='fileMove'
                           @start='dragStart($event, "personal")'
                           @end='dragEnd'
+                          @add='dragAdd'
+                          
                           >
                           <div 
-                              class="every_file"
-                              :class="file.FileType !== 12 ? 'draged' : ''"
+                              :class="file.FileType !== 12 ? 'every_file draged' : 'every_file'"
                               v-for="(file, index) in personalFiles"
                               :key="file.FilePkid"
                               :id='file.FilePkid'
@@ -1596,8 +1596,30 @@ export default {
           console.log(err);
         });
       }else { // 个人文档
-        this.inputTextShow2 = false;
-        this.addTextIng = false;
+        let obj = {
+          myUserId: this.userId,
+          fatherId: this.personalFolder.folderId,
+          iLevel: this.personalFolder.iLevel,
+          title: this.personalFolder.fatherName, // 现在只能给未分组添加文字
+          desc: this.inputText,
+        };
+        this.$HTTP('post', '/persona_add_file', obj).then(res => {
+          this.inputTextShow2 = false;
+          this.addTextIng = false;
+          this.inputText = '';
+          let returnObj = this.addFileAttr(res.result);
+          returnObj = Object.assign(res.result, returnObj);
+          this.personalFiles.push(returnObj);
+          this.$message({
+            type: 'success',
+            message: '添加文字内容成功',
+            center: true
+          });
+          console.log('添加文字内容成功', res);
+        }).catch(err => {
+          console.log(err);
+        });
+       
       }
       
     },
@@ -1654,7 +1676,7 @@ export default {
           taskId: this.idList.taskId,
           myUserId: this.idList.userId,
         }
-        this.$HTTP('post', '/demand_list', obj).then(res => {
+        this.$HTTP('post', '/demand_list', obj, $('#app')[0]).then(res => {
           // console.log(res.result);
           this.demandList = [...res.result];
           this.demandOrGain = flag;
@@ -1788,7 +1810,7 @@ export default {
           .eq(i)
           .find(".group_file")
           .eq(0)
-          .width();
+          .width() + 24;
         const x = Math.floor(w / this.fileBoxW);
         let list = [...this.parthsGroup[i].fileList];
         let length = list.length;
@@ -2605,7 +2627,7 @@ export default {
     },
 
     // 文件收藏请求及数据处理
-    sendCollection(obj) {
+    sendCollection(obj, type) {
       this.$HTTP('post', '/collections_add', obj).then(res => {
         if(res.code === '200') {
           this.$message({
@@ -2615,22 +2637,36 @@ export default {
           });
         }
         let result = [...res.result];
+        for(let y of result) {
+          let returnObj = this.addFileAttr(y);
+          y = Object.assign(y, returnObj);
+        }
         if(!this.personalFilesShow) { return }
-        if(this.personalFolder.folderId === 0 && this.personalFolder.iLevel === 0) { // 正在'我的文档'文件夹页面
+        if(type === 'dragCollect') {
+          // this.personalFiles.push(...result);
+        }else if(this.personalFolder.folderId === 0 && this.personalFolder.iLevel === 0) { // 正在'我的文档'文件夹页面
           let indexs = this.personalFiles.findIndex(ele => ele.FilePkid === 0);
           if(indexs !== -1) {
             this.personalFiles[indexs].SubfileCount += result.length;
           }
         }else if(this.personalFolder.folderId === 0 && this.personalFolder.iLevel === 1) { // 正在’我的收藏‘页面
-          for(let y of result) {
-            let returnObj = this.addFileAttr(y);
-            y = Object.assign(y, returnObj);
+          if(result.length === 1 && result[0].FileType === 12) {
+            let x = this.personalFiles.findIndex(ele => ele.FileType !== 12);
+            if(x === -1) {
+              this.personalFiles.push(...result);
+            }else {
+              this.personalFiles.splice(x, 0, ...result);
+            }
+          }else {
+            this.personalFiles.push(...result);
           }
-          this.personalFiles.push(...result);
+          
         }
         if(Number(obj.type) === 1 && this.operateType === 2) {
           this.fileCheckboxAll('clear'); // 多选操作完成后把选中状态还原
         }
+
+        this.fileCheckboxSelf = false;
         this.personalFiles = this.personalFiles.concat();
 
       }).catch(err => {
@@ -2645,16 +2681,21 @@ export default {
 
 
     // 文件拖拽---------------------------------start
+    mouseMove() {
+      console.log('///??????????//');
+    },  
     // 文件移动时的回调函数
     fileMove(e, under) {
-      // e.dragged 拖拽的元素
-      // e.draggedContext 拖拽的元素的详情
-      // e.draggedContext.element 拖拽的元素的内容
-      // e.draggedContext.futureIndex / index 拖拽的元素的索引
-      // e.to: 拖入区域
-      // e.relatedContext: 拖入区域的上下文
+      /**
+       * e.dragged 拖拽的元素
+       * e.draggedContext 拖拽的元素的详情
+       * e.draggedContext.element 拖拽的元素的内容
+       * e.draggedContext.futureIndex / index 拖拽的元素的索引
+       * e.to: 拖入区域
+       * e.relatedContext: 拖入区域的上下文
+       * **/
 
-      // console.log("fileMove", e, this.dragItem.item.FileName);
+      // console.log("fileMove", this.dragItem.item.FileName);
       if (!this.dragItem.item.FileName) {
         const item = e.draggedContext.element;
         this.dragItem.item = Object.assign({}, item);
@@ -2688,7 +2729,7 @@ export default {
       this.dragItem.newIndex = e.newIndex;
 
       const { fromGroup: from, toGroup: to, item, oldIndex, newIndex } = this.dragItem;
-      console.log('---', from, to, oldIndex, e.newIndex);
+      // console.log('---', from, to, oldIndex, e.newIndex);
 
       if(from === to && oldIndex === newIndex) {
         this.dragEndInit();
@@ -2699,12 +2740,12 @@ export default {
         let last = this.parthsGroup[this.parthsGroup.length - 1];
         this.addParth(last.groupName, last, this.dragItem);
       }
-      if (from !== "personal" && to === "personal") {
-        // 添加到个人文档--copy
-      } else if (from === "personal" && to === "personal") {
-        this.personalSort(this.dragItem);
+      if (to === "personal") { // from !== "personal" && 
+        this.addToCollect(this.dragItem);
         this.dragEndInit();
         return;
+        // 添加到个人文档--copy
+      } else if (from === "personal" && to === "personal") {
         // 个人文档的文件排序
       } else if (from === "personal" && to !== "personal") {
         // 从个人文档添加到我的操作中--copy
@@ -3029,20 +3070,26 @@ export default {
           title = title + ' ' + 1;
         }
       }
-
-      this.personalFiles.push({
-        Count: 0,
-        FilePkid: this.personalFiles.length,
-        FileName: title,
-        FileTitle: title,
-        UrlMin: null,
-        FileType: 12,
-        UrlMin: this.fileTypeImg[12].src,
-        userName: null,
-        Type: "folder",
-        edit: true,
-        createdFolder: true
-      });
+      let obj = {
+          Count: 0,
+          FilePkid: 'folder' + this.personalFiles.length,
+          FileName: title,
+          FileTitle: title,
+          UrlMin: null,
+          FileType: 12,
+          UrlMin: this.fileTypeImg[12].src,
+          userName: null,
+          Type: "folder",
+          edit: true,
+          createdFolder: true
+        };
+      let x = this.personalFiles.findIndex(ele => ele.FileType !== 12);
+      if(x === -1) {
+        this.personalFiles.push(obj);
+      }else {
+        this.personalFiles.splice(x, 0, obj);
+      }
+      
 
       this.$nextTick(() => {
         const ele = $('#fileNameEdit');
@@ -3310,33 +3357,29 @@ export default {
         } 
       }
     },
-
-
-    // 个人文档文件的排序
-    personalSort(dragItem) {
+    // 拖拽加入收藏
+    addToCollect(dragItem) {
       const { fromGroup: from, toGroup: to, item, oldIndex, newIndex } = dragItem;
+      console.log('addToCollect---',from, to, oldIndex, newIndex, dragItem);
       let obj = {
-        FilePkid: item.FilePkid,
-        fatherId: this.personalFolder.folderId,
-        isSort: newIndex,
-      }
-      this.$HTTP('post', '/persona_update_isSort', obj).then(res => {
-        if(res.code !== '200') {
-          console.log('个人文档文件排序失败', res.msg);
-          return;
-        }
-        console.log('个人文档文件排序成功', res.result);
-      }).catch(err => {
-        console.log('个人文档文件排序失败', err);
-      });
+        myUserId: this.userId,
+        vale: item.FilePkid,
+        type: 1,
+        idType: 1,
+        fatherId: item.FilePkid ? this.personalFolder.folderId : 0,
+        iLevel: item.FilePkid ? this.personalFolder.iLevel : 1,
+      };
+      this.personalFiles.push(item);
+      this.sendCollection(obj, 'dragCollect');
     },
-
+    dragAdd(e) {
+      this.personalFiles.splice(e.newIndex, 1);
+    },
     // 个人文档的操作--------------------------------end
 
 
 
 
-    
     // 文件上传--------------------------------start
     // 文件上传成果对数据的处理
     self_uploadSuccess(res,  _file) {
@@ -3344,6 +3387,7 @@ export default {
       let file1 = this.addFileAttr(file);
       file1 = Object.assign({}, file, file1);
       if(this.uploadFrom >= 5) { // 个人文档
+        this.fileCheckboxSelf = false;
         this.personalFiles = this.personalFiles.concat(file1); 
         return;
       }
@@ -3650,7 +3694,7 @@ export default {
         fatherId: file ? file.FilePkid : 0,
         iLevel:  file ? this.personalFolder.iLevel + 1 : this.personalFolder.iLevel,
       };
-      this.$HTTP('post', '/persona_get_list', obj).then(res => {
+      this.$HTTP('post', '/persona_get_list', obj, $('#personalFiles')[0]).then(res => {
         let result = Object.assign({}, res.result);
         this.personalFiles = result.fileItemList;
         this.personalFolder.folderId = result.fatherId;
