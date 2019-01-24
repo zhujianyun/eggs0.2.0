@@ -12,7 +12,7 @@
         <div class="full_preview_list clearfix">
             <div    
                 class="every_stage"
-                v-for='stage in fullPreview.stageFileList'
+                v-for='(stage, index) in fullPreview.stageFileList'
                 :key='stage.stageTaskId'
                 >
                 <div class="stage_top">{{stage.title}}</div>
@@ -20,18 +20,18 @@
                     <template v-if='stage.enabled'>
                         <div 
                             class="file_group"
-                            v-for='group in stage.fileList'
+                            v-for='(group, index1) in stage.fileList'
                             :key='group.pkid'
                             >
                             <p class="group_title">{{group.groupName ? group.groupName : '未分组文件'}}</p>
                             <div class="group_list clearfix">
                                 <div 
                                     :class="{file_box: true, file_box_hover: item.FilePkid === file.FilePkid}"
-                                    v-for='item in group.fileList'
+                                    v-for='(item, index2) in group.fileList'
                                     :key='item.FilePkid'
-                                    @mouseenter.stop="fileMouseenter($event, item)"
+                                    @mouseenter.stop="fileMouseenter($event, item, index2, index1, index)"
                                     @mouseleave="fileMouseleave($event, item)"
-
+                                    @click='enterTheDetails(index2, index1, index)'
                                 >
                                     <span class="file_img">
                                         <img :src="item.UrlMins" alt="">
@@ -58,11 +58,16 @@
             </div>
         </div>
         <transition name="fade1">
-            <div id='hoverFile' class="hover_file" v-if='fileShow'>
+            <div 
+                v-if='fileShow' 
+                id='hoverFile' 
+                class="hover_file" 
+                >
                 <div 
                     class="every_file"
                     @mouseenter="enterFile(file)"
                     @mouseleave="leaveFile(file)"
+                    @click='enterTheDetails(file.index, file.groupIndex, file.stageIndex)'
                     >
                     <span class="file_pic">
                         <template v-if='file.FileType === 11 && file.Desc'>
@@ -90,12 +95,21 @@
                 </div>
             </div>
         </transition>
-
+        <transition name="fade1">
+            <file-details v-if="filedetailsShow"
+            :info='enterDetailInfo'
+            @closeDetails='closeDetails' />
+        </transition>
     </div>
 </template>
 <script>
+import FileDetails from '../../fileDetails';
+
 export default {
     props: ['taskId', 'fullList'],
+    components: {
+        FileDetails
+    },
     data() {
         return {
             fileTypeImgM: [
@@ -157,10 +171,33 @@ export default {
             fileShow: false,
             _time: null,
             _time1: null,
+            filedetailsShow: false,
         }
     },
     methods: {
-        fileMouseenter(e, item) {
+        // 进入文件详情
+        enterTheDetails(index, groupIndex, stageIndex) {
+            let stageInfo = this.fullPreview.stageFileList[stageIndex];
+            this.enterDetailInfo = {
+                groupIndex: groupIndex,
+                fileIndex: index,
+                fileList: stageInfo.fileList,
+                type: 1,
+                menuList: [
+                    this.fullPreview.taskTitle, 
+                    stageInfo.title, 
+                    stageInfo.fileList[groupIndex].groupName, 
+                    stageInfo.fileList[groupIndex].fileList[index].FileName
+                ]
+            }
+            this.filedetailsShow = true;
+            
+        },
+        // 关闭文件详情
+        closeDetails() {
+            this.filedetailsShow = false;
+        },
+        fileMouseenter(e, item, index2, index1, index) {
             if(this._time || this._time1) {
                 clearTimeout(this._time);
                 clearTimeout(this._time1);
@@ -169,7 +206,7 @@ export default {
             }
             this._time = setTimeout(() => {
                 this.fileShow = true;
-                this.file = Object.assign({}, item);
+                this.file = Object.assign({}, item, {index: index2, groupIndex: index1, stageIndex: index});
                 
                 let returns = this.findparent($(e.target));
                 let left = returns[0];
@@ -384,6 +421,7 @@ export default {
       .every_file {
           border: 1px solid #3684FF;
           background: #ffffff;
+          box-shadow:0px 1px 8px 0px rgba(59,59,59,0.5);
       }
   }
 }

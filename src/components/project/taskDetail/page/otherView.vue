@@ -119,6 +119,7 @@
                         type="text" 
                         v-model='group.groupName'
                         @blur='groupTitleBlur(group)'
+                        @keyup.enter='groupTitleBlur(group, true)'
                         />
                     <div class="group_operate">
                         <el-dropdown 
@@ -200,8 +201,8 @@
                     >
                     <div class="file_name every_common">
                       <el-checkbox v-model='file.checked' @change='checkboxChange($event, file, 0)'></el-checkbox>
-                      <img :src="file.FileType === 1 ? fileTypeImg[1].src : file.UrlMin" alt="">
-                      <span v-if='!file.edit' class="file_title">{{file.FileName}}</span>
+                      <img :src="file.FileType === 1 ? fileTypeImg[1].src : file.UrlMin" alt="" @click='enterTheDetails(index, index0)'>
+                      <span @click='enterTheDetails(index, index0)' v-if='!file.edit' class="file_title">{{file.FileName}}</span>
                         <input 
                           v-else 
                           class="edit" 
@@ -209,15 +210,16 @@
                           id="fileNameEdit"
                           @input='fileNameEditChange($event, file)'
                           @blur="fileNameEditBlur($event, file)"
+                          @keyup.enter='fileNameEditBlur($event, file, true)'
                           />
                     </div>
-                    <div class="file_from every_common">
+                    <div class="file_from every_common" @click='enterTheDetails(index, index0)'>
                       <span>{{file.nickName ? file.nickName : file.userName}}</span>
                     </div>
-                    <div class="file_time every_common">
+                    <div class="file_time every_common" @click='enterTheDetails(index, index0)'>
                       <span>{{file.formatTime}}</span>
                     </div>
-                    <div class="file_message every_common">
+                    <div class="file_message every_common" @click='enterTheDetails(index, index0)'>
                       <i class="iconfont icon-pinglun"></i>
                       <span v-if='file.Count'>{{file.Count}}</span>
                     </div>
@@ -255,8 +257,8 @@
                 >
                 <div class="file_name every_common">
                   <el-checkbox v-model='file.checked' @change='checkboxChange($event, file, 1)'></el-checkbox>
-                  <img :src="file.FileType === 1 ? fileTypeImg[1].src : file.UrlMin" alt="">
-                  <span v-if='!file.edit' class="file_title">{{file.FileName}}</span>
+                  <img :src="file.FileType === 1 ? fileTypeImg[1].src : file.UrlMin" alt="" @click='enterTheDetails(file.index, file.groupIndex)'>
+                  <span v-if='!file.edit' class="file_title" @click='enterTheDetails(file.index, file.groupIndex)'>{{file.FileName}}</span>
                   <input 
                     v-else 
                     class="edit" 
@@ -264,15 +266,16 @@
                     id="fileNameEdit"
                     @input='fileNameEditChange($event, file)'
                     @blur="fileNameEditBlur($event, file)"
+                    @keyup.enter='fileNameEditBlur($event, file, true)'
                     />
                 </div>
-                <div class="file_from every_common">
+                <div class="file_from every_common" @click='enterTheDetails(file.index, file.groupIndex)'>
                   <span>{{file.nickName ? file.nickName : file.userName}}</span>
                 </div>
-                <div class="file_time every_common">
+                <div class="file_time every_common" @click='enterTheDetails(file.index, file.groupIndex)'>
                   <span>{{file.formatTime}}</span>
                 </div>
-                <div class="file_message every_common">
+                <div class="file_message every_common" @click='enterTheDetails(file.index, file.groupIndex)'>
                   <i class="iconfont icon-pinglun"></i>
                   <span v-if='file.Count'>{{file.Count}}</span>
                 </div>
@@ -413,6 +416,8 @@ export default {
       transferDefaultStage: [], // 移交时默认选择下一阶段阶段
       transferType: 1, // 1--单个文件移交， 2--多个文件移交， 3--组文件的移交
       uploadFrom: 1, // 1--从本地拖拽上传； 2--从本地拖拽上传到分组中； 3--分组点击分组里的上传
+      lastTime: null, // 判断失焦和进入详情的间隔
+      enterEdit: false, // enter保存
     };
   },
   watch: {
@@ -486,8 +491,15 @@ export default {
     ...mapMutations([
       'CHECKEDLIST_CHANGE',
       'FILELENGTH_CHANGE'
-
     ]),
+    // 进入文件详情
+    enterTheDetails(index, groupIndex) {
+      let times = new Date().getTime();
+      if(times - this.lastTime < 500) {
+        return;
+      }
+      this.$emit('handleDetails', index, groupIndex);      
+    },
     // 文件选中状态改变
     checkboxChange(val, item, flag) {
       this.selectedListChange(val, item, flag);
@@ -496,6 +508,16 @@ export default {
       }else { // 有分组
         this.parthsGroup = this.parthsGroup.concat();
       }
+    },
+
+    // 编辑时对input框的获取焦点等操作
+    editFocus(element, select = true) {
+      this.$nextTick(() => {
+        const ele = element ? $(element) : this.$refs.createdGroup[0];
+        ele.focus();
+        select ? ele.select() : null;
+        this.enterEdit = false;
+      });
     },
     // 已选列表改变
     selectedListChange(val, item, flag) {
@@ -570,9 +592,11 @@ export default {
       const list = [];
       for(let i = 0; i < this.parthsGroup.length; i++) {
         let x = this.parthsGroup[i];
-        for(let ele of x.fileList) {
+        for(let n = 0; n < x.fileList.length; n++) {
+          let ele = x.fileList[n];
           ele.groupId = x.pkid; 
           ele.groupIndex = i;
+          ele.index = n;
         }
         list.push(...x.fileList);
 
@@ -649,14 +673,7 @@ export default {
         // console.log(this.parthsGroup);
 
         // 分组名获取焦点并选
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
-          ele.select();
-          // this.$refs.createdGroup[0].scrollIntoView({
-          //   behavior: "smooth"
-          // });
-        });
+        this.editFocus();
         return;
       }
 
@@ -668,39 +685,45 @@ export default {
     },
 
     // 新建/编辑分组名
-    groupTitleBlur(group) {
+    groupTitleBlur(group, flag) {
+      if(this.enterEdit) {
+        return;
+      }
+      this.lastTime = new Date().getTime();
       if(group.groupName == '') {
         this.$message.warning('分组名不能为空！');
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
-        });
+        this.editFocus();
+        return;
+      }
+      // 先判重，如果有重复的名字--提示，否则--发送请求
+      let repeat = this.parthsGroup.findIndex(ele => (ele.groupName === group.groupName && ele.pkid !== group.pkid));
+      if(repeat !== -1) {
+        this.$message.warning('已含有同名分组名！');
+        this.editFocus();
+        return;
       }
       if(group.createdGroup) { // 新建
         // 发送请求---新建分组
         this.addParth(group.groupName);
       }else { // 编辑
-        // 先判重，如果有重复的名字--提示，否则--发送请求
-        let repeat = this.parthsGroup.findIndex(ele => (ele.groupName === group.groupName && ele.pkid !== group.pkid));
-        if(repeat !== -1) {
-          this.$message.warning('已含有同名分组名！');
-        }else {
           // 发送修改分组名的接口
-          if(this.groupNameCopy !== group.groupName) {
-            let obj = {
-              filePartitionId: group.pkid,
-              title: group.groupName
-            };
-            this.$HTTP('post', '/filePartition_update', obj).then(res => {
-              console.log('文件分组名修改成功', res);
-              this.$message.success('文件分组名修改成功!');
-            }).catch(err => {
-              console.log(err);
-            });
-          }
-          group.edit = false;
-          this.parthsGroup = this.parthsGroup.concat();
+        if(this.groupNameCopy !== group.groupName) {
+          let obj = {
+            filePartitionId: group.pkid,
+            title: group.groupName
+          };
+          this.$HTTP('post', '/filePartition_update', obj).then(res => {
+            console.log('文件分组名修改成功', res);
+            this.$message.success('文件分组名修改成功!');
+          }).catch(err => {
+            console.log(err);
+          });
         }
+        group.edit = false;
+        this.parthsGroup = this.parthsGroup.concat();
+      }
+      if(flag) {
+        this.enterEdit = true;
       }
     },
 
@@ -737,7 +760,6 @@ export default {
     },
 
 
-
     // 分组的更多操作--------------------分组的操作
     fileGroupCommand(type, index, group) {
       this.filePartitionId = group.pkid;
@@ -765,11 +787,7 @@ export default {
         group.edit = true;
         this.groupNameCopy = group.groupName;
         this.parthsGroup = this.parthsGroup.concat();
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
-          ele.select();
-        });
+        this.editFocus();
         return;
       }
       if(type === 'delete') { // 删除
@@ -878,12 +896,10 @@ export default {
         item.edit = true;
         this.fileNameCopy = item.FileTitle;
         this.parthsGroup = this.parthsGroup.concat();
-
+        this.editFocus('#fileNameEdit');
         this.$nextTick(() => {
           const ele = $('#fileNameEdit');
           ele.css({width: this.textWidth(ele.val()) + 4})
-          ele.focus();
-          ele.select();
         });
         return;
       }
@@ -911,15 +927,16 @@ export default {
       return width;
     },
     // 修改文件名失焦--保存
-    fileNameEditBlur(e, item) {
+    fileNameEditBlur(e, item, flag) {
+      if(this.enterEdit) {
+        return;
+      }
+      this.lastTime = new Date().getTime();
       const { index, groupId, groupIndex } = this.operateFile;
       const newTitle = item.FileTitle + '.' + item.Type;
       if(item.FileTitle == '') {
         this.$message.warning('文件名不能为空！');
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit');
         return;
       }
       // 先判重，如果有重复的名字--提示，否则--发送请求
@@ -928,10 +945,7 @@ export default {
       
       if(repeat !== -1) {
         this.$message.error('该分组内含有同名文件！');
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit');
       }else {
         // 发送修改分组名的接口
         if(this.fileNameCopy !== item.FileTitle) {
@@ -949,6 +963,9 @@ export default {
         }
         item.edit = false;
         this.parthsGroup = this.parthsGroup.concat();
+      }
+      if(flag) {
+        this.enterEdit = true;
       }
     },
     // 取消删除文件
@@ -1521,10 +1538,12 @@ export default {
     width: 184px;
   }
   .file_message {
-    width: 114px;
+    width: 100px;
   }
   .file_more {
-    width: 30px;
+    width: 44px;
+    padding-left: 14px;
+    box-sizing: border-box;
   }
   .top_header {
     overflow: hidden;
@@ -1607,6 +1626,7 @@ export default {
           border: 1px solid #eeeeee;
           box-sizing: border-box;
           margin-top: 6px;
+          cursor: pointer;
           .every_common {
             height: 38px;
             line-height: 40px;

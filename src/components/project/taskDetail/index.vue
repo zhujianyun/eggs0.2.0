@@ -373,8 +373,9 @@
                                     :filename='ele.FileName'
                                     @mouseenter="enterFile(ele)"
                                     @mouseleave="leaveFile(ele)"
+                                    @click='enterTheDetails(index, 0, -1)'
                                     >
-                                    <span class="file_pic" @click='enterTheDetails'>
+                                    <span class="file_pic">
                                       <template v-if='ele.FileType === 11 && ele.Desc'>
                                         <span class="text_desc"><span>{{ele.Desc}}</span></span>
                                       </template>
@@ -391,6 +392,8 @@
                                         v-model='ele.FileTitle' 
                                         id="fileNameEdit"
                                         @blur="fileNameEditBlur($event, ele)"
+                                        @keyup.enter='fileNameEditBlur($event, ele, true)'
+                                        @click.stop
                                         />
                                         <el-tooltip effect="dark" :content="ele.nickName ? ele.nickName : ele.userName" placement="top" :open-delay="300">
                                           <img :src="ele.UserPic" alt="" class="from_header">
@@ -401,12 +404,13 @@
                                         </el-tooltip>
                                           {{ele.Count}}
                                       </span>
-                                      <span class="fixed file_checkbox" v-if='oneChecked || ele.hover'>
+                                      <span class="fixed file_checkbox" v-if='oneChecked || ele.hover' @click.stop>
                                         <el-checkbox v-model="ele.checked" @change="everyFileCheckbox($event, ele)"></el-checkbox>
                                       </span>
                                       <el-dropdown 
                                         class="fixed file_more"
                                         @visible-change="operateFileDropdown($event, ele)"
+                                        @click.native.stop
                                         >
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                         <el-dropdown-menu slot="dropdown">
@@ -504,6 +508,7 @@
                                       type="text" 
                                       v-model='group.groupName'
                                       @blur='groupTitleBlur(group)'
+                                      @keyup.enter='groupTitleBlur(group, true)'
                                       />
                                   <div class="group_operate">
                                     <span 
@@ -685,7 +690,7 @@
                                       :groupid='group.pkid'
                                       :id='item.FilePkid'
                                       :filename='item.FileName'
-                                      @click='groupExtendToggle(index, item)'
+                                      @click='groupExtendToggle(index, item, index1)'
                                       @mouseenter="enterFile(item)"
                                       @mouseleave="leaveFile(item)"
                                       >
@@ -726,6 +731,8 @@
                                             v-model='item.FileTitle' 
                                             id="fileNameEdit"
                                             @blur="fileNameEditBlur($event, item)"
+                                            @keyup.enter='fileNameEditBlur($event, item, true)'
+                                            @click.stop
                                             />
                                           <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                             <img :src="item.UserPic" alt="" class="from_header">
@@ -736,10 +743,10 @@
                                             </el-tooltip>
                                             {{item.Count}}
                                           </span>
-                                          <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
+                                          <span class="fixed file_checkbox" v-if='oneChecked || item.hover' @click.stop>
                                             <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
                                           </span>
-                                          <el-dropdown class="fixed file_more">
+                                          <el-dropdown class="fixed file_more" @click.native.stop>
                                             <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                             <el-dropdown-menu slot="dropdown">
                                               <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
@@ -780,7 +787,6 @@
                                     dragClass: 'drag_file',
                                     disabled: group.dragDisabled,
                                     draggable: power ? '.draged' : '',
-
                                   }"
                                   :move='fileMove'
                                   @start='dragStart($event, group.pkid, index)'
@@ -795,6 +801,7 @@
                                     :filename='item.FileName'
                                     @mouseenter="enterFile(item)"
                                     @mouseleave="leaveFile(item)"
+                                    @click='enterTheDetails(index1, index + 1, -1)'
                                     >
                                     <span class="file_pic">
                                       <template v-if='item.FileType === 11 && item.Desc'>
@@ -813,6 +820,8 @@
                                         v-model='item.FileTitle' 
                                         id="fileNameEdit"
                                         @blur="fileNameEditBlur($event, item)"
+                                        @keyup.enter='fileNameEditBlur($event, item, true)'
+                                        @click.stop
                                         />
                                       <el-tooltip effect="dark" :content="item.nickName ? item.nickName : item.userName" placement="top" :open-delay="300">
                                         <img :src="item.UserPic" alt="" class="from_header">
@@ -823,10 +832,10 @@
                                         </el-tooltip>
                                         {{item.Count}}
                                       </span>
-                                      <span class="fixed file_checkbox" v-if='oneChecked || item.hover'>
+                                      <span class="fixed file_checkbox" v-if='oneChecked || item.hover' @click.stop>
                                         <el-checkbox v-model="item.checked" @change="everyFileCheckbox($event, item)"></el-checkbox>
                                       </span>
-                                      <el-dropdown class="fixed file_more">
+                                      <el-dropdown class="fixed file_more" @click.native.stop>
                                         <span class="el-dropdown-link"><i class='iconfont icon-gengduo'></i></span>
                                         <el-dropdown-menu slot="dropdown">
                                           <el-dropdown-item @click.native="fileCommand('download', index1, item, group.pkid, index)">下载</el-dropdown-item>
@@ -885,11 +894,13 @@
                     :stageList='stageList'
                     :list="stageInfo.fileList"
                     @handleCollect='sendCollection'
+                    @handleDetails='enterTheDetails'
                   />
                 </div>
                 <!-- 相关需求 -->
                 <div v-else id="operateFile" class="operate_file">
                   <demand-view
+                  :taskTitle='stageInfo.title'
                   :list='demandList'
                   @handleCollect="sendCollection"
                   ref="demandView"
@@ -1034,6 +1045,7 @@
                                   v-model='file.FileTitle' 
                                   id="fileNameEdit"
                                   @blur="personalFileBlur($event, file, index)"
+                                  @keyup.enter='personalFileBlur($event, file, index, true)'
                                   />
                                 <p v-if='file.FileType === 12' class="file_num">{{file.SubfileCount}}个文件</p>
                                 <p  v-else class="file_num">{{file.Size}}</p>
@@ -1121,10 +1133,11 @@
         @closeProgress="closeProgress"
         @handleCancel="cancelUpload"
         @handleRe="reUpload" />
-        <file-details 
-          v-if="filedetailsShow"
-          @closeDetails='closeDetails' 
-          />
+      <transition name="fade1">
+        <file-details v-if="filedetailsShow"
+          :info='enterDetailInfo'
+          @closeDetails='closeDetails' />
+      </transition>
     </div>
 </template>
 <script>
@@ -1266,6 +1279,7 @@ export default {
       parthsGroup: [], // 分组文件列表
       personalFilesShow: false, // 个人文档是否显示
       personalFiles: [], // 个人文档列表
+      personalFileCopy: [], // 个人文档列表
       personalFolder: {
         folderId: 0, // 当前个人文件夹层级的ID
         iLevel: 0, // 当前个人文件夹的层级
@@ -1321,6 +1335,9 @@ export default {
        * **/
       uploadFrom: 1, 
       filedetailsShow: false , //文件预览是否显示
+      lastTime: null, // 判断失焦和进入详情的间隔
+      enterEdit: false, // enter保存
+
     };
   },
   watch: {
@@ -1459,8 +1476,29 @@ export default {
       'POWER_CHANGE'
     ]),
     // 进入文件详情
-    enterTheDetails(notGroupedList) {
+    enterTheDetails(index, groupIndex, type) {
+      if(type === -1) {
+        let times = new Date().getTime();
+        if(times - this.lastTime < 500) {
+          return;
+        }
+      }
+      
+      let x = this.stageList.findIndex(ele => ele.stageId == this.stageId);
+      this.enterDetailInfo = {
+        groupIndex: groupIndex,
+        fileIndex: index,
+        fileList: this.stageInfo.fileList,
+        type: type ? 2 : 1,
+        menuList: [
+          this.stageInfo.title, 
+          this.stageInfo.stageList[x].stageTitle, 
+          this.stageInfo.fileList[groupIndex].groupName, 
+          this.stageInfo.fileList[groupIndex].fileList[index].FileName
+          ]
+      }
       this.filedetailsShow = true;
+      
     },
     // 关闭文件详情
     closeDetails() {
@@ -1583,6 +1621,7 @@ export default {
 
     // 输入文字--失去焦点
     inputTextBlur() {
+      this.lastTime = new Date().getTime();
       $('#inputText').removeClass('textarea_border');
     },
 
@@ -1680,7 +1719,7 @@ export default {
         projectId: this.projectId,
         taskId: this.taskId
       };
-      this.$HTTP("post", "/project_get_view", obj)
+      this.$HTTP("post", "/project_get_view", obj, $('#app')[0])
         .then(res => {
           this.fullList = res.result;
           this.fullPreviewShow = true;
@@ -1760,8 +1799,11 @@ export default {
     },
 
     // 文件组折叠/展开
-    groupExtendToggle(index, item) {
-      if(item !== true && !item.overLength) {return}
+    groupExtendToggle(index, item, index1) {
+      if(item !== true && !item.overLength) {
+        this.enterTheDetails(index1, index + 1);
+        return;
+        }
       if (this.leftCenterFlag) {
         this.leftRightToggle();
         this.parthsGroup[index].packUp = null;
@@ -1951,6 +1993,15 @@ export default {
 
       }
     },
+    // 编辑时对input框的获取焦点等操作
+    editFocus(element, select = true) {
+      this.$nextTick(() => {
+        const ele = element ? $(element) : this.$refs.createdGroup[0];
+        ele.focus();
+        select ? ele.select() : null;
+        this.enterEdit = false;
+      });
+    },
     // 整体的分组管理
     groupCommand(type) {
       if(this.viewToggle) { // 在默认视图操作分组管理
@@ -2005,14 +2056,7 @@ export default {
             createdGroup: true
           });
           // 分组名获取焦点并选
-          this.$nextTick(() => {
-            const ele = $(this.$refs.createdGroup[0]);
-            ele.focus();
-            ele.select();
-            // this.$refs.createdGroup[0].scrollIntoView({
-            //   behavior: "smooth"
-            // });
-          });
+          this.editFocus();
           return;
         }
 
@@ -2055,51 +2099,57 @@ export default {
     },
 
     // 新建/编辑分组名
-    groupTitleBlur(group) {
+    groupTitleBlur(group, flag) {
+      if(this.enterEdit) {
+        return;
+      }
+      this.lastTime = new Date().getTime();
       if(group.groupName == '') {
         this.$message({
           type: 'warning',
           message: '分组名不能为空！',
           center: true
         });
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
+        this.editFocus();
+        return;
+      }
+      // 先判重，如果有重复的名字--提示，否则--发送请求
+      let repeat = this.parthsGroup.findIndex(ele => (ele.groupName === group.groupName && ele.pkid !== group.pkid));
+      if(repeat !== -1) {
+        this.$message({
+          type: 'warning',
+          message: '已含有同名分组名！',
+          center: true
         });
+        this.editFocus();
+        return;
       }
       if(group.createdGroup) { // 新建
         // 发送请求---新建分组
         this.addParth(group.groupName);
       }else { // 编辑
-        // 先判重，如果有重复的名字--提示，否则--发送请求
-        let repeat = this.parthsGroup.findIndex(ele => (ele.groupName === group.groupName && ele.pkid !== group.pkid));
-        if(repeat !== -1) {
-          this.$message({
-            type: 'warning',
-            message: '已含有同名分组名！',
-            center: true
-          });
-        }else {
-          // 发送修改分组名的接口
-          if(this.groupNameCopy !== group.groupName) {
-            let obj = {
-              filePartitionId: group.pkid,
-              title: group.groupName
-            };
-            this.$HTTP('post', '/filePartition_update', obj).then(res => {
-              console.log('文件分组名修改成功', res);
-              this.$message({
-                type: 'success',
-                message: '文件分组名修改成功',
-                center: true
-              });
-            }).catch(err => {
-              console.log(err);
+        // 发送修改分组名的接口
+        if(this.groupNameCopy !== group.groupName) {
+          let obj = {
+            filePartitionId: group.pkid,
+            title: group.groupName
+          };
+          this.$HTTP('post', '/filePartition_update', obj).then(res => {
+            console.log('文件分组名修改成功', res);
+            this.$message({
+              type: 'success',
+              message: '文件分组名修改成功',
+              center: true
             });
-          }
-          group.edit = false;
-          this.parthsGroup = this.parthsGroup.concat();
+          }).catch(err => {
+            console.log(err);
+          });
         }
+        group.edit = false;
+        this.parthsGroup = this.parthsGroup.concat();
+      }
+      if(flag) {
+        this.enterEdit = true;
       }
     },
 
@@ -2178,12 +2228,7 @@ export default {
         }else {
           this.notGroupedList = this.notGroupedList.concat();
         }
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-          ele.select();
-        
-        });
+        this.editFocus('#fileNameEdit');
         return;
       }
       if(type === 'delete') { // 删除
@@ -2192,8 +2237,13 @@ export default {
         return;
       }
     },
+
     // 修改文件名失焦--保存
-    fileNameEditBlur(e, item) {
+    fileNameEditBlur(e, item, flag) {
+      if(this.enterEdit) {
+        return;
+      }
+      this.lastTime = new Date().getTime();
       const { index, groupId, groupIndex } = this.operateFile;
       const newTitle = item.FileTitle + '.' + item.Type;
       if(item.FileTitle == '') {
@@ -2202,10 +2252,7 @@ export default {
           message: '文件名不能为空！',
           center: true
         });
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit');
         return;
       }
       // 先判重，如果有重复的名字--提示，否则--发送请求
@@ -2221,10 +2268,7 @@ export default {
           message: '该分组内含有同名文件！·',
           center: true
         });
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit', false);
       }else {
         // 发送修改分组名的接口
         if(this.fileNameCopy !== item.FileTitle) {
@@ -2250,6 +2294,9 @@ export default {
         }else {
           this.notGroupedList = this.notGroupedList.concat();
         }
+      }
+      if(flag) {
+        this.enterEdit = true;
       }
     },
     // 取消删除文件
@@ -2312,11 +2359,7 @@ export default {
         group.edit = true;
         this.groupNameCopy = group.groupName;
         this.parthsGroup = this.parthsGroup.concat();
-        this.$nextTick(() => {
-          const ele = $(this.$refs.createdGroup[0]);
-          ele.focus();
-          ele.select();
-        });
+        this.editFocus();
         return;
       }
       if(type === 'delete') { // 删除
@@ -2743,6 +2786,11 @@ export default {
           ele.addClass("dragging");
         }
       });
+      if(this.dragItem.fromGroup === 'personal') {
+        this.personalFileCopy = JSON.parse(JSON.stringify(this.personalFiles));
+        console.log(this.personalFileCopy);
+
+      }
       // 临时添加的一个分组
       this.groupCommand('temporary');
 
@@ -2770,14 +2818,15 @@ export default {
         this.addParth(last.groupName, last, this.dragItem);
       }
       if (to === "personal") { // from !== "personal" && 
+        // 添加到个人文档--copy
         this.addToCollect(this.dragItem);
         this.dragEndInit();
         return;
-        // 添加到个人文档--copy
       } else if (from === "personal" && to === "personal") {
         // 个人文档的文件排序
       } else if (from === "personal" && to !== "personal") {
         // 从个人文档添加到我的操作中--copy
+        this.collectToGain(this.dragItem);
       } else if (from === "noGroup" && to === "noGroup") {
         // 未分组之间的拖拽
       } else if (from !== to) {
@@ -2800,7 +2849,7 @@ export default {
           }
         }
       }
-      if(to !== 'new') {
+      if(to !== 'new' && from !== "personal") {
         try { 
           await this.fileIsSort(e.newIndex, to);
         } catch(err) {
@@ -2819,6 +2868,36 @@ export default {
         }
         
       }
+    },
+
+    // 从个人文档拖拽文档到成果文件
+    collectToGain(dragItem) {
+      const { fromGroup: from, toGroup: to, item, oldIndex, newIndex } = dragItem;
+      this.personalFiles = this.personalFileCopy.concat();
+      // console.log(dragItem);
+      let obj = {
+        myUserId: this.userId,
+        id: item.FilePkid,
+        stageTaskId: this.stageTaskId,
+        isSort: newIndex,
+        filePartitionId: to === 'noGroup' ? 0 : to,
+      };
+      this.$HTTP('post', '/collections_move', obj).then(res => {
+        console.log('添加文件成功', res);
+        let result = Object.assign({}, res.result);
+        let file1 = this.addFileAttr(result);
+        result = Object.assign({}, result, file1);
+        if(to === 'noGroup') {
+          this.notGroupedList.splice(newIndex, 1, result);
+        }else {
+          let indexs = this.parthsGroup.findIndex(ele => ele.pkid == to);
+          if(indexs !== -1) {
+            this.parthsGroup[indexs].fileList.splice(newIndex, 1, result);
+          }
+        }
+      }).catch(err => {
+        console.log('添加文件失败',err);
+      });
     },
 
     // 文件移动排序
@@ -3118,13 +3197,7 @@ export default {
       }else {
         this.personalFiles.splice(x, 0, obj);
       }
-      
-
-      this.$nextTick(() => {
-        const ele = $('#fileNameEdit');
-        ele.focus();
-        ele.select();
-      });
+      this.editFocus('#fileNameEdit');
     },
     // 个人文档的文件（夹）的更多操作
     personalFileCommand(type, index, item) {
@@ -3139,13 +3212,7 @@ export default {
         item.edit = true;
         this.fileNameCopy = item.FileTitle;
         this.personalFiles = this.personalFiles.concat();
-       
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-          ele.select();
-        
-        });
+        this.editFocus('#fileNameEdit');
         return;
       }
       if(type === 'delete') { // 删除
@@ -3154,9 +3221,12 @@ export default {
         return;
       }
     },
-  
+
     // 添加/修改文件夹失去焦点--保存
-    personalFileBlur(e, file, index) {
+    personalFileBlur(e, file, index, flag) {
+      if(this.enterEdit) {
+        return;
+      }
       const newTitle = file.FileType === 12 ? file.FileTitle : file.FileTitle + '.' + file.Type;
       if(file.FileTitle == '') {
         this.$message({
@@ -3164,10 +3234,7 @@ export default {
           message: `文件${file.FileType === 12 ? '夹' : ''}名不能为空！`,
           center: true
         });
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit', false);
         return;
       }
       
@@ -3178,10 +3245,7 @@ export default {
           message: `该目录下已含有同名文件${file.FileType === 12 ? '夹' : ''}！`,
           center: true
         });
-        this.$nextTick(() => {
-          const ele = $('#fileNameEdit');
-          ele.focus();
-        });
+        this.editFocus('#fileNameEdit', false);
         return;
       }
       if(file.createdFolder) { // 新建
@@ -3218,10 +3282,13 @@ export default {
           }).catch(err => {
             console.log('修改文件名失败', err);
           });
-          file.FileName = newTitle;
-          file.edit = false;
-          this.personalFiles = this.personalFiles.concat();
         }
+        file.FileName = newTitle;
+        file.edit = false;
+        this.personalFiles = this.personalFiles.concat();
+      }
+      if(flag) {
+        this.enterEdit = true;
       }
     },
  
@@ -3389,7 +3456,7 @@ export default {
     // 拖拽加入收藏
     addToCollect(dragItem) {
       const { fromGroup: from, toGroup: to, item, oldIndex, newIndex } = dragItem;
-      console.log('addToCollect---',from, to, oldIndex, newIndex, dragItem);
+      // console.log('addToCollect---',from, to, oldIndex, newIndex, dragItem);
       let obj = {
         myUserId: this.userId,
         vale: item.FilePkid,
