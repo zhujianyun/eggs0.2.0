@@ -25,18 +25,19 @@
                             >
                             <p class="group_title">{{group.groupName ? group.groupName : '未分组文件'}}</p>
                             <div class="group_list clearfix">
-                                <div class="file_box"
-                                    v-for='file in group.fileList'
-                                    :key='file.FilePkid'
-                                    @mouseover.stop="fileMouseover($event, file)"
-                                    @mouseout="fileMousout($event, file)"
+                                <div 
+                                    :class="{file_box: true, file_box_hover: item.FilePkid === file.FilePkid}"
+                                    v-for='item in group.fileList'
+                                    :key='item.FilePkid'
+                                    @mouseenter.stop="fileMouseenter($event, item)"
+                                    @mouseleave="fileMouseleave($event, item)"
 
                                 >
                                     <span class="file_img">
-                                        <img :src="file.UrlMins" alt="">
+                                        <img :src="item.UrlMins" alt="">
                                         <span class="none"></span>
                                     </span>
-                                    <p class="file_title word_over">{{file.FileName}}</p>
+                                    <p class="file_title word_over">{{item.FileName}}</p>
                                 </div>
                             </div>
                         </div>
@@ -56,44 +57,40 @@
                 </div>
             </div>
         </div>
-        <div id='hoverFile' class="hover_file" v-if='fileShow'>
-            <div 
-                class="every_file"
-                @mouseenter="enterFile(file)"
-                @mouseleave="leaveFile(file)"
-                >
-                <span class="file_pic">
-                    <template v-if='file.FileType === 11 && file.Desc'>
-                    <span class="text_desc"><span>{{file.Desc}}</span></span>
-                    </template>
-                    <template v-else>
-                    <img :src="file.UrlMin" alt="">
-                    </template>
-                    <span class="none"></span>
-                </span>
-                <div class="file_info">
-                    <p v-if='!file.edit' class="title" @dblclick="fileNameDblclick($event, file)">{{file.FileName}}</p>
-                    <input 
-                    v-else 
-                    class="title edit" 
-                    v-model='file.FileTitle' 
-                    id="fileNameEdit"
-                    @blur="fileNameEditBlur($event, file)"
-                    />
-                    <el-tooltip effect="dark" :content="file.nickName ? file.nickName : file.userName" placement="top" :open-delay="300">
-                    <img :src="file.UserPic" alt="" class="from_header">
-                    </el-tooltip>
-                    <span class="file_message fr">
-                    <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
-                        <i class='iconfont icon-pinglun'></i>
-                    </el-tooltip>
-                    {{file.Count}}
+        <transition name="fade1">
+            <div id='hoverFile' class="hover_file" v-if='fileShow'>
+                <div 
+                    class="every_file"
+                    @mouseenter="enterFile(file)"
+                    @mouseleave="leaveFile(file)"
+                    >
+                    <span class="file_pic">
+                        <template v-if='file.FileType === 11 && file.Desc'>
+                        <span class="text_desc"><span>{{file.Desc}}</span></span>
+                        </template>
+                        <template v-else>
+                        <img :src="file.UrlMin" alt="">
+                        </template>
+                        <span class="none"></span>
                     </span>
-                    
+                    <div class="file_info">
+                        <p class="title">{{file.FileName}}</p>
+                        <el-tooltip effect="dark" :content="file.nickName ? file.nickName : file.userName" placement="top" :open-delay="300">
+                        <img :src="file.UserPic" alt="" class="from_header">
+                        </el-tooltip>
+                        <span class="file_message fr">
+                        <el-tooltip effect="dark" content="评论" placement="top" :open-delay="300">
+                            <i class='iconfont icon-pinglun'></i>
+                        </el-tooltip>
+                        {{file.Count}}
+                        </span>
+                        
+                    </div>
+                    <div class="null"></div>
                 </div>
-                <div class="null"></div>
             </div>
-        </div>
+        </transition>
+
     </div>
 </template>
 <script>
@@ -163,12 +160,12 @@ export default {
         }
     },
     methods: {
-        fileMouseover(e, item) {
-            if(this._time) {
+        fileMouseenter(e, item) {
+            if(this._time || this._time1) {
                 clearTimeout(this._time);
-            }
-            if(this._time1) {
                 clearTimeout(this._time1);
+                this._time = null;
+                this._time1 = null;
             }
             this._time = setTimeout(() => {
                 this.fileShow = true;
@@ -188,7 +185,7 @@ export default {
                         left = appW - w;;
                     }
                     if(top + h > appH) {
-                        top = appH - h - 100;
+                        top = top - h - 70;
                     }
                     $('#hoverFile').css({left: left + 'px', top: top + 'px'});
 
@@ -196,15 +193,17 @@ export default {
             }, 200);
             
         },
-        fileMousout(e, item) {
-            if(this._time) {
+        fileMouseleave(e, item) {
+            if(this._time || this._time1) {
                 clearTimeout(this._time);
-            }
-            if(this._time1) {
                 clearTimeout(this._time1);
+                this._time = null;
+                this._time1 = null;
             }
+          
             this._time1 = setTimeout(() => {
                 this.fileShow = false;
+                this.file = {};
             }, 200);
 
         },
@@ -217,8 +216,9 @@ export default {
             }
             this.fileShow = true;
         },
-         leaveFile() {
+        leaveFile() {
             this.fileShow = false;
+            this.file = {};
         },
         findparent(e) {
             let attrs = e.attr('class');
@@ -226,76 +226,6 @@ export default {
                 return [e.offset().left, e.offset().top]
             }else {
                return this.findparent(e.parent()); 
-            }
-        },
-
-        fileNameDblclick(e, item) {
-            item.edit = true;
-            this.file = JSON.parse(JSON.stringify(this.file));
-        },
-
-        // 修改文件名失焦--保存
-        fileNameEditBlur(e, item) {
-            item.edit = false;
-            this.file = JSON.parse(JSON.stringify(this.file));
-
-            return;
-            const { index, groupId, groupIndex } = this.operateFile;
-            const newTitle = item.FileTitle + '.' + item.Type;
-            if(item.FileTitle == '') {
-                this.$message({
-                type: 'warning',
-                message: '文件名不能为空！',
-                center: true
-                });
-                this.$nextTick(() => {
-                const ele = $('#fileNameEdit');
-                ele.focus();
-                });
-                return;
-            }
-            // 先判重，如果有重复的名字--提示，否则--发送请求
-            let repeat = -1;
-            if(groupId) {
-                repeat = this.parthsGroup[groupIndex].fileList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
-            }else {
-                repeat = this.notGroupedList.findIndex(ele => (ele.FileName === newTitle && ele.FilePkid !== item.FilePkid));
-            }
-            if(repeat !== -1) {
-                this.$message({
-                type: 'error',
-                message: '该分组内含有同名文件！·',
-                center: true
-                });
-                this.$nextTick(() => {
-                const ele = $('#fileNameEdit');
-                ele.focus();
-                });
-            }else {
-                // 发送修改分组名的接口
-                if(this.fileNameCopy !== item.FileTitle) {
-                let obj = {
-                    FilePkid: item.FilePkid,
-                    newTitle: item.FileTitle + '.' + item.Type
-                };
-                this.$HTTP('post', '/stageTaskFile_update', obj).then(res => {
-                    console.log('修改文件名成功', res);
-                    this.$message({
-                    type: 'success',
-                    message: '修改文件名成功',
-                    center: true
-                    });
-                }).catch(err => {
-                    console.log('修改文件名失败', err);
-                });
-                item.FileName = newTitle;
-                }
-                item.edit = false;
-                if(groupId) {
-                this.parthsGroup = this.parthsGroup.concat();
-                }else {
-                this.notGroupedList = this.notGroupedList.concat();
-                }
             }
         },
         getData() {
@@ -406,6 +336,12 @@ export default {
                               text-align: center;
                               
                           }
+                        &:hover {
+                            border: 1px solid #3684FF;
+                        }
+                      }
+                      .file_box_hover {
+                          border: 1px solid #3684FF;
                       }
                   }
               }
@@ -446,6 +382,7 @@ export default {
   .hover_file {
       position: fixed;
       .every_file {
+          border: 1px solid #3684FF;
           background: #ffffff;
       }
   }

@@ -80,27 +80,31 @@
                 <el-tooltip effect="dark" content="添加成员" placement="top" :open-delay="300">
                   <i class='iconfont icon-haoyou1'></i>
                 </el-tooltip>
-                <add-human
-                  v-if='addHumanShow'
-                  :fullViewFlag='true'
-                  :defaultList='stageList'
-                  :ids='idList'
-                  @stageInfoChange="stageInfoChange"
-                />
+                <transition name="fade1">
+                  <add-human
+                    v-if='addHumanShow'
+                    :fullViewFlag='true'
+                    :defaultList='stageList'
+                    :ids='idList'
+                    @stageInfoChange="stageInfoChange"
+                  />
+                </transition>
               </span>
               <!-- 加时间 -->
               <span class="add_time" @click.stop='addTimeHandle'>
                  <el-tooltip effect="dark" content="添加时间" placement="top" :open-delay="300">
                   <i class='iconfont icon-rili1'></i>
                 </el-tooltip>
-                <add-time
-                  v-if='addTimeShow'
-                  :fullViewFlag='true'
-                  :defaultList='stageList'
-                  :ids='idList'
-                  @stageInfoChange="stageInfoChange"
+                <transition name="fade1">
+                  <add-time
+                    v-if='addTimeShow'
+                    :fullViewFlag='true'
+                    :defaultList='stageList'
+                    :ids='idList'
+                    @stageInfoChange="stageInfoChange"
 
-                />
+                  />
+                </transition>
               </span>
             </div>
           </div>
@@ -128,25 +132,29 @@
                 <el-tooltip effect="dark" content="添加成员" placement="top" :open-delay="300">
                   <i class='iconfont icon-haoyou1'></i>
                 </el-tooltip>
-                <add-human
-                  v-if='addHumanShow'
-                  :defaultList='stageList'
-                  :ids='idList'
-                  @stageInfoChange="stageInfoChange"
-                />
+                <transition name="fade1">
+                  <add-human
+                    v-if='addHumanShow'
+                    :defaultList='stageList'
+                    :ids='idList'
+                    @stageInfoChange="stageInfoChange"
+                  />
+                </transition>
               </span>
               <!-- 加时间 -->
               <span class="add_time" @click.stop='addTimeHandle'>
                  <el-tooltip effect="dark" content="添加时间" placement="top" :open-delay="300">
                   <i class='iconfont icon-rili1'></i>
                 </el-tooltip>
-                <add-time
-                  v-if='addTimeShow'
-                  :defaultList='stageList'
-                  :ids='idList'
-                  @stageInfoChange="stageInfoChange"
+                <transition name="fade1">
+                  <add-time
+                    v-if='addTimeShow'
+                    :defaultList='stageList'
+                    :ids='idList'
+                    @stageInfoChange="stageInfoChange"
+                  />
+                </transition>
 
-                />
               </span>
               
               <span class="line"></span>
@@ -175,12 +183,13 @@
                     <div class="left fl">
                       <!-- 文件上传 -->
                       <el-dropdown 
-                        v-if='power' 
+                        v-if='false && power' 
                         placement="bottom"
                         >
                         <span class="el-dropdown-link">
                           <i class='iconfont icon-shangchuan'></i>
                         </span>
+                        <!-- 文件上传 -->
                         <el-dropdown-menu slot="dropdown">
                           <el-dropdown-item
                             @click.native="handleClickUpload(0)"
@@ -204,6 +213,26 @@
                           <el-dropdown-item>从个人文档上传</el-dropdown-item>
                         </el-dropdown-menu>
                       </el-dropdown>
+                      <el-upload 
+                        v-if='power' 
+                        :ref="uploadFrom === 1 ? 'fileUpload' : ''"
+                        class="upload_file"
+                        :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+filePartitionId"
+                        :show-file-list="false"
+                        :multiple="true"
+                        :on-error="uploadError"
+                        :on-success="uploadSuccess"
+                        :on-progress="uploadProgress"
+                        :limit="9"
+                        :on-exceed="handleExceed"
+                        :before-upload="beforeUpload"
+                        >
+                          <el-tooltip effect="dark" content="上传" placement="top" :open-delay="300">
+                            <i 
+                              class='iconfont icon-shangchuan' 
+                              @click="handleClickUpload(0)"></i>
+                          </el-tooltip>
+                      </el-upload>
                       <!-- 添加文字 -->
                       <el-tooltip v-if='power' effect="dark" content="添加文字" placement="top" :open-delay="300">
                         <i 
