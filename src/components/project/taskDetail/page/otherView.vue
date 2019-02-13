@@ -43,7 +43,7 @@
         :on-error="uploadError"
         :on-success="uploadSuccess"
         :on-progress="uploadProgress"
-        :limit="9"
+        :limit="99"
         :on-exceed="handleExceed"
         :before-upload="beforeUpload"
         @click.native.prevent
@@ -104,7 +104,7 @@
                 :on-error="uploadError"
                 :on-success="uploadSuccess"
                 :on-progress="uploadProgress"
-                :limit="9"
+                :limit="99"
                 :on-exceed="handleExceed"
                 :before-upload="beforeUpload"
                 @click.native.prevent
@@ -142,7 +142,7 @@
                                 :on-error="uploadError"
                                 :on-success="uploadSuccess"
                                 :on-progress="uploadProgress"
-                                :limit="9"
+                                :limit="99"
                                 :on-exceed="handleExceed"
                                 :before-upload="beforeUpload"
                                 >
@@ -1188,6 +1188,14 @@ export default {
     closeProgress() {
       this.uploadProgressFlag = false;
       this.fileProgressList = [];
+      // 暂时解决两次上传时文件个数大于9个的bug
+      if(Array.isArray(this.$refs.fileUpload)) {
+        // console.log(this.$refs.fileUpload[0]);
+        this.$refs.fileUpload[0].clearFiles();
+      }else {
+        // onsole.log(this.$refs.fileUpload);
+        this.$refs.fileUpload.clearFiles();
+      }
     },
 
     // 取消上传
@@ -1271,7 +1279,14 @@ export default {
     },
     // 文件上传超出提示
     handleExceed(files, fileList) {
-        this.$message.warning("最多只能选择9个文件");
+      if(files.length > 9) {
+        this.$message({
+          type: 'warning',
+          message: '最多只能选择9个文件',
+          center: true
+        });
+        return false;
+      }
     },
     // 文件上传前
     beforeUpload(file) {
@@ -1372,14 +1387,7 @@ export default {
       if (this.uploadProgressFlag && returns) {
         setTimeout(() => {
           this.closeProgress();
-          // 暂时解决两次上传时文件个数大于9个的bug
-          if(Array.isArray(this.$refs.fileUpload)) {
-            // console.log(this.$refs.fileUpload[0]);
-            this.$refs.fileUpload[0].clearFiles();
-          }else {
-            // onsole.log(this.$refs.fileUpload);
-            this.$refs.fileUpload.clearFiles();
-          }
+          
         }, 2000);
       }
     },

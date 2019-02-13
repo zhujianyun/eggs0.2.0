@@ -2,24 +2,33 @@
   <div class="project_task">
     <div class="project_task_top">
       <el-select v-model="selectedProject"
-                 placeholder="请选择">
+                 placeholder="请选择"
+                 @change="projectChange(selectedProject)">
         <el-option v-for="item in projectList"
-                   :key="item.value"
-                   :label="item.label"
-                   :value="item.value"
-                   @change="projectChange">
+                   :key="item.projectid"
+                   :label="item.title"
+                   :value="item.projectid">
         </el-option>
       </el-select>
 
       <i class="iconfont  icon-star"
-         :class="starFlag ? 'project_star' : ''"
-         @click="projectStart"></i>
+         :class="starFlag? 'project_star' : ''"
+         @click="projectStart(starFlag)"></i>
       <i class="iconfont icon-shuxingliebiaoxiangqing"
          @click="itemInformationShow=true"></i>
 
       <div class="fr otherButton">
-        <i class="iconfont icon-19daoru"
-           @click="toLead()"></i>
+        <el-tooltip class="item cur_dis"
+                    effect="dark"
+                    :open-delay="300"
+                    content="导入"
+                    placement="top-start">
+          <span class="icon cur_dis"
+                @click="toLead()">
+            <i class="iconfont icon-19daoru"></i>
+          </span>
+        </el-tooltip>
+
         <el-dropdown>
           <span class="el-dropdown-link">
             <i class="iconfont icon-haoyou"></i>
@@ -30,7 +39,6 @@
               <input type="text"
                      placeholder="搜索">
             </div>
-
             <div class="projectUserLists">
               <p class="projecttTitle">项目成员列表</p>
               <draggable v-model="userList"
@@ -54,9 +62,15 @@
         </el-dropdown>
 
         <el-dropdown @click.native.stop="parthCommand()">
-          <span class="el-dropdown-link">
-            <i class="iconfont icon-gengduo"></i>
-          </span>
+          <el-tooltip class="item cur_dis"
+                      effect="dark"
+                      :open-delay="300"
+                      content="更多"
+                      placement="top-start">
+            <span class="el-dropdown-link">
+              <i class="iconfont icon-gengduo"></i>
+            </span>
+          </el-tooltip>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item v-if="projectItem.creater.createrId ==userPkid"
                               @click.native="parthCommand('editStage')">编辑阶段</el-dropdown-item>
@@ -79,7 +93,8 @@
                   prefix-icon="el-icon-search"
                   size="small"
                   v-model="searchValue"
-                  @input="getProjectAll(searchValue)">
+                  @input="serchPartitionAndTask(searchValue)">
+
         </el-input>
       </div>
     </div>
@@ -107,6 +122,8 @@
         </div>
         <div class="mainContent"
              :class="{'mainContentFixed':isFixed}">
+          <p class="noSearch"
+             v-show="!partitionsList.length">暂无符合条件的搜索结果</p>
           <!-- 未分区 -->
           <div class="partitionsMain noPartitions"
                :data-partitionid='noPartitions.partitionId'>
@@ -150,7 +167,14 @@
                   <i class="iconfont cur unfold"
                      :class="!noPartitions.autoExpand?'icon-unfold':'icon-packup'"
                      @click="goFlod(noPartitions)"></i>
-                  <div class="stageTittle">{{noPartitions.partitionTitle}}</div>
+                  <div type="text"
+                      
+                       class="stageTittle"
+                       contenteditable="true"
+                       @keydown='checkEnter'
+                       v-html="noPartitions.partitionTitle"
+                       @blur="partitionBlur(noPartitions,indexs,noPartitions.partitionTitle)"
+                       @focus="partitionFocus(noPartitions.partitionTitle,noPartitions,indexs)">{{noPartitions.partitionTitle}}</div>
                 </div>
                 <!-- 空白占位 -->
                 <draggable v-model="userList"
@@ -218,7 +242,7 @@
                                       :open-delay="300"
                                       placement="top-start">
                             <span class="icon"
-                                  @click.stop="addStage(noPartitions.taskList,index,'noPartitions',noPartitions)">
+                                  @click.stop="addStage(noPartitions.taskList,index,'noPartitions',noPartitions,noPartitions)">
                               <i class="iconfont icon-jia1 cur"></i>
                             </span>
                           </el-tooltip>
@@ -246,7 +270,9 @@
                         <div class="stage cur"
                              v-for="(lists,index) in item.stageTaskList"
                              :key="index"
-                             @mouseenter='mouseTopEnter(item,index)'>
+                             @mouseenter='mouseTopEnter(item,index,lists)'
+                             @mouseleave='mouseTopleave(item,index,lists)'>
+                          <!-- :class="{'stageHoverShow':lists.isShowHover}" -->
                           <!-- 正常显示状态==================================================================== -->
                           <!-- 1.我参与时 有背景 -->
                           <div class="stageBg"
@@ -256,9 +282,10 @@
                                v-if='lists.stageTaskState==true'>
                             <i class="iconfont icon-wancheng"></i>完成</div>
                           <!-- 3.开启状态 显示内容 -->
-                          <!-- {{lists.enabled}} -->
+                          <!-- {{lists.stageTaskState}} -->
                           <div class="stageInfo cur"
-                               v-if="lists.enabled==''||lists.enabled==true">
+                               v-if="lists.enabled && lists.enabled==true&&lists.stageTaskState!==true || lists.enabled==''"
+                               @mouseenter='stageInfoMouse(item,lists)'>
                             <div class="participantImg">
                               <draggable :list="lists.userList"
                                          :class="{'red':!lists.isRepeat}"
@@ -266,12 +293,16 @@
                                 <span class="img"
                                       v-for="(i,index) in lists.userList"
                                       :key="index"
-                                      v-if="index<5">
+                                      v-if="index < 5">
                                   <img :src="i.userPic"
                                        alt="">
+                                  <span class='isFinish'
+                                        v-show='i.IsState'>
+                                    <i class='iconfont icon-xuanzhong'></i>
+                                  </span>
                                 </span>
                                 <span class="numsInfo"
-                                      v-if="lists.userList.length > 5">+{{lists.userList.length-5}}人</span>
+                                      v-if="lists.userList && lists.userList.length > 5">+{{lists.userList.length-5}}人</span>
                               </draggable>
                             </div>
                             <div class="participantMain"
@@ -295,6 +326,7 @@
                                 <span v-if="!end.year==nowYear">{{end.year}}/</span>
                                 <span> {{end.month}}/ {{end.day}} {{end.hour}}:{{end.minute}}</span>
                               </span>
+                              <!-- {{lists.fileCont}} -->
                               <i class="iconfont icon-wenjian1"
                                  v-if="lists.fileCont!=0||lists.fileCont!=''">{{lists.fileCont}}</i>
                             </div>
@@ -308,6 +340,8 @@
                           <!-- hover显示状态 =====================================================================-->
                           <!--1. 参与与不参与 都显示详细内容  -->
                           <div class="stageHover"
+                               :class="{'stageHoverShow':lists.stageHoverIsShow}"
+                               @mouseleave='stageInfoLeave(item,lists)'
                                v-if="lists.stageTaskState===false&&lists.enabled===true||lists.enabled===''">
                             <el-tooltip class="item"
                                         effect="dark"
@@ -358,6 +392,7 @@
                                                   prefix-icon='iconfont icon-rili1'
                                                   type="datetimerange"
                                                   :clearable='false'
+                                                  popper-class="stage_time"
                                                   @change="checkTime(item,lists,value6)"
                                                   range-separator="至"
                                                   start-placeholder="开始日期"
@@ -391,12 +426,15 @@
                               </div>
                             </div>
                             <!-- 文件上传 -->
-                            <el-dropdown placement="bottom">
-                              <span class="el-dropdown-link">
-                                <i class='iconfont icon-shangchuan'></i>
-                              </span>
-                              <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item @click.native="handleClickUpload(item,lists,noPartitions,'noPartitions')">
+                            <el-dropdown placement="bottom"
+                                         trigger="click"
+                                         @visible-change='uploadVistible($event)'>
+                              <i class='iconfont icon-shangchuan'
+                                 :class="{'cur_dis':!lists.isPartIn}"
+                                 @click='uploadDrop(lists)'></i>
+                              <el-dropdown-menu slot="dropdown"
+                                                v-show="false">
+                                <el-dropdown-item @click.native="handleClickUpload(item,lists,element,'partitions')">
                                   <el-upload ref="fileUpload"
                                              class="upload_file"
                                              :action="'/ProjectFile.ashx?&myUserId='+userPkid+'&projectId='+item.taskId+'&stageTaskId='+lists.stageTaskId+'&filePartitionId=0'"
@@ -410,7 +448,7 @@
                                              :before-upload="beforeUpload">本地上传
                                   </el-upload>
                                 </el-dropdown-item>
-                                <el-dropdown-item>从个人文档上传</el-dropdown-item>
+                                <!-- <el-dropdown-item>从个人文档上传</el-dropdown-item> -->
                               </el-dropdown-menu>
                             </el-dropdown>
 
@@ -540,15 +578,14 @@
                    :key="element.partitionId"
                    class="partitionsMain"
                    :data-partitionid='element.partitionId'
-                   v-if=" element.partitionId!==0">
+                   v-if="element.partitionId!==0">
                 <transition name="fade">
                   <div class="partitionsAndStages"
                        v-if="!element.autoExpand && element.partitionId!==0">
                     <div ref='partitions'
                          class="partitionsLabel"
                          style="heigth:100px;"
-                         :class="{'partitionsLabelFixed':leftFixed}"
-                         :style="'height:'+ ((element.taskList.length )* 72) +'px;'">
+                         :class="{'partitionsLabelFixed':leftFixed}">
                       <span class="iconBox">
                         <!-- 移动分区 -->
                         <el-tooltip class="item"
@@ -696,17 +733,25 @@
                                 <i class="iconfont icon-wancheng"></i>完成</div>
                               <!-- 3.开启状态 显示内容 -->
                               <!-- {{lists.stageTaskState}}任务是否完成 {{lists.enabled}}是否开启 -->
+                              <!-- {{lists.enabled}}{{lists.stageTaskState}} -->
+                              <!-- {{lists.enabled==true}}1 -->
                               <div class="stageInfo cur"
-                                   v-if="lists.enabled==true||lists.enabled==''">
+                                   v-if=" lists.enabled && lists.enabled==true&&lists.stageTaskState!==true || lists.enabled==''"
+                                   @mouseenter='stageInfoMouse(item,lists)'>
+                                <!-- v-if="lists.enabled==''||lists.enabled==true||!lists.stageTaskState==true" -->
                                 <div class="participantImg">
                                   <draggable :list="lists.userList"
                                              :options="{group:{'article':lists.isRepeat}, disabled: false}">
                                     <span class="img"
                                           v-for="(i,index) in lists.userList"
                                           :key="index"
-                                          v-if="index <5">
+                                          v-if="index < 5">
                                       <img :src="i.userPic"
                                            alt="">
+                                      <span class='isFinish'
+                                            v-show='i.IsState'>
+                                        <i class='iconfont icon-xuanzhong'></i>
+                                      </span>
                                       <span class="numsInfo"
                                             v-if="lists.userList.length>5">+{{lists.userList.length-5}}人</span>
                                     </span>
@@ -714,7 +759,6 @@
                                 </div>
                                 <div class="participantMain"
                                      :class="{'fontRed':lists.taskTime==0}">
-                                  <!-- {{lists.startTimeArr}}开始时间 -->
                                   <span class="pieChart"
                                         v-show="lists.taskTime==0"></span>
                                   <svg viewBox="0 0 32 32"
@@ -749,6 +793,8 @@
                               <!-- hover显示状态 =====================================================================-->
                               <!--1. 参与与不参与 都显示详细内容  -->
                               <div class="stageHover"
+                                   :class="{'stageHoverShow':lists.stageHoverIsShow}"
+                                   @mouseleave='stageInfoLeave(item,lists)'
                                    v-if="lists.stageTaskState===false&&lists.enabled===true||lists.enabled===''">
                                 <el-tooltip class="item"
                                             effect="dark"
@@ -800,6 +846,7 @@
                                                       prefix-icon='iconfont icon-rili1'
                                                       type="datetimerange"
                                                       :clearable='false'
+                                                      popper-class="stage_time"
                                                       @change="checkTime(item,lists,value6)"
                                                       range-separator="至"
                                                       :start-placeholder="lists.startTime"
@@ -834,11 +881,14 @@
                                   </div>
                                 </div>
                                 <!-- 文件上传 -->
-                                <el-dropdown placement="bottom">
-                                  <span class="el-dropdown-link">
-                                    <i class='iconfont icon-shangchuan'></i>
-                                  </span>
-                                  <el-dropdown-menu slot="dropdown">
+                                <el-dropdown placement="bottom"
+                                             trigger="click"
+                                             @visible-change='uploadVistible($event)'>
+                                  <i class='iconfont icon-shangchuan'
+                                     :class="{'cur_dis':!lists.isPartIn}"
+                                     @click='uploadDrop(lists)'></i>
+                                  <el-dropdown-menu slot="dropdown"
+                                                    v-show="false">
                                     <el-dropdown-item @click.native="handleClickUpload(item,lists,element,'partitions')">
                                       <el-upload ref="fileUpload"
                                                  class="upload_file"
@@ -853,7 +903,7 @@
                                                  :before-upload="beforeUpload">本地上传
                                       </el-upload>
                                     </el-dropdown-item>
-                                    <el-dropdown-item>从个人文档上传</el-dropdown-item>
+                                    <!-- <el-dropdown-item>从个人文档上传</el-dropdown-item> -->
                                   </el-dropdown-menu>
                                 </el-dropdown>
 
@@ -940,7 +990,7 @@
                                 :open-delay="300"
                                 placement="top-start">
                       <span class="icon"
-                            @click.stop="addPartition(element,index,'addPartition')">
+                            @click.stop="addPartition(element,indexs,'addPartition')">
                         <i class="iconfont icon-jia1 cur"></i>
                       </span>
                     </el-tooltip>
@@ -963,8 +1013,8 @@
                          :class="!element.autoExpand ? 'icon-unfold':'icon-packup'"
                          @click="goFlod(element)"></i>
                     </transition>
-                    <span>
-                      {{element.partitionTitle}}
+                    <span v-html="element.partitionTitle">
+                      <!-- {{element.partitionTitle}} -->
                     </span>
                   </li>
                 </div>
@@ -1035,8 +1085,6 @@ import UploadProgress from "../../common/uploadProgress";
 import AddPeople from "../../common/addPeople";
 import Reminder2 from "../../common/reminder2";
 import draggable from "vuedraggable";
-import { WSAESOCKTNOSUPPORT, POINT_CONVERSION_COMPRESSED } from 'constants';
-import { setTimeout } from 'timers';
 export default {
   components: {
     draggable,
@@ -1067,21 +1115,9 @@ export default {
       projectId: JSON.parse(localStorage.getItem('projectItem')).projectid,
       classify: "", //点击进入 是我负责的还是 我参与 权限修改
       projectItem: JSON.parse(localStorage.getItem('projectItem')), // 当前选择的项目
-      projectList: [
-        {
-          value: "选项1",
-          label: "Eggs0.1.1",
-          userPkid: 11
-        },
-        {
-          value: "选项2",
-          label: "双皮奶",
-          userPkid: 22
-
-        },
-      ],
+      projectList: [],
       selectedProject: "选项1",
-      starFlag: JSON.parse(localStorage.getItem('projectItem')).isStar,
+      starFlag: '',
       detailsShow: false,
       taskId: '',
       nowTaskId: '', //当前点击的 任务id
@@ -1091,7 +1127,6 @@ export default {
       //  表格选项
       isFixed: false,
       leftFixed: false,
-      projectItem: JSON.parse(localStorage.getItem('projectItem')), // 当前选择的项目
       loginUser: JSON.parse(localStorage.getItem('staffInfo')), // 当前登录者的信息
       userPkid: JSON.parse(localStorage.getItem('staffInfo')).userPkid, // 当前登录者的ID
       stageList: [], //阶段设置
@@ -1159,38 +1194,41 @@ export default {
       ],
       blurTime: '', // 失去焦点时的时间
       // 文件上传
-
       uploadProgressFlag: false,
       fileProgressList: [],
       delFileFlag: false, // 删除文件的提示
       notGroupedList: [], // 未分组文件列表 
       fileNum: '',
-
       nowTime: '', //当前时间
       nowBlurTime: "",//当前失焦时间
-
       nowUploadId: [], //当前上传片段id集合
+
     };
   },
   watch: {
     noPartitions: {
       deep: true,
       handler(val, old) {
-        if (!val.taskList.length) {
-          val.isBlank = true;
-        } else {
-          val.isBlank = false;
+        if (val.length) {
+          if (!val.taskList.length) {
+            val.isBlank = true;
+          } else {
+            val.isBlank = false;
+          }
         }
       }
     },
     partitionsList: {
       deep: true,
       handler(val, old) {
-        for (let i of val) {
-          if (!i.taskList.length) {
-            i.isBlank = true;
+        if (val) {
+          for (let i of val) {
+            if (!i.taskList.length) {
+              i.isBlank = true;
+            }
           }
         }
+
       }
     }
   },
@@ -1199,8 +1237,47 @@ export default {
   ,
   methods: {
     ...mapMutations(['DETAILS_CHANGE', 'TASKITEM_CHANGE', 'TASK_POSITION', 'PROJECT_CHANGE']),
-    // 项目列表人员拖拽 放下
+    // serchPartitionAndTask
+    serchPartitionAndTask(value) {
+      this.getProjectAll(value, this.projectId);
 
+    },
+    uploadDrop(list) {
+      list.upLoadIsShow = true;
+      // $(".el-popper").css('display', 'block');/
+
+      // console.log('dddd', list.upLoa/dIsShow = true)
+    },
+    // 关闭显示
+    uploadVistible(e) {
+      // e = false;
+      console.log(e)
+    },
+    stageInfoMouse(item, list) {
+      for (let list of this.partitionsList) {
+        for (let item of list.taskList) {
+          for (let i of item.stageTaskList) {
+            i.stageHoverIsShow = false;
+            i.upLoadIsShow = false;
+            // $(".el-popper").css('display', 'none');
+            this.partitionsList = [...this.partitionsList];
+          }
+        }
+      }
+      // let time = setTimeout(() => {
+      list.stageHoverIsShow = true;
+      this.partitionsList = [...this.partitionsList];
+      // }, 1000);
+    },
+    stageInfoLeave(item, list) {
+      if (list.upLoadIsShow) {
+        return
+      } else {
+        $(".el-popper").css('display', 'none');
+        list.stageHoverIsShow = false;
+        this.partitionsList = [...this.partitionsList];
+      }
+    },
     userListChoose(evt) {
       let userId = evt.item.dataset.pkid;
       for (let list of this.noPartitions.taskList) {
@@ -1255,19 +1332,29 @@ export default {
       this.starFlag = !this.starFlag;
       let obj = { 'projectId': this.projectId, 'userId': this.userPkid }
       this.$HTTP('post', '/project_update_isStar', obj).then(res => {
-        // localStorage.setItem('projectItem', this.starFlag);
       })
     },
 
     // 上下分区判断位置
     mouseEnter(el, index) {
       this.mouseLeftIndex = el.taskId;
+      // console.log(el)
+      // this.stageHoverIsShow = true;
     },
     // 左右阶段 定位判断
-    mouseTopEnter(el, index) {
+    mouseTopEnter(el, index, list) {
       this.mouseTopIndex = index;
-    },
+      return
 
+      list.isShowHover = true;
+      console.log(list);
+      // isShowHover
+    },
+    mouseTopleave(el, index, list) {
+      return
+      list.isShowHover = true;
+      console.log('')
+    },
     // 点击邀请好友
     invitePeople(ids) {
       // this.addPeopleShow = false;
@@ -1489,7 +1576,7 @@ export default {
       this.popShow = false;
       this.toLeadShow = false;
       this.getstageList();
-      this.getProjectAll('');
+      this.getProjectAll('', this.projectId);
     },
     parthCommand(command) {
       if (command == 'editStage') {
@@ -1538,13 +1625,21 @@ export default {
           // 判断 名字是否需要修改 
           let data = { 'myUserId': this.userPkid, 'projectId': this.projectId, 'partitionId': el.partitionId, 'title': title, 'iSort': 0 }
           this.$HTTP('post', '/task_add', data).then(res => {
-            this.getProjectAll('');
+            this.getProjectAll('', this.projectId);
           })
         }
       }
     },
-    projectChange(val) {
-      // this.PROJECT_CHANGE(val);
+    projectChange(selectedProject) {
+      this.getProjectAll('', selectedProject);
+      let index = this.projectList.findIndex(res => {
+        return res.projectid == selectedProject;
+      })
+      this.starFlag = this.projectList[index].isStar;
+      // console.log(this.projectList[index])
+
+      localStorage.setItem('projectItem', JSON.stringify(this.projectList[index]));
+      // console.log(this.projectItem)
     },
     // 搜索功能
     // searchChange(val) {
@@ -1558,6 +1653,7 @@ export default {
     // 关闭
     closeInfo() {
       this.itemInformationShow = false;
+      this.getProjectAll('', this.projectId);
     },
 
     // 未分区
@@ -1569,13 +1665,13 @@ export default {
         this.isNewP = true;
         this.EmptyData.partitionTitle = '';
         if (name == 'addPartition') {
+          console.log('分区名字')
           this.partitionsList.splice(index + 1, 0, this.EmptyData);
           this.EmptyData.partitionId = this.partitionsList.length + 1;
           this.$nextTick(res => {
             $('.hhah').children().eq(index).find('.stageTittle').focus();
           })
         } else {
-          return
           this.partitionsList.splice(1, 0, this.EmptyData);
           this.EmptyData.partitionId = this.partitionsList.length + 1;
           this.$nextTick(res => {
@@ -1652,6 +1748,7 @@ export default {
       this.$HTTP('post', '/partition_delete', obj).then(res => {
         this.reminder2Flag = false;
       })
+      this.getProjectAll('', this.projectId)
     },
     // 分区移动 start
     getdata(evt) {
@@ -1679,6 +1776,7 @@ export default {
         let taskIndex = this.partitionsList.findIndex(res => {
           return res.partitionId == element.partitionId;
         })
+
         if (name == 'Partitions') {
           this.newTask.taskTitle = '';
           this.isNewS = true;
@@ -1687,8 +1785,8 @@ export default {
             $(".hhah").children().eq(taskIndex - 1).find('.stageName').eq(index + 1).focus();
           })
         } else {
-          this.newTask.taskTitle = '';
           this.isNewS = true;
+          this.newTask.taskTitle = '';
           el.splice(index + 1, 0, this.newTask);
           this.$nextTick(res => {
             $('.taskLists').children().eq(index + 1).find('.stageName').focus();
@@ -1740,9 +1838,11 @@ export default {
     },
     // 修改任务名字
     ModifyTaskName(taskId, title) {
+      console.log(taskId, title)
       let data = { 'taskId': taskId, 'title': title }
       this.$HTTP('post', '/task_update_title', data).then(res => {
         console.log(res)
+
       })
     },
     // 删除任务
@@ -1829,78 +1929,95 @@ export default {
       })
     },
     // 获取项目所有列表
-    getProjectAll(keys) {
-      let data = { project: this.projectId, 'myUserId': this.userPkid, 'keys': keys };
-      this.$HTTP('post', '/project_get_info2', data).then(res => {
-        this.partitionsList = res.result;
-        for (let list of this.partitionsList) {
-          list.isnew = false;
-          if (list.taskList !== '') {
-            for (let i of list.taskList) {
-              i.isnews = false;
-              if (i.taskId == '') {
-                list.isBlank = true;
-                list.taskList.splice(i, 1);
-              }
-              this.stageTaskList = i.stageTaskList;
-              for (let item of i.stageTaskList) {
-                item.addPopShow = false;
-                item.isRepeat = false;
-                if (item.userList.length) {
-                  let indexs = item.userList.findIndex(res => {
-                    return res.userpkid == this.userPkid;
-                  })
-                  if (indexs !== -1) {
-                    item.isPartIn = true;
+    getProjectAll(keys, projectId) {
+
+      let data = { project: projectId, 'myUserId': this.userPkid, 'keys': keys };
+      this.$HTTP('post', '/project_get_info2', data, $('#app')[0]).then(res => {
+        let arr = res.result;
+        if (res.result.length) {
+          this.partitionsList = res.result;
+        } else {
+          this.partitionsList = [];
+          this.noPartitions = [];
+
+          console.log(this.partitionsList);
+          return
+        }
+        if (this.partitionsList) {
+          for (let list of this.partitionsList) {
+            list.isnew = false;
+            if (list.taskList !== '') {
+              for (let i of list.taskList) {
+                i.isnews = false;
+                if (i.taskId == '') {
+                  list.isBlank = true;
+                  list.taskList.splice(i, 1);
+                }
+                this.stageTaskList = i.stageTaskList;
+                for (let item of i.stageTaskList) {
+                  item.addPopShow = false; //添加人员是否显示
+                  item.isRepeat = false; //是否重复
+                  item.isShowHover = false; //
+                  item.upLoadIsShow = false; // 上传是否显示
+
+                  item.stageHoverIsShow = false; // 几个按钮hover是否显示
+                  if (item.userList.length) {
+                    let indexs = item.userList.findIndex(res => {
+                      return res.userpkid == this.userPkid;
+                    })
+                    if (indexs !== -1) {
+                      item.isPartIn = true;
+                    } else {
+                      item.isPartIn = false;
+                    }
                   } else {
                     item.isPartIn = false;
                   }
-                } else {
-                  item.isPartIn = false;
-                }
-                //  0超期  1没超期 
-                if (item.endTime) {
-                  // 超期了
-                  if (new Date(item.endTime) - new Date() <= 0) {
-                    item.taskTime = 0;
-                  } else {
+                  //  0超期  1没超期 
+                  if (item.endTime) {
+                    // 超期了
+                    if (new Date(item.endTime) - new Date() <= 0) {
+                      item.taskTime = 0;
+                    } else {
 
-                    item.taskTime = 1;
-                    let ratio = (new Date() - new Date(item.startTime)) / (new Date(item.endTime) - new Date(item.startTime));
-                    // console.log(ratio * 100)
-                    item.ratio = ratio * 100;
+                      item.taskTime = 1;
+                      let ratio = (new Date() - new Date(item.startTime)) / (new Date(item.endTime) - new Date(item.startTime));
+                      // console.log(ratio * 100)
+                      item.ratio = ratio * 100;
+                    }
                   }
-                }
 
-                if (item.startTime) {
-                  let time = item.startTime.split(' ');
-                  time = time[0].split('/').concat(time[1].split(':'));
-                  item.startTimeArr = [
-                    {                      year: time[0].substring(2, 4),
-                      month: time[1],
-                      day: time[2],
-                      hour: time[3],
-                      minute: time[4]
-                    }
-                  ]
-                }
-                if (item.endTime) {
-                  let time = item.endTime.split(' ');
-                  time = time[0].split('/').concat(time[1].split(':'));
-                  item.endTimeArr = [
-                    {                      year: time[0].substring(2, 4),
-                      month: time[1],
-                      day: time[2],
-                      hour: time[3],
-                      minute: time[4]
-                    }
-                  ]
+                  if (item.startTime) {
+                    let time = item.startTime.split(' ');
+                    time = time[0].split('/').concat(time[1].split(':'));
+                    item.startTimeArr = [
+                      {                        year: time[0].substring(2, 4),
+                        month: time[1],
+                        day: time[2],
+                        hour: time[3],
+                        minute: time[4]
+                      }
+                    ]
+                  }
+                  if (item.endTime) {
+                    let time = item.endTime.split(' ');
+                    time = time[0].split('/').concat(time[1].split(':'));
+                    item.endTimeArr = [
+                      {                        year: time[0].substring(2, 4),
+                        month: time[1],
+                        day: time[2],
+                        hour: time[3],
+                        minute: time[4]
+                      }
+                    ]
+                  }
                 }
               }
             }
           }
-        }
-        this.noPartitions = this.partitionsList[0];
+          this.noPartitions = this.partitionsList[0];
+        };
+
       })
     },
     // 获取项目参与人员列表
@@ -1919,11 +2036,9 @@ export default {
     // 当前点击的是哪个分组的上传
     handleClickUpload(item, lists, element, name) {
       this.fileNum = lists.fileCont;
+      // lists.upLoadIsShow = true;
       this.filePartitionId = 0;
-      console.log(lists)
-
       this.notGroupedList = lists.fileNames;
-      console.log(this.notGroupedList)
       this.nowUploadId = { 'name': name, 'taskId': item.taskId, 'stage': lists.stageId, 'partitionId': element.partitionId };
     },
     // 关闭文件上传视图
@@ -2145,14 +2260,29 @@ export default {
 
 
     // 文件上传--------------------------------end
+    // 获取项目列表
+    getProjectLists() {
+      let data = { 'myUserId': this.userPkid }
+      this.$HTTP('post', '/projectParticipation_getList', data).then(res => {
+        let arr = res.result;
+        this.projectList = arr;
+        let index = this.projectList.findIndex(res => {
+          return res.projectid == this.projectId;
+        })
+        this.selectedProject = this.projectList[index].title;
+        this.starFlag = this.projectList[index].isStar;
+      })
+    }
   },
   created() {
     let nowTime = new Date();
     this.nowYear = String(new Date().getFullYear()).slice(2, 4);
-    // console.log
+    console.log(this.projectId)
+    // return
     this.getstageList(); //获取阶段列表 
-    this.getProjectAll('');
+    this.getProjectAll('', this.projectId);
     this.getProjectUserList();
+    this.getProjectLists(); //获取项目标题列表
   },
   mounted() {
     let _ = this;
@@ -2339,7 +2469,7 @@ export default {
       .topTable {
         height: 40px;
         background: #fff;
-        z-index: 100;
+        z-index: 10;
         .topBar {
           display: flex;
           flex-direction: row;
@@ -2375,7 +2505,7 @@ export default {
           }
           //4个阶段 标题 内容
           .stageTitleLists {
-            z-index: 99;
+            z-index: 10;
             width: 252px;
             height: 40px;
             line-height: 40px;
@@ -2403,11 +2533,15 @@ export default {
         flex-direction: column;
         z-index: 1;
         //1. 每行内容 包含分区（任务 阶段）
-
+        .noSearch {
+          display: inline-block;
+          text-align: center;
+          padding: 30px;
+        }
         .partitionsMain {
           display: flex;
           flex-direction: row;
-          min-height: 72px;
+          // min-height: 72px;
           .partitionsAndStages {
             display: flex;
             flex-direction: row;
@@ -2429,20 +2563,23 @@ export default {
                 position: relative;
                 .stageName {
                   display: inline-block;
-                  line-height: 2;
+                  line-height: 1.3;
                   height: 50%;
                   width: 100px;
-                  // background: red;
                   border: none;
                   margin-top: 22px;
                   .box_sizing;
                   overflow: hidden;
+                  // text-overflow: ellipsis;
+                  // white-space: nowrap;
+                  text-align: left;
+                  outline: none;
                 }
                 .iconBox_ {
                   position: absolute;
                   height: 30px;
                   line-height: 30px;
-                  left: 0px;
+                  left: 10px;
                   .icon {
                     display: inline-block;
                     width: 14px;
@@ -2502,8 +2639,11 @@ export default {
                   line-height: 72px;
                   color: #3684ff;
                 }
+                .stageHoverShow {
+                  display: inline-block !important;
+                  background: #fff;
+                }
                 .stage {
-                  // position: relative;
                   .stageBg {
                     position: absolute;
                     display: inline-block;
@@ -2516,12 +2656,12 @@ export default {
                   }
                   .stageHover {
                     position: absolute;
-                    display: inline-block;
+                    // display: inline-block;
                     height: 100%;
                     width: 100%;
                     z-index: 100;
                     padding: 15px 35px;
-                    opacity: 0;
+                    display: none;
                     .box_sizing;
                     i {
                       font-size: 14px !important;
@@ -2642,12 +2782,14 @@ export default {
                     z-index: 100;
                     background: #ffffff;
                     text-align: center;
-                    opacity: 0;
+                    // opacity: 0;
+                    display: none;
                     .el-button {
                       border: none !important;
                       background: none;
                       padding: 0 !important;
-                      line-height: 72px;
+                      margin-top: 25px;
+                      // line-height: 72px;
                       i {
                         color: #fff;
                         font-size: 14px;
@@ -2681,9 +2823,11 @@ export default {
                     z-index: 3;
                     background: #ffffff;
                     text-align: center;
-                    opacity: 0;
+                    // opacity: 0;
+                    display: none;
                     .el-button {
-                      line-height: 72px;
+                      // line-height: 72px;
+                      margin-top: 30px;
                       border: none;
                       padding: 0;
                       background: none;
@@ -2722,9 +2866,32 @@ export default {
                         border-radius: 3px;
                         overflow: hidden;
                         margin: 0 4px;
+                        position: relative;
+
                         img {
                           width: 20px;
                           height: 20px;
+                        }
+                        .isFinish {
+                          position: absolute;
+                          display: inline-block;
+                          width: 10px;
+                          height: 10px;
+                          border-radius: 50%;
+                          background: #ffffff;
+                          bottom: -1px;
+                          right: -1px;
+                          text-align: center;
+                          overflow: hidden;
+
+                          i {
+                            position: absolute;
+                            font-weight: bold;
+                            bottom: 0;
+                            right: 0;
+                            font-size: 8px;
+                            color: #169a19;
+                          }
                         }
                       }
                     }
@@ -2785,28 +2952,29 @@ export default {
                     }
                   }
                 }
+
                 .stage:hover {
-                  .stageHover {
-                    position: absolute;
-                    display: inline-block;
-                    height: 100%;
-                    width: 100%;
-                    background: #ffffff;
-                    border: 1px solid #c4c4c4;
-                    z-index: 3;
-                    // display: block;
-                    padding: 15px 35px;
-                    .box_sizing;
-                    animation: ttt 0.5s 1 forwards;
-                  }
+                  // .stageHover {
+                  //   position: absolute;
+                  //   display: inline-block;
+                  //   height: 100%;
+                  //   width: 100%;
+                  //   background: #ffffff;
+                  //   border: 1px solid #c4c4c4;
+                  //   z-index: 3;
+                  //   padding: 15px 35px;
+                  //   .box_sizing;
+                  //   // animation: ttt 0.5s 1 forwards;
+                  // }
                   .closeHover {
-                    // display: block;
-                    animation: ttt 0.5s 1 forwards;
+                    display: block;
+                    // animation: ttt 0.5s 1 forwards;
                   }
                   .finishHover {
-                    // display: block;
-                    animation: ttt 0.5s 1 forwards;
+                    display: block;
+                    // animation: ttt 0.5s 1 forwards;
                   }
+
                   @keyframes ttt {
                     0% {
                       opacity: 0;
@@ -2942,12 +3110,14 @@ export default {
           left: calc(50% + 7px);
           transform: translate(-50%, -50%);
           border: none;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           display: inline-block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          text-align: left;
+          outline: none;
           i {
             position: absolute;
           }

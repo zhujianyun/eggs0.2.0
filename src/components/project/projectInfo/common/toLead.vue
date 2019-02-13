@@ -7,7 +7,7 @@
                 <i class="iconfont icon-guanbijiantou fr"
                    @click="closePop"></i>
             </div>
-            <div class="mainBox">
+            <div class="toLeadMainBox">
                 <span>
                     <img src="../../../../assets/img/tolead.png"
                          width="278px"
@@ -42,13 +42,15 @@
                                :on-exceed="handleExceed">
                         <button class="main_button_bg">上传Excel文件</button>
                     </el-upload>
-                    <button class="main_button_border downloadMould">下载Excel模板</button>
+                    <button class="main_button_border downloadMould">
+                        <a href="http://eggs.apexgame.cn/upload/Excel/Excel下载模板 .xlsx">下载Excel模板</a>
+                    </button>
                 </div>
             </div>
         </div>
+        <!-- 没有内容 确认 是否导入取消 -->
         <div class="affirmPop"
-             v-show="!toLeadShow">
-
+             v-show="isLeadShow">
             <div class="top">
                 <i class="iconfont icon-return fl"
                    @click="closePop"></i>
@@ -82,16 +84,17 @@
                       @click="startTolead">开始导入</span>
             </div>
         </div>
-        <!-- 温馨提示 -->
+
+        <!-- 有内容 温馨提示 -->
         <div class="affirmPop"
-             v-show="false"
-             @click.stop="isShowGroupAndTask=false">
+             v-show="isShowGroupAndTask"
+             @click.stop='isShowGroup=false'>
             <div class="top">
                 <span> 温馨提示</span>
             </div>
             <div class="main">
                 <p class="promptText">
-                    系统监测到您的目录已存在内容，您可以 选择要保留的内容
+                    系统监测到您的目录已存在内容，您可以选择要保留的内容
                 </p>
                 <span class="fileBox">
                     <span class="pleaseChoose">
@@ -100,7 +103,7 @@
                            @click.stop="isShowGroupList"></i>
                     </span>
                     <div class="groupAndTask"
-                         v-show="isShowGroupAndTask">
+                         v-show="isShowGroup">
                         <ul v-for="(list,index) of groupAndTask"
                             :key="list.partitionId"
                             class="groupLists">
@@ -111,7 +114,7 @@
                                     <i :class="list.isfold ?'icon-unfold':'icon-enter'"
                                        class="iconfont"></i>
                                 </span>
-                                <span>{{list.partitionTitle}}</span>
+                                <span class="partitionTitle">{{list.partitionTitle}}</span>
                                 <i class="iconfont icon-xuanzhong"
                                    v-show="list.isChecked"></i>
                             </li>
@@ -135,6 +138,7 @@
                       @click="startTolead">确认</span>
             </div>
         </div>
+
         <!-- 导入内容 -->
         <div class="importContent"
              v-if="importContentShow">
@@ -150,26 +154,25 @@
                             <span></span>
                         </li>
                     </ul>
-                    <ul class="lableLists">
-                        <li class="lists">
-                            <i class="iconfont icon-unfold"></i>
-                            <span>未分区</span>
-                            <span>未分区任务</span>
-                            <span></span>
-                        </li>
-                    </ul>
-                    <ul class="lableLists"
-                        v-for="(list,index)  of itemList"
-                        :key="index">
-                        {{list}}
-                        <li class="lists">
-                            <i class="iconfont icon-unfold"></i>
-                            <span>{{list.Title}}</span>
+                    <div class="partition  clearfix"
+                         v-for="(list,index) of itemList"
+                         :key="index">
+                        <span class="groupTittle fl">
+                            <span class="TittleBox">
+                                <i class="iconfont icon-unfold"></i>
+                                <span class="name">{{list.Title}}</span>
+                            </span>
+                        </span>
+                        <div class="lists fl">
+                            <div class="taskTittle"
+                                 v-for="(item ,index) of list.Child"
+                                 :key="index">
+                                <span> {{item}}</span>
+                                <span></span>
+                            </div>
+                        </div>
 
-                            <span>未分区任务</span>
-                            <span></span>
-                        </li>
-                    </ul>
+                    </div>
                 </div>
             </div>
             <div class="ContentBottom">
@@ -193,10 +196,13 @@ export default {
             projectId: JSON.parse(localStorage.getItem('projectItem')).projectid,
             userPkid: JSON.parse(localStorage.getItem('staffInfo')).userPkid, // 当前登录者的ID
             fileTittle: '',
-            groupAndTask: '',
+            groupAndTask: [],
             isShowGroupAndTask: false,
             importContentShow: false,
             itemList: [],
+            isLeadShow: false, //没有内容 提示是否导入
+            isShowGroup: false, //
+            group: 0,
         }
     },
     components: {
@@ -206,16 +212,12 @@ export default {
         groupAndTask(val, old) {
             let group = 0;
             for (let list of val) {
-                if (list.isChecked) {
-                    group++;
-                } else {
-                    group--;
-                }
-                this.checkNum = '已选择' + group + '项内容';
-                let groupNum = 0;
+                var groupNum = 0;
                 for (let item of list.taskList) {
                     if (item.isChecked) {
                         groupNum += 1;
+                        console.log(item)
+                        group = group + 1;
                     }
                     if (groupNum == list.taskList.length) {
                         list.isChecked = true;
@@ -224,6 +226,7 @@ export default {
                     }
                 }
             }
+            this.checkNum = '已选择' + group + '项内容';
         }
     },
     props: [],
@@ -233,10 +236,25 @@ export default {
             this.importContentShow = false;
         },
         ok() {
-            this.$emit('closePop');
+            let gropLists = [];
+            let taskLists = [];
+            for (let list of this.groupAndTask) {
+                if (!list.isChecked) {
+                    gropLists.push(list.partitionId);
+                }
+                for (let item of list.taskList) {
+                    if (!item.isChecked) {
+                        taskLists.push(list.partitionId);
+                    }
+                }
+            }
+            let data = { 'projectId': this.projectId, 'myUserId': this.userPkid, 'delPartitionVale': gropLists.join(','), 'delTaskVale': taskLists.join(','), 'itemList': JSON.stringify(this.itemList).toString() }
+            this.$HTTP('post', '/project_Import', data).then(res => {
+                this.$emit('closePop');
+            })
         },
         isShowGroupList() {
-            this.isShowGroupAndTask = !this.isShowGroupAndTask;
+            this.isShowGroup = !this.isShowGroup;
         },
         isfold(item) {
             item.isfold = !item.isfold;
@@ -250,26 +268,34 @@ export default {
             this.groupAndTask = [...this.groupAndTask];
         },
         checkGroup(item) {
-            for (let i of item.taskList) {
-                i.isChecked = !i.isChecked;
-            }
             item.isChecked = !item.isChecked;
-            console.log(item)
+            if (item.isChecked) {
+                for (let i of item.taskList) {
+                    i.isChecked = true;
+                }
+            } else {
+                for (let i of item.taskList) {
+                    i.isChecked = false;
+                }
+            }
             this.groupAndTask = [...this.groupAndTask];
+
         },
         uploadSuccess(res) {
             let arr = res.result;
             this.fileTittle = arr.FileName;
             this.toLeadShow = false;
-
             this.itemList = arr.ItemList;
-            console.log(this.itemList)
+            for (let list of this.groupAndTask) {
+                if (list.taskList.length) {
+                    this.isShowGroupAndTask = true;
+                } else {
+                    this.isLeadShow = true;
+                }
+            }
         },
         startTolead() {
             this.importContentShow = true;
-
-
-            console.log('ddd')
         },
         handleExceed(files, fileList) {
             this.$message.warning(`当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);
@@ -335,8 +361,9 @@ export default {
       padding: 0 20px;
       .box_sizing;
     }
-    .mainBox {
+    .toLeadMainBox {
       padding: 70px 83px 38px 83px;
+      .box_sizing;
       border-bottom: 1px solid rgba(242, 242, 242, 1);
       span {
         display: inline-block;
@@ -459,12 +486,23 @@ export default {
             text-align: left;
             padding: 0 43px;
             .box_sizing;
+            .partitionTitle {
+              padding: 0 30px;
+              width: 170px;
+              .box_sizing;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              position: absolute;
+              left: 0;
+            }
             .isfold {
               display: inline-block;
               width: 20px;
               height: 20px;
-              position: absolute;
               left: 10px;
+              position: absolute;
+              z-index: 99;
               i {
                 font-size: 14px;
                 font-weight: normal;
@@ -480,7 +518,10 @@ export default {
             height: 32px;
             line-height: 32px;
             text-align: left;
-            padding: 0 14px;
+            padding: 0 30px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             .box_sizing;
             position: relative;
             .icon-xuanzhong {
@@ -577,46 +618,59 @@ export default {
             }
           }
         }
-        .lableLists {
-          .lists {
-            display: flex;
-            flex-direction: row;
+
+        .partition {
+          display: flex;
+          flex-direction: row;
+          .groupTittle {
+            width: 108px;
+            display: inline-block;
+            text-align: center;
             position: relative;
-            .icon-unfold {
+            border-right: 1px solid #eeeeee;
+            border-bottom: 1px solid #eeeeee;
+            .TittleBox,
+            i {
               position: absolute;
+              top: 50%;
               left: 10px;
-              top: 30px;
-            }
-            span {
-              line-height: 70px;
-              text-align: center;
-              border-right: 1px solid #eeeeee;
-              border-bottom: 1px solid #eeeeee;
-            }
-            span:nth-child(2) {
-              display: inline-block;
-              width: 112px;
-              height: 70px;
-            }
-            span:nth-child(3) {
-              display: inline-block;
-              width: 140px;
-              height: 70px;
-            }
-            span:nth-child(4) {
-              display: inline-block;
-              width: 252px;
-              height: 70px;
+              transform: translateY(-50%);
+              .name {
+                display: inline-block;
+                line-height: 1.5;
+                margin-left: 25px;
+                width: 60px;
+              }
             }
           }
-          li {
-            // span {
-            //   display: inline-block;
-            //   width: 112px;
-            //   height: 70px;
-            //   border-right: 1px solid red;
-            //   border-bottom: 1px solid red;
-            // }
+          .lists {
+            width: calc(100% - 120px);
+            .taskTittle {
+              height: 70px;
+              width: 380px;
+              text-align: left;
+              display: flex;
+              flex-direction: row;
+              span {
+                padding: 0 20px;
+                .box_sizing;
+                line-height: 70px;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 3;
+                overflow: hidden;
+                display: inline-block;
+                height: 70px;
+                border-right: 1px solid #eeeeee;
+                border-bottom: 1px solid #eeeeee;
+              }
+              span:nth-child(1) {
+                width: 136px;
+              }
+              span:nth-child(2) {
+                width: 252px;
+              }
+            }
           }
         }
       }

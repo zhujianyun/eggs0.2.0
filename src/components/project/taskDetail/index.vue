@@ -6,7 +6,7 @@
             <div class="project_name" @click='returnProject'>{{projectItem.title}}</div>
           <!-- </el-tooltip> -->
 
-          <!-- state=1(一开始) state=2(一完成) state=3(一未开始) state=4(一进行中) state=5(一已超时) state=6(一已关闭)  -->
+          <!-- state=1(一开启) state=2(一完成) state=3(一未开始) state=4(一进行中) state=5(一已超时) state=6(一已关闭)  -->
           <div class="stage_list">
             <el-tabs v-model="stageId" @tab-click="taskStageDetail(taskId, stageId)">
               <el-tab-pane 
@@ -16,14 +16,20 @@
                 :name="stage.stageId"
                 >
                   <span slot="label">
-                    <span class="round">
-                      <img v-if='stage.state === 1' src="./style/state_icon/state1.png" alt="">
-                      <img v-else-if='stage.state === 2' src="./style/state_icon/state2.png" alt="">
-                      <img v-else-if='stage.state === 3' src="./style/state_icon/state3.png" alt="">
-                      <img v-else-if='stage.state === 4' src="./style/state_icon/state4.png" alt="">
-                      <img v-else-if='stage.state === 5' src="./style/state_icon/state5.png" alt="">
-                      <img v-else-if='stage.state === 6' src="./style/state_icon/state6.png" alt="">
-                    </span>
+                    <el-tooltip 
+                      effect="dark" 
+                      :content="stage.state > 0 && stage.state <= 6 ? stateTooltip[stage.state*1-1] : '状态错误'" 
+                      placement="top" 
+                      :open-delay="300">
+                      <span class="round">
+                        <img v-if='stage.state === 1' src="./style/state_icon/state1.png" alt="">
+                        <img v-else-if='stage.state === 2' src="./style/state_icon/state2.png" alt="">
+                        <img v-else-if='stage.state === 3' src="./style/state_icon/state3.png" alt="">
+                        <img v-else-if='stage.state === 4' src="./style/state_icon/state4.png" alt="">
+                        <img v-else-if='stage.state === 5' src="./style/state_icon/state5.png" alt="">
+                        <img v-else-if='stage.state === 6' src="./style/state_icon/state6.png" alt="">
+                      </span>
+                    </el-tooltip>
                     {{stage.stageTitle}}
                   </span>
                 </el-tab-pane>
@@ -42,11 +48,10 @@
               v-for="(group, index) in this.tasksList"
               :key="group.partitionId"
               >
-              <div class="group_title">
+              <div class="group_title" @click='extendToggle(index)'>
                 <i 
                     class='iconfont icon-unfold'
                     :class="group.extend ? '' : 'icon_rotate'"
-                    @click='extendToggle(index)'
                     ></i>
                 <span>{{group.partitionTitle}}</span>
               </div>
@@ -58,6 +63,7 @@
                         :key="list.taskId"
                         >
                         <p 
+                          :id="list.taskId == taskId ? 'selectTask' : ''"
                           :class="list.taskId == taskId ? 'select_task every' : 'every'"
                           @click="taskStageDetail(list.taskId, stageId)"
                         >{{list.taskTitle}}</p>
@@ -203,7 +209,7 @@
                               :on-error="uploadError"
                               :on-success="uploadSuccess"
                               :on-progress="uploadProgress"
-                              :limit="9"
+                              :limit="99"
                               :on-exceed="handleExceed"
                               :before-upload="beforeUpload"
                               >本地上传
@@ -223,7 +229,7 @@
                         :on-error="uploadError"
                         :on-success="uploadSuccess"
                         :on-progress="uploadProgress"
-                        :limit="9"
+                        :limit="99"
                         :on-exceed="handleExceed"
                         :before-upload="beforeUpload"
                         >
@@ -329,7 +335,7 @@
                       <el-upload
                         v-if='power || (notGroupedList && notGroupedList.length) || dragItem.fromGroup'
                         :ref="uploadFrom === 2 ? 'fileUpload' : ''"
-                        class="file_empty_upload"
+                        :class="{file_empty_upload: true, dragger_upload_dis: dragItem.item && dragItem.item.FilePkid ? true : false}"
                         :drag="power && !dragItem.FilePkid ? true : false"
                         :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+0"
                         :show-file-list="false"
@@ -337,7 +343,7 @@
                         :on-error="uploadError"
                         :on-success="uploadSuccess"
                         :on-progress="uploadProgress"
-                        :limit="9"
+                        :limit="99"
                         :on-exceed="handleExceed"
                         :before-upload="beforeUpload"
                         @click.native.prevent
@@ -485,7 +491,7 @@
                             >
                             <el-upload
                               :ref="uploadFrom === 4 && filePartitionId === group.pkid ? 'fileUpload' : ''"
-                              class="file_empty_upload"
+                              :class="{file_empty_upload: true, dragger_upload_dis: dragItem.item && dragItem.item.FilePkid ? true : false}"
                               :drag="power && !dragItem.FilePkid ? true : false"
                               :action="'/ProjectFile.ashx?myUserId='+userId+'&projectId='+projectId+'&stageTaskId='+stageTaskId+'&filePartitionId='+group.pkid"
                               :show-file-list="false"
@@ -493,7 +499,7 @@
                               :on-error="uploadError"
                               :on-success="uploadSuccess"
                               :on-progress="uploadProgress"
-                              :limit="9"
+                              :limit="99"
                               :on-exceed="handleExceed"
                               :before-upload="beforeUpload"
                               @click.native.prevent
@@ -515,7 +521,7 @@
                                       v-if='group.packUp' 
                                       @click='groupExtendToggle(index, true)'
                                       class='mainColor_underline_text'
-                                      >收起</span>{{group.packUp}}
+                                      >收起</span>
                                       <el-dropdown 
                                         v-if='power || group.fileList.length'
                                         class="fixed file_more"
@@ -536,7 +542,7 @@
                                               :on-error="uploadError"
                                               :on-success="uploadSuccess"
                                               :on-progress="uploadProgress"
-                                              :limit="9"
+                                              :limit="99"
                                               :on-exceed="handleExceed"
                                               :before-upload="beforeUpload"
                                               >
@@ -592,8 +598,12 @@
                               <div 
                                 v-if='group.allList'
                                 :key="group.pkid"
-                                class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.temporary ? 'drag_in_temporary' : 'drag_in') : 'drag_dis') : ''"
+                                :class="{
+                                  group_file: true,
+                                  drag_in_temporary: dragItem && dragItem.fromGroup && group.border && group.temporary,
+                                  drag_in: dragItem && dragItem.fromGroup && group.border && !group.temporary ,
+                                  drag_dis:  dragItem && dragItem.fromGroup && !group.border
+                                }"
                                 @click.stop
                                 >
                                 <draggable
@@ -663,8 +673,12 @@
                               <div 
                                 v-else-if='group.overList'
                                 :key="group.pkid"
-                                class="group_file"
-                                :class="dragItem && dragItem.fromGroup ? (group.border ? (group.temporary ? 'drag_in_temporary' : 'drag_in') : 'drag_dis') : ''"
+                                :class="{
+                                  group_file: true,
+                                  drag_in_temporary: dragItem && dragItem.fromGroup && group.border && group.temporary,
+                                  drag_in: dragItem && dragItem.fromGroup && group.border && !group.temporary,
+                                  drag_dis: dragItem && dragItem.fromGroup && !group.border,
+                                }"
                                 @click.stop
                                 >
                                 <draggable
@@ -919,7 +933,7 @@
                         :on-error="uploadError"
                         :on-success="uploadSuccess"
                         :on-progress="uploadProgress"
-                        :limit="9"
+                        :limit="99"
                         :on-exceed="handleExceed"
                         :before-upload="beforeUpload"
                         >
@@ -955,9 +969,9 @@
                         v-model="fileCheckboxSelf" 
                         @change='fileCheckboxAllSelf'>全选</el-checkbox>
                         <template v-if='checkedListSelf.length'>
-                         <el-tooltip effect="dark" content="下载" placement="top" :open-delay="300">
+                         <!-- <el-tooltip effect="dark" content="下载" placement="top" :open-delay="300">
                             <i class="iconfont icon-xiazai" @click='multipleDownload1'></i>
-                          </el-tooltip>
+                          </el-tooltip> -->
                           <el-tooltip effect="dark" content="删除" placement="top" :open-delay="300">
                             <i class="iconfont icon-delete" @click='multipleDel'></i>
                           </el-tooltip>
@@ -1133,6 +1147,8 @@
         @closeProgress="closeProgress"
         @handleCancel="cancelUpload"
         @handleRe="reUpload" />
+      
+      <!-- 文件详情预览 -->
       <transition name="fade1">
         <file-details v-if="filedetailsShow"
           :info='enterDetailInfo'
@@ -1337,6 +1353,7 @@ export default {
       filedetailsShow: false , //文件预览是否显示
       lastTime: null, // 判断失焦和进入详情的间隔
       enterEdit: false, // enter保存
+      stateTooltip: ['已开启', '已完成', '未开始', '进行中', '已超时', '已关闭'],
 
     };
   },
@@ -1489,7 +1506,7 @@ export default {
         groupIndex: groupIndex,
         fileIndex: index,
         fileList: this.stageInfo.fileList,
-        type: type ? 2 : 1,
+        type: type && type !== -1 ? 2 : 1,
         menuList: [
           this.stageInfo.title, 
           this.stageInfo.stageList[x].stageTitle, 
@@ -2265,7 +2282,7 @@ export default {
       if(repeat !== -1) {
         this.$message({
           type: 'error',
-          message: '该分组内含有同名文件！·',
+          message: '该分组内含有同名文件！',
           center: true
         });
         this.editFocus('#fileNameEdit', false);
@@ -3530,6 +3547,11 @@ export default {
     closeProgress() {
       this.uploadProgressFlag = false;
       this.fileProgressList = [];
+      if(Array.isArray(this.$refs.fileUpload)) {
+        this.$refs.fileUpload[0].clearFiles();
+      }else {
+        this.$refs.fileUpload.clearFiles();
+      }
     },
 
     // 取消上传
@@ -3613,15 +3635,19 @@ export default {
     },
     // 文件上传超出提示
     handleExceed(files, fileList) {
-      this.$message({
-        type: 'warning',
-        message: '最多只能选择9个文件',
-        center: true
-      });
+      if(files.length > 9) {
+        this.$message({
+          type: 'warning',
+          message: '最多只能选择9个文件',
+          center: true
+        });
+        return false;
+      }
     },
     // 文件上传前
     beforeUpload(file) {
       // console.log('--before', file);
+     
       if (!this.uploadProgressFlag) {
         this.uploadProgressFlag = true;
       }
@@ -3696,7 +3722,11 @@ export default {
 
     // 文件上传中
     uploadProgress(event, file, fileList) {
+     
       let percents = parseInt(event.percent);
+      if(percents < 30) {
+        console.log('--11111uploadProgress', file.url);
+      } 
       let ids = this.fileProgressList.findIndex(ele => {
         return ele.uid === file.uid;
       });
@@ -3715,7 +3745,6 @@ export default {
         //   }
         //   this.uploadError('err', file);
         // }
-
         if (
           !this.fileProgressList[ids].imgUrl &&
           this.fileProgressList[ids].FileTypeNum == 1
@@ -3740,12 +3769,6 @@ export default {
       if (this.uploadProgressFlag && returns) {
         setTimeout(() => {
           this.closeProgress();
-          // 暂时解决两次上传时文件个数大于9个的bug
-          if(Array.isArray(this.$refs.fileUpload)) {
-            this.$refs.fileUpload[0].clearFiles();
-          }else {
-            this.$refs.fileUpload.clearFiles();
-          }
         }, 2000);
       }
     },
@@ -3840,6 +3863,9 @@ export default {
       }
       // console.log('stageInfoChange----', type, info, indexs, this.stageList[indexs].state);
       this.STAGEINFO_CHANGE(this.stageInfo);
+      this.$nextTick(() => {
+        this.$refs.stageManage && this.$refs.stageManage.setData(this.stageInfo);
+      });
 
     },
 
@@ -3873,6 +3899,12 @@ export default {
         this.initData(); // 初始化数据
         this.taskId = taskId;
         this.stageId = stageId;
+        let params = {
+          projectId: this.projectId, 
+          stageId: this.stageId, 
+          taskId: this.taskId
+        }
+        localStorage.setItem('getTaskIds', JSON.stringify(params));
         let obj = {
           myUserId: this.userId,
           projectId: this.projectId,
@@ -3940,7 +3972,8 @@ export default {
       }
       this.stageInfo.fileList = returnList.concat();
       this.$nextTick(() => {
-        this.$refs.stageManage.setData(this.stageInfo);
+        this.$refs.stageManage && this.$refs.stageManage.setData(this.stageInfo);
+        document.getElementById('selectTask').scrollIntoView({behavior: "smooth"});
       });
       this.countFileOne();
       this.idList = null;

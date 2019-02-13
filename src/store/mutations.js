@@ -22,7 +22,7 @@ import {
     CHECKEDLIST_CHANGE,
     FILELENGTH_CHANGE,
     TASKIDS_CHANGE,
-    POWER_CHANGE
+    POWER_CHANGE,
 
 } from './mutation-types';
 import Vue from '../../node_modules/vue';
@@ -152,7 +152,6 @@ export default {
         state.power = power;
         // state.power = 1;
     },
-
     
 
 

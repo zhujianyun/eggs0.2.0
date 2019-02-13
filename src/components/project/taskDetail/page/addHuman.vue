@@ -135,7 +135,7 @@ export default {
       this.delPeopleFlag = false;
       const index = this.selectedIndex[0];
       const index1 = this.selectedIndex[1];
-       console.log( this.stagePeopleList[index]);
+      // console.log( this.stagePeopleList[index]);
       // 发送请求
       let obj = {
         projectId: this.ids.projectId,
@@ -154,7 +154,7 @@ export default {
           }
           this.$emit('stageInfoChange', 1, data);
           this.stagePeopleList[index].userList.splice(index1, 1);
-          // console.log("任务删除人员", res, this.stagePeopleList);
+          console.log("任务删除人员", res, this.stagePeopleList);
         })
         .catch(err => {
           console.log("任务删除人员失败", err);

@@ -10,17 +10,19 @@
       <router-view></router-view>
     </div>
   </div>
-
 </template>
 <script>
 import leftNav from "../common/left";
 import topBar from "../common/topBar";
+import noticeAll from "../notice/noticeAll";
 import { setCookie, getCookie } from '../../api/cookie';
+import { mapState } from 'vuex';
 
 export default {
   components: {
     leftNav,
-    topBar
+    topBar,
+    noticeAll
   },
   data() {
     return {
@@ -54,19 +56,26 @@ export default {
       this.userId = staffInfo.userPkid;
       // 2.有链接地址
     } else if (urls) {
-        console.log(this.userId, this.myUserId,'0 kankan加好友没有')
+      console.log(this.userId, this.myUserId, '0 kankan加好友没有')
       let url = decodeURI(window.location.href)
         .split("?")[1]
         .split("&");
       if (url[0].split("=")[0] == 'userId') {
-        console.log(this.userId, this.myUserId,'1 kankan加好友没有')
+        console.log(this.userId, this.myUserId, '1 kankan加好友没有')
         let userId = url[0].split("=")[1];
         this.getInfo(userId);
       } else {
         this.userId = staffInfo.userPkid;
-        console.log(this.userId, this.myUserId,'2 kankan加好友没有')
-        this.myUserId = url[0].split("=")[1];
         this.type = url[1].split("=")[1];
+        
+        // 1.通过好友列表进入的
+        
+        // 2.通过项目进入
+
+        // 3.通过任务片段进入
+
+        console.log(this.userId, this.myUserId, '2 kankan加好友没有')
+        this.myUserId = url[0].split("=")[1];
         this.id = url[2].split("=")[1];
         if (this.userId !== this.myUserId) {
           this.agreeJoin(this.userId, this.myUserId);
@@ -102,7 +111,7 @@ export default {
     left: 0;
   }
   .topBar_k {
-    z-index: 11;
+    z-index: 13;
     width: 100%;
     position: fixed;
     left: 0;
@@ -118,6 +127,16 @@ export default {
     margin-top: 50px;
     .box_sizing;
     background: #ffffff;
+    position: relative;
+    .notice_y {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #CCFFFF;
+      z-index: 100;
+    }
   }
 }
 </style>

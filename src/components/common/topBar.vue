@@ -37,8 +37,14 @@
         <li>
           <i class="iconfont  icon-shuaxin"></i>
         </li>
-        <li>
-          <i class="iconfont icon-tongzhi"></i>
+        <li class="notice_icon">
+          <i class="iconfont icon-tongzhi" @click.stop='clickNotice'></i>
+          <transition name="fade1">
+            <notice-page 
+              v-if='noticeShow' 
+              @enterAll='enterAll'
+              />
+          </transition>
         </li>
         <li @click="friend">
           <i class="iconfont icon-haoyouliebiao"></i>
@@ -48,19 +54,38 @@
   </div>
 </template>
 <script>
+import noticePage from "../notice";
+
 import { setCookie } from '../../api/cookie';
 
 export default {
-  components: {},
+  components: {
+    noticePage,
+  },
   data() {
     return {
       staffInfo: "",
       createrId: "",
-      setListShow: false
+      setListShow: false,
+      noticeShow: false,
     };
   },
-
   methods: {
+    clickNotice() {
+      if(this.noticeShow) {
+        this.noticeShow = false;
+      }else {
+        this.noticeShow = true;
+      }
+      let clickHide = e => {
+        this.noticeShow = false;
+        $(document).unbind("click", clickHide)
+      };
+      $(document).bind("click", clickHide)
+    },
+    enterAll() {
+      this.noticeShow = false;
+    },
     friend() {
       this.$router.push("/friend");
     },
@@ -82,9 +107,9 @@ export default {
   },
   created() {
     if (localStorage.getItem("staffInfo")) {
-      this.staffInfo = JSON.parse(localStorage.getItem("staffInfo"));
+      let staffInfo = JSON.parse(localStorage.getItem("staffInfo"));
+      this.getInfo(staffInfo.userPkid)
     }
-
     let urls = decodeURI(window.location.href).split("?")[1];
     if (urls) {
       let url = decodeURI(window.location.href)
@@ -163,11 +188,14 @@ export default {
         width: 28px;
         height: 28px;
         .border_radius(@br: 3px);
-        background: red;
       }
       i {
         font-size: 12px;
       }
+    }
+    
+    .notice_icon {
+      position: relative;
     }
     .setList {
       position: absolute;

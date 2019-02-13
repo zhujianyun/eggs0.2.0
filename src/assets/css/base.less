@@ -227,9 +227,6 @@ input{
 .cur_dis {
   cursor: not-allowed !important;
   color: @grayNight !important;
-  &:hover {
-    color: @grayNight !important;
-  }
 }
 .word_over {
   overflow: hidden;
@@ -847,18 +844,16 @@ not supported by any browser */
         }
       .upload_progress_img {
         display: inline-block;
-        width: 32px;
+        width: 24px;
         height: 32px; 
         vertical-align: middle;
+        text-align: center;
         img {
-          display: inline-block;
-          height: 100%; 
-          vertical-align: top;
-          text-align: center;
-          max-width: 32px;
+          max-width: 100%;
+          max-height: 100%;
+          vertical-align: super;
         }
       }
-
       .upload_progress_name {
         display: inline-block;
         vertical-align: top;
@@ -868,7 +863,6 @@ not supported by any browser */
         line-height: 20px;
         margin-top: 6px;
         margin-left: 8px;
-
       }
 
       .upload_progress_percent {

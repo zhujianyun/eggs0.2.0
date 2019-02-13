@@ -3,9 +3,9 @@ import Router from 'vue-router';
 
 import Enter from '@/components/enter';
 import Login from '@/components/login';
+
 // 首页
 import Home from '@/components/home';
-
 
 
 import RegisterPage from '@/components/register';
@@ -29,6 +29,11 @@ import TaskDetail from '@/components/project/taskDetail';
 
 import Friend from '@/components/friend';
 
+// 通知
+import Notice from '@/components/notice/noticeAll';
+
+// 任务被删除时的404页面
+import NoTask from '@/components/common/noTask';
 
 Vue.use(Router)
 
@@ -66,6 +71,16 @@ export default new Router({
             path: '/friend',
             name: 'Friend',
             component: Friend
+        },
+        {
+            path: '/notice',
+            name: 'Notice',
+            component: Notice
+        },
+        {
+            path: '/noTask',
+            name: 'NoTask',
+            component: NoTask
         }
         ]
     }, {

@@ -10,9 +10,11 @@
                     <span v-if='progress.error' class="upload_progress_img">
                         <img :filetype="progress.FileTypeNum" :src="fileTypeImg[progress.FileTypeNum].src" alt="">
                     </span>
-                    <span v-else class="upload_progress_img">
-                        <img v-if="progress.FileTypeNum == 1" :src="progress.imgUrl" alt="">
-                        <img v-else :filetype="progress.FileTypeNum" :src="fileTypeImg[progress.FileTypeNum].src" alt="">
+                    <span v-else :class="progress.FileTypeNum == 1 ? 'upload_progress_img' : 'upload_progress_img'">
+                        <img :filetype="progress.FileTypeNum" :src="fileTypeImg[progress.FileTypeNum].src" alt="">
+
+                        <!-- <img v-if="progress.FileTypeNum == 1" :src="progress.imgUrl" alt="">
+                        <img v-else :filetype="progress.FileTypeNum" :src="fileTypeImg[progress.FileTypeNum].src" alt=""> -->
                     </span>
                     <span class="upload_progress_name">{{progress.name}}</span>
                     <span v-if='progress.error' class="upload_progress_error">

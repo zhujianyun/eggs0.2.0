@@ -86,7 +86,7 @@
                                 :filename='item.FileName'
                                 @mouseenter="enterFile(item)"
                                 @mouseleave="leaveFile(item)"
-                                @click='groupExtendToggle(index, index1, index2)'
+                                @click='groupExtendToggle(index, index1, item, index2)'
                                 
                                 >
                                 <template v-if='item.overLength'>
@@ -309,7 +309,7 @@ export default {
         },
 
         // 文件组折叠/展开
-        groupExtendToggle(index, index1, index2) {
+        groupExtendToggle(index, index1, item, index2) {
             if(item !== true && !item.overLength) {
                 this.enterTheDetails(index2, index1, index);
                 return;

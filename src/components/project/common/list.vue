@@ -405,6 +405,7 @@ export default {
       showButton: true, //显示 按钮默认显示
       classify: "", //点击进入 是我负责的还是 我参与 权限修改
       HandoverShow: false,//项目交接是否显示
+      createrId: JSON.parse(localStorage.getItem("staffInfo")).userPkid,
     };
   },
 
@@ -415,7 +416,7 @@ export default {
       if (this.I_participatein) {
         for (let i in this.I_participatein) {
           let index = this.I_participatein[i].userlist.findIndex(res => {
-            return res.userId == this.I_participatein[i].creater.createrId
+            return res.userId == this.I_participatein[i].creater.createrId;
           })
           this.I_participatein[i].userlist.splice(index, 1)
           // console.log('我参与的', this.I_participatein)
@@ -489,7 +490,6 @@ export default {
 
     // 项目恢复
     projectRestore(list) {
-      console.log("恢复");
       this.$confirm(
         "您是否归档该项目？归档后可在 已归档 中进行恢复",
         "温馨提示",
@@ -523,17 +523,18 @@ export default {
     // 获取我负责的列表
     getMyResponsibleList() {
       let data = { createrId: this.createrId };
-      this.$HTTP("post", "/project_getListByCreaterId", data).then(res => {
+      this.$HTTP("post", "/project_getListByCreaterId", data,$('#app')[0]).then(res => {
         this.myResponsibleList = res.result;
         console.log('我负责的', this.myResponsible)
       });
     },
     // 获取我参与的列表
     get_I_participatein(createrId) {
-      let data = { userId: createrId };
-      this.$HTTP("post", "/projectParticipation_getListByUserId", data).then(
+      let data = { userId: this.createrId };
+      this.$HTTP("post", "/projectParticipation_getListByUserId", data,$('#app')[0]).then(
         res => {
           this.I_participatein = res.result;
+          console.log(res)
         }
       );
     },
@@ -542,7 +543,6 @@ export default {
       let data = { createrId: this.createrId };
       this.$HTTP("post", "/project_getSaveListByCreaterId", data).then(res => {
         this.projectArchiveList = res.result;
-        console.log(this.projectArchiveList);
         for (var item of this.projectArchiveList) {
           if (item.saveTime) {
             let i = item.saveTime.split(" ");
@@ -556,7 +556,6 @@ export default {
       list.isStar = !list.isStar;
       let obj = { projectId: list.projectid, userId: this.userId };
       this.$HTTP("post", "/project_update_isStar", obj).then(res => {
-        // console.log(res.code);
         if (res.code == 200) {
           this.getMyResponsibleList();
         }
@@ -603,14 +602,30 @@ export default {
       }
     },
     enterTask(list) {
-      // console.log
+      console.log(list) 
+      
       localStorage.setItem('projectItem', JSON.stringify(list));
       this.$router.push("/project/projectInfo");
     },
     // 项目归档 显示按钮
     showAll() {
       this.showButton = !this.showButton;
-    }
+    },
+    //1.通过好友列表 同意添加好友
+    agreeJoin(myUserId, friendsUserId) {
+      let obj = { myUserId: myUserId, friendsUserId: friendsUserId };
+      this.$HTTP('post', '/user_friends_add', obj).then(res => {
+        console.log(res)
+      })
+    },
+    // 2.通过项目加入
+    byProject(type, id) {
+      let obj = { myUserId: myUserId, friendsUserId: friendsUserId, type: type, id: id };
+      this.$HTTP('post', '/user_friendsByType_add', obj).then(res => {
+        console.log(res)
+      });
+    },
+    // 3.通过任务片段
   },
   mounted() { },
   created() {
@@ -625,7 +640,19 @@ export default {
       let url = decodeURI(window.location.href)
         .split("?")[1]
         .split("&");
-      this.createrId = url[0].split("=")[1]
+
+      // console.log(url[1].split("=")[1], url[0].split("=")[1], url[2].split("=")[1])
+      // 1.通过好友列表进入的 
+      if (url[1].split("=")[1] == 0) {
+        this.agreeJoin(this.userId, url[0].split("=")[1]);
+
+        // 2.通过项目进入
+      } else if (url[1].split("=")[1] == 1) {
+        this.byProject();
+        // 3.通过任务片段进入
+      } else {
+        this.byProject();
+      }
     }
 
     // 获取我负责的列表
