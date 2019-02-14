@@ -41,6 +41,7 @@ export default new Router({
     routes: [{
         path: '/',
         name: 'Home',
+        redirect: '/project',
         component: Home,
         children: [{
             path: '/workbench',

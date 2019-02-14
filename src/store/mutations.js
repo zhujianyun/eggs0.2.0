@@ -23,6 +23,7 @@ import {
     FILELENGTH_CHANGE,
     TASKIDS_CHANGE,
     POWER_CHANGE,
+    UNREAD_CHANGE,
 
 } from './mutation-types';
 import Vue from '../../node_modules/vue';
@@ -153,7 +154,9 @@ export default {
         // state.power = 1;
     },
     
-
+    [UNREAD_CHANGE](state, num) {
+        state.unreadNum = num;
+    },
 
 
 

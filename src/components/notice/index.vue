@@ -6,24 +6,32 @@
                 <span v-if='isAllRead' class="fr" @click.stop='clickAllRead'>标记全部已读</span>
                 <span v-else class="fr cur_dis">标记全部已读</span>
             </div>
-            <div class="notice_list">
+            <div class="notice_list" id='noticeList'>
                 <template v-if='isAllRead'>
                     <div 
                         class="notice_every clearfix"
                         v-for='(item, index) in noticeList'
-                        :key='item.noticeId'
+                        :key='item.Pkid'
                         >
                         <span class="left_header fl">
-                            <img :src="item.noticeFromHeader" alt="">
+                            <img :src="item.userPic" alt="">
                         </span>
                         <div class="right_detail fl">
-                            <div class="notice_from">{{item.noticeFromName}}</div>
-                            <div class="notice_type" @click="enterDetail">{{item.npticeContent}}</div>
-                            <div class="notice_time">{{item.noticeTime}}</div>
+                            <div class="notice_from">{{item.userName}}</div>
+                            <div class="notice_type" v-if='item.Type === 1'>已将你加入<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span></div>
+                            <div class="notice_type" v-else-if='item.Type === 2'>已将你移出<span class="gray_night">{{item.Content}}</span></div>
+                            <div class="notice_type" v-else-if='item.Type === 3'>已将你加入<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span>阶段</div>
+                            <div class="notice_type" v-else-if='item.Type === 4'>已将你移出<span class="gray_night">{{item.Content}}</span>阶段</div>
+                            <div class="notice_type" v-else-if='item.Type === 5'>评论<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span>：{{item.Content}}</div>
+                            <div class="notice_type" v-else-if='item.Type === 6'>在评论 <span>{{item.userName}}</span>的<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span>时@你：{{item.Content}}</div>
+                            <div class="notice_type" v-else-if='item.Type === 7'>已经完成工作并将文件移交给你</div>
+                            <div class="notice_type" v-else-if='item.Type === 8'>已将<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span>交接给你</div>
+                            <div class="notice_type" v-else-if='item.Type === 9'>已将<span class="mainColor_text" @click="enterDetail">{{item.Content}}</span>归档</div>
+                            <div class="notice_time">{{item.showDate}}</div>
                         </div>
                         <i 
                         class='iconfont icon-yidu'
-                        @click='clickRead'
+                        @click='clickRead(index)'
                         ></i>
                         <div class="bottom_line" v-if='index < noticeList.length - 1'></div>
                     </div>
@@ -50,66 +58,17 @@
     </div>
 </template>
 <script>
-import { mapMutations } from 'vuex';
+import { mapState, mapMutations } from 'vuex';
 
 export default {
     data() {
         return {
-            noticeList: [
-                {
-                    noticeId: 1,
-                    noticeFromId: 11,
-                    noticeFromName: '卢洪臣',
-                    noticeFromHeader: '/upload/user/b2a50343-9ebe-42de-845b-dae8d6889f1f.png',
-                    noticeType: 1,
-                    noticeTime: '2019/02/13 11:11:00',
-                    npticeContent: '评论：这里是评论的内容，只显示一行，然后：这里是评论的内容，只显示一行，然后',
-                    isRead: false,
-                },
-                {
-                    noticeId: 2,
-                    noticeFromId: 12,
-                    noticeFromName: '卢洪臣',
-                    noticeFromHeader: '/upload/user/b2a50343-9ebe-42de-845b-dae8d6889f1f.png',
-                    noticeType: 1,
-                    noticeTime: '2019/02/13 11:11:00',
-                    npticeContent: '评论：这里是评论的内容，只显示一行，然后...',
-                    isRead: false,
-                },
-                {
-                    noticeId: 3,
-                    noticeFromId: 11,
-                    noticeFromName: '卢洪臣',
-                    noticeFromHeader: '/upload/user/b2a50343-9ebe-42de-845b-dae8d6889f1f.png',
-                    noticeType: 1,
-                    noticeTime: '2019/02/13 11:11:00',
-                    npticeContent: '评论：这里是评论的内容，只显示一行，然后...',
-                    isRead: false,
-                },
-                {
-                    noticeId: 4,
-                    noticeFromId: 11,
-                    noticeFromName: '卢洪臣',
-                    noticeFromHeader: '/upload/user/b2a50343-9ebe-42de-845b-dae8d6889f1f.png',
-                    noticeType: 1,
-                    noticeTime: '刚刚',
-                    npticeContent: '评论时@你：具体的内容信息 @原娣 具体的是...',
-                    isRead: false,
-                },
-                {
-                    noticeId: 5,
-                    noticeFromId: 11,
-                    noticeFromName: '卢洪臣',
-                    noticeFromHeader: '/upload/user/b2a50343-9ebe-42de-845b-dae8d6889f1f.png',
-                    noticeType: 1,
-                    noticeTime: '刚刚',
-                    npticeContent: '评论时@你：具体的内容信息 @原娣 具体的是...',
-                    isRead: false,
-                },
-            ]
+            userId: JSON.parse(localStorage.getItem("staffInfo")).userPkid, // 当前登录者的ID
+            noticeList: []
         }
     },
     computed: {
+        ...mapState(['unreadNum']),
         isAllRead() {
             let have = this.noticeList.findIndex(ele => !ele.isRead);
             if(have !== -1) {
@@ -120,6 +79,7 @@ export default {
         }
     },
     methods: {
+        ...mapMutations(['UNREAD_CHANGE']),
 
         // 点击查看所有通知
         seeAllNotice() {
@@ -130,12 +90,34 @@ export default {
 
         // 标记全部已读
         clickAllRead() {
-            this.noticeList.map(ele => ele.isRead = true);
+            let obj = { userId: this.userId };
+            this.$HTTP("post", "/user_update_notificationStateAll", obj)
+            .then(res => {
+                this.UNREAD_CHANGE(0);
+                this.noticeList = [];
+            })
+            .catch(err => {
+                console.log("标记已读失败", err);
+            });
         },
 
         // 点击标记已读
-        clickRead() {
-
+        clickRead(index) {
+            let obj = { pkid: this.noticeList[index].Pkid };
+            this.$HTTP("post", "/user_update_notificationState", obj)
+            .then(res => {
+                let num = this.unreadNum - 1;
+                this.UNREAD_CHANGE(num);
+                this.$nextTick(() => {
+                    $('.notice_every').eq(index).hide(() => {
+                        this.noticeList.splice(1, index);
+                        this.noticeList = this.noticeList.concat();
+                    });
+                });
+            })
+            .catch(err => {
+                console.log("标记已读失败", err);
+            });
         },
         // 进入通知详情
         enterDetail() { 
@@ -146,9 +128,27 @@ export default {
         clickSet() {
 
         },
+        getNoticeList(page = 1, number = 20) {
+            let obj = { page: page, number: number, userId: this.userId, enabled: 1 };
+            this.$HTTP("post", "/user_get_notificationList", obj, $('#noticeList')[0])
+            .then(res => {
+                let result = [...res.result];
+                console.log("消息列表", res.result);
+                this.noticeList = result.filter(ele => ele.Enabled);
+                this.noticeList.map(ele => ele.showDate = this.timeDiff(ele.CreateTime));
+                if(this.noticeList.length && this.noticeList.length < Number(res.newsCont)) {
+                    this.loadMoreShow = true;
+                }else {
+                    this.loadMoreShow = false;
+                }
+            })
+            .catch(err => {
+            console.log("消息列表获取失败", err);
+            });
+        },
     },
     created() {
-
+        this.getNoticeList();
     },
 }
 </script>
@@ -230,6 +230,19 @@ export default {
                             margin-bottom: 4px;
                             width: 290px;
                             .word_over;
+                             .gray_night {
+                                color: @grayNight;
+                                padding: 0 5px;
+                            }
+                            .read_style {
+                                color: @grayNight;
+                                padding: 0 5px;
+                                .cur;
+                                &:hover {
+                                    color: @mainColor;
+                                    text-decoration: underline;
+                                }
+                        }
                         }
                         .notice_time {
                             color: @grayNight;

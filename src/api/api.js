@@ -31,10 +31,11 @@ MyApi.install = function (Vue, options) {
                 }
             };
             return this.$axios(axios).then(res => {
-                 if(load) {
+                if(load) {
                   loading.close();
                 }
                 return res.data;
+                
             }).catch(err => {
                 if(load) {
                     loading.close();
@@ -241,13 +242,91 @@ MyApi.install = function (Vue, options) {
         // 获取年月日
         //获取年
         let year = dateBegin.getFullYear();
+        let year1 = dateEnd.getFullYear();
         //获取月
         let month = dateBegin.getMonth() + 1;
+        let month1 = dateEnd.getMonth() + 1;
+        month = month < 10 ? '0' + month : month;
+        month1 = month1 < 10 ? '0' + month1 : month1;
+
         //获取日
         let day = dateBegin.getDate();
-        let day2 = dateEnd.getDate();
+        let day1 = dateEnd.getDate();
+
+        // 获取时
+        let H = dateBegin.getHours();
+        H = H < 10 ? '0' + H : H;
+
+        // 获取时
+        let Min = dateBegin.getMinutes();
+        Min = Min < 10 ? '0' + Min : Min;
+
+
+        let dd = new Date();
+        dd.setDate(dd.getDate() - 2);
+        let isQT = dd.getDate();
+        if(isQT === day && dd.getMonth() + 1 === parseInt(month)) {
+            isQT = true;
+        }else {
+            isQT = false;
+        }
+
+        let dd1 = new Date();
+        dd1.setDate(dd1.getDate() - 1);
+        let isZT = dd1.getDate();
+        if(isZT === day && dd1.getMonth() + 1 ===  parseInt(month)) {
+            isZT = true;
+        }else {
+            isZT = false;
+        }
+
+        let dd2 = new Date();
+        dd2.setDate(dd2.getDate() - 3);
+        let isLong = dd2.getDate();
+        if(isLong === day && dd2.getMonth() + 1 ===  parseInt(month)) {
+            isLong = true;
+        }else {
+            isLong = false;
+        }
+
+        // 1.刚刚（一分钟之内）
+        // 2.XX分钟前（一分钟到一小时之间）
+        // 3.XX小时前（一小时到24小时之间）
+        // 4.昨天
+        // 5.前天
+        // 6.今年
+        // 7.以前
+        // console.log(time, dateDiff, " 相差 "+dayDiff+"天 "+hours+"小时 "+minutes+" 分钟"+seconds+" 秒");
+
+        if(year !== year1) {
+            return year + '/' + month + '/' + day + ' ' + H + ':' + Min;
+        }else if(dayDiff >= 3 || isLong) {
+            return month + '/' + day + ' ' + H + ':' + Min;
+        }else if(isQT) {
+            return '前天 ' + H + ':' + Min;
+        }else if(isZT) {
+            return '昨天 ' + H + ':' + Min;
+        }else if(dayDiff == 0 && day == day1) {
+            if(hours > 0) {
+                if(minutes > 0 || seconds > 0) {
+                    return (hours + 1) + '小时前';
+                }else {
+                    return hours + '小时前';
+                }
+            }else if(minutes > 0){
+                return minutes + '分钟前';
+            }else {
+                return '刚刚';
+            }
+            if(minutes > 0 || seconds > 0) {
+                return (hours + 1) + '小时前';
+            }else {
+                return hours + '小时前';
+            }
+        }
+        return;
         if(dateDiff <= 0) { // 未超时
-            if(dayDiff == 0 && day == day2) { // 今日截止 state = 2
+            if(dayDiff == 0 && day == day1) { // 今日截止 state = 2
                 return {
                     countDown: ( minutes > 0 || seconds > 0 ) ? '剩余' + (hours + 1) + '小时' : '剩余' + hours + '小时',
                     state: 2,
@@ -275,7 +354,7 @@ MyApi.install = function (Vue, options) {
             }
         }
  
-        // console.log(time, dateDiff, " 相差 "+dayDiff+"天 "+hours+"小时 "+minutes+" 分钟"+seconds+" 秒");
+        
         // console.log(dateDiff+"时间差的毫秒数",dayDiff+"计算出相差天数",leave1+"计算天数后剩余的毫秒数"
         //     ,hours+"计算出小时数",minutes+"计算相差分钟数",seconds+"计算相差秒数");
             

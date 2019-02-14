@@ -2277,7 +2277,10 @@ export default {
   created() {
     let nowTime = new Date();
     this.nowYear = String(new Date().getFullYear()).slice(2, 4);
-    console.log(this.projectId)
+    if(false && this.$route.params.projectId) {
+      this.projectId = this.$route.params.projectId;
+    }
+
     // return
     this.getstageList(); //获取阶段列表 
     this.getProjectAll('', this.projectId);

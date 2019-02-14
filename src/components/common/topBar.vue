@@ -10,7 +10,7 @@
           <li class="last">
             <el-dropdown trigger="click">
               <span class="el-dropdown-link">
-                {{staffInfo.realName}}
+                {{staffInfo.realName ? staffInfo.realName : 'Happy work'}}
                 <i class="el-icon-arrow-down el-icon--right"></i>
               </span>
               <el-dropdown-menu slot="dropdown">
@@ -30,15 +30,27 @@
           </li>
           <li class="last">
             <img :src="staffInfo.pic"
+                v-if='staffInfo.pic'
                  class="userImg"
-                 alt="">
+                 alt=""
+                 >
+            <img src="../../assets/img/load.gif"
+              v-else
+                 class="userImg"
+                 alt=""
+                 >
           </li>
         </span>
         <li>
-          <i class="iconfont  icon-shuaxin"></i>
+          <el-tooltip effect="dark" content="刷新" placement="top" :open-delay="300">
+            <i class="iconfont  icon-shuaxin" @click="refresh"></i>
+          </el-tooltip>
         </li>
         <li class="notice_icon">
-          <i class="iconfont icon-tongzhi" @click.stop='clickNotice'></i>
+          <el-tooltip effect="dark" content="消息通知" placement="top" :open-delay="300">
+            <i class="iconfont icon-tongzhi" @click.stop='clickNotice'></i>
+          </el-tooltip>
+          <span v-if="Number(unreadNum)" class="unread" @click.stop='clickNotice'>{{unreadNum > 99 ? '···' : unreadNum}}</span>
           <transition name="fade1">
             <notice-page 
               v-if='noticeShow' 
@@ -47,7 +59,9 @@
           </transition>
         </li>
         <li @click="friend">
-          <i class="iconfont icon-haoyouliebiao"></i>
+          <el-tooltip effect="dark" content="好友管理" placement="top" :open-delay="300">
+            <i class="iconfont icon-haoyouliebiao"></i>
+          </el-tooltip>
         </li>
       </ul>
     </div>
@@ -55,13 +69,14 @@
 </template>
 <script>
 import noticePage from "../notice";
-
+import { mapState } from 'vuex';
 import { setCookie } from '../../api/cookie';
 
 export default {
   components: {
     noticePage,
   },
+  inject: ['reload'],
   data() {
     return {
       staffInfo: "",
@@ -70,7 +85,15 @@ export default {
       noticeShow: false,
     };
   },
+  computed: {
+    ...mapState(['unreadNum']),
+  },
   methods: {
+    // 刷新页面
+    refresh() {
+      this.reload();
+    },
+    // 消息通知
     clickNotice() {
       if(this.noticeShow) {
         this.noticeShow = false;
@@ -178,6 +201,9 @@ export default {
       text-align: center;
       border-right: 1px solid #f2f2f2;
       cursor: pointer;
+      .iconfont:hover {
+        color: @mainColor;
+      }
     }
     .last {
       border: none;
@@ -196,6 +222,20 @@ export default {
     
     .notice_icon {
       position: relative;
+      .unread {
+        position: absolute;
+        left: 26px;
+        top: -6px;
+        line-height: 1;
+        display: inline-block;
+        padding: 3px;
+        min-width: 12px;
+        font-size: 12px;
+        text-align: center;
+        .border_radius(@br: 50%);
+        background-color: #ff6173;
+        color: #ffffff;
+      }
     }
     .setList {
       position: absolute;
