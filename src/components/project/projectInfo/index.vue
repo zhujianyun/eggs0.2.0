@@ -2277,12 +2277,13 @@ export default {
   created() {
     let nowTime = new Date();
     this.nowYear = String(new Date().getFullYear()).slice(2, 4);
-    if(false && this.$route.params.projectId) {
-      this.projectId = this.$route.params.projectId;
+    let params = this.$route.params.projectId ? this.$route.params : null;
+    if(params) {
+      this.projectId = params.projectId;
     }
-
+   
     // return
-    this.getstageList(); //获取阶段列表 
+    this.getstageList(this.projectId); //获取阶段列表 
     this.getProjectAll('', this.projectId);
     this.getProjectUserList();
     this.getProjectLists(); //获取项目标题列表

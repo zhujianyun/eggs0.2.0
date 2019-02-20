@@ -46,11 +46,11 @@
             <i class="iconfont  icon-shuaxin" @click="refresh"></i>
           </el-tooltip>
         </li>
-        <li class="notice_icon">
+        <li class="notice_icon" @mouseenter.stop="getNoticeNum()" @click.stop='clickNotice'>
           <el-tooltip effect="dark" content="消息通知" placement="top" :open-delay="300">
-            <i class="iconfont icon-tongzhi" @click.stop='clickNotice'></i>
+            <i class="iconfont icon-tongzhi"></i>
           </el-tooltip>
-          <span v-if="Number(unreadNum)" class="unread" @click.stop='clickNotice'>{{unreadNum > 99 ? '···' : unreadNum}}</span>
+          <span v-if="Number(unreadNum)" class="unread">{{unreadNum > 99 ? '···' : unreadNum}}</span>
           <transition name="fade1">
             <notice-page 
               v-if='noticeShow' 
@@ -69,7 +69,7 @@
 </template>
 <script>
 import noticePage from "../notice";
-import { mapState } from 'vuex';
+import { mapState, mapMutations } from 'vuex';
 import { setCookie } from '../../api/cookie';
 
 export default {
@@ -83,12 +83,14 @@ export default {
       createrId: "",
       setListShow: false,
       noticeShow: false,
+      noticeInterval: null,
     };
   },
   computed: {
     ...mapState(['unreadNum']),
   },
   methods: {
+    ...mapMutations(['UNREAD_CHANGE']),
     // 刷新页面
     refresh() {
       this.reload();
@@ -106,6 +108,22 @@ export default {
       };
       $(document).bind("click", clickHide)
     },
+    // 获取未读消息数量
+    getNoticeNum(userId) {
+      return new Promise((resolve, reject) => {
+        let obj = { userId: userId ? userId : this.staffInfo.userPkid};
+        this.$HTTP("post", "/user_get_notificationListCount", obj)
+          .then(res => {
+            this.UNREAD_CHANGE(parseInt(res.result));
+            // console.log("消息列表数量", res);
+            resolve(true);
+          })
+          .catch(err => {
+            console.log("消息列表数量获取失败", err);
+            reject(err);
+          });
+      });
+    },
     enterAll() {
       this.noticeShow = false;
     },
@@ -120,18 +138,30 @@ export default {
     },
     // 获取个人信息
     getInfo(userpkid) {
-      let data = { userPkid: userpkid };
-      this.$HTTP("post", "/user_get", data).then(res => {
-        localStorage.setItem("staffInfo", JSON.stringify(res.result));
-        this.staffInfo = res.result;
-        this.createrId = this.staffInfo.userPkid;
+      return new Promise((resolve, reject) => {
+        let data = { userPkid: userpkid };
+        this.$HTTP("post", "/user_get", data).then(res => {
+          localStorage.setItem("staffInfo", JSON.stringify(res.result));
+          this.staffInfo = res.result;
+          this.createrId = this.staffInfo.userPkid;
+          resolve(true);
+        }).catch(err => {
+          reject(err);
+        });
       });
     },
   },
-  created() {
+  async created() {
     if (localStorage.getItem("staffInfo")) {
       let staffInfo = JSON.parse(localStorage.getItem("staffInfo"));
-      this.getInfo(staffInfo.userPkid)
+      try {
+        await this.getInfo(staffInfo.userPkid);
+        await this.getNoticeNum(staffInfo.userPkid);
+      }catch(err) {
+        console.log(err);
+      }
+      
+
     }
     let urls = decodeURI(window.location.href).split("?")[1];
     if (urls) {
@@ -148,6 +178,7 @@ export default {
         this.id = url[2].split("=")[1];
       }
     }
+
   },
   mounted() {
     // let _this = this;
@@ -161,6 +192,13 @@ export default {
     //   }
     //   _this.setListShow = true;
     // });
+    this.noticeInterval = setInterval(() => {
+      this.getNoticeNum();
+    }, 1000 * 10);
+  },
+  beforeDestroy() {
+    clearInterval(this.noticeInterval);
+    this.noticeInterval = null;
   }
 };
 </script>

@@ -155,7 +155,7 @@
                                     @click="sendComment(commentInfo)">评论</span>
                             </div>
                         </div>
-                        <div class="allComment">
+                        <div class="allComment" id='allComment'>
                             <p v-if='commentInfoLists.length'>全部评论</p>
                             <ul>
                                 <li class="clearfix commentList"
@@ -694,6 +694,16 @@ export default {
         window.onresize = () => {
             this.setLeft();
         }
+        this.$nextTick(() => {
+            $('.task_detail_yun').eq(0).css({zIndex: 14});
+            let type = this.info.noticeType;
+            if(type === 5 || type === 6 || type === 11 || type === 12) {
+              document.getElementById('allComment').scrollIntoView({behavior: "smooth"});
+            }
+        });
+  },
+  beforeDestroy() {
+    $('.task_detail_yun').eq(0).css({zIndex: 11});
   }
   
 };
